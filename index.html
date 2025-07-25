@@ -147,14 +147,6 @@
                 -webkit-tap-highlight-color: rgba(52, 152, 219, 0.3);
                 /* 增加内边距提升触摸体验 */
                 padding: 10px 3px;
-                /* 禁用文字选择，避免与长按功能冲突 */
-                -webkit-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-                /* 禁用长按上下文菜单 */
-                -webkit-touch-callout: none;
-                -webkit-tap-highlight-color: transparent;
             }
             
             /* 手机端长按提示 */
@@ -493,13 +485,6 @@
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
-            /* 禁用文字选择，避免与长按功能冲突 */
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-            /* 禁用长按上下文菜单 */
-            -webkit-touch-callout: none;
         }
         
         td:hover {
@@ -882,36 +867,6 @@
             }
         }
         
-        /* 全局禁用手机端文字选择，避免与长按功能冲突 */
-        @media (max-width: 768px) {
-            * {
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                -khtml-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-            }
-            
-            /* 但允许输入框和文本区域的文字选择 */
-            input, textarea, .notes-input {
-                -webkit-user-select: text;
-                -moz-user-select: text;
-                -ms-user-select: text;
-                user-select: text;
-                -webkit-touch-callout: default;
-            }
-            
-            /* 确保表格单元格完全禁用选择 */
-            table, tr, td, th {
-                -webkit-touch-callout: none;
-                -webkit-user-select: none;
-                -khtml-user-select: none;
-                -moz-user-select: none;
-                -ms-user-select: none;
-                user-select: none;
-            }
-        }
     </style>
 </head>
 <body>
@@ -945,7 +900,7 @@
                         </li>
                         <li class="mobile-instruction">
                             👆
-                            <span class="highlight">长按线路格子0.5秒</span> - 标记金猪被击杀但不知时间
+                            <span class="highlight">长按线路格子</span> - 标记金猪被击杀但不知时间
                         </li>
                         <li>
                             🔄
@@ -2088,7 +2043,6 @@
                 let longPressTimer;
                 let touchStartTime;
                 let isLongPress = false;
-                let touchStartX, touchStartY;
                 
                 // 检测是否为移动设备
                 function isMobileDevice() {
@@ -2100,13 +2054,7 @@
                 function startLongPress(e) {
                     if (!isMobileDevice()) return;
                     
-                    // 阻止默认行为，防止文字选择和上下文菜单
-                    e.preventDefault();
-                    
-                    const touch = e.touches[0];
                     touchStartTime = Date.now();
-                    touchStartX = touch.clientX;
-                    touchStartY = touch.clientY;
                     isLongPress = false;
                     
                     // 添加视觉反馈
@@ -2122,53 +2070,36 @@
                         
                         // 移除视觉反馈
                         cell.classList.remove('long-press-active');
-                    }, 500); // 减少到500ms，提升响应速度
+                    }, 600); // 600ms长按阈值
                 }
                 
                 // 长按结束
                 function endLongPress(e) {
                     if (!isMobileDevice()) return;
                     
-                    // 阻止默认行为
-                    e.preventDefault();
-                    
                     clearTimeout(longPressTimer);
                     cell.classList.remove('long-press-active');
                     
                     // 如果是短按且不是长按，则正常处理点击
                     const touchDuration = Date.now() - touchStartTime;
-                    if (touchDuration < 500 && !isLongPress) {
+                    if (touchDuration < 600 && !isLongPress) {
                         // 延迟一点执行，避免与长按冲突
                         setTimeout(() => {
                             if (!isLongPress) {
-                                // 手动触发点击事件
-                                handleCellClick(e);
+                                // 这里不需要手动调用handleCellClick，
+                                // 因为浏览器会自动触发click事件
                             }
                         }, 50);
                     }
                 }
                 
-                // 长按取消（手指移动或触摸取消）
-                function cancelLongPress(e) {
+                // 长按取消
+                function cancelLongPress() {
                     if (!isMobileDevice()) return;
                     
-                    // 如果是touchmove，检查移动距离
-                    if (e.type === 'touchmove') {
-                        const touch = e.touches[0];
-                        const moveX = Math.abs(touch.clientX - touchStartX);
-                        const moveY = Math.abs(touch.clientY - touchStartY);
-                        
-                        // 如果移动距离超过10px，取消长按
-                        if (moveX > 10 || moveY > 10) {
-                            clearTimeout(longPressTimer);
-                            cell.classList.remove('long-press-active');
-                            isLongPress = false;
-                        }
-                    } else {
-                        clearTimeout(longPressTimer);
-                        cell.classList.remove('long-press-active');
-                        isLongPress = false;
-                    }
+                    clearTimeout(longPressTimer);
+                    cell.classList.remove('long-press-active');
+                    isLongPress = false;
                 }
                 
                 // 绑定触摸事件
