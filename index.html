@@ -116,28 +116,24 @@
             }
             
             table {
-                min-width: 800px; /* 设置最小宽度，确保表格不会被挤压 */
-                font-size: 14px;
-                border-spacing: 3px; /* 减小间距，但保持清晰 */
+                min-width: 600px; /* 手机端适当减小最小宽度，但保证能看到所有列 */
+                font-size: 12px;
+                border-spacing: 2px;
             }
             
             th {
-                padding: 8px 3px;
-                font-size: 11px;
-                white-space: nowrap;
-                min-width: 35px; /* 设置最小宽度 */
-                width: 35px; /* 固定宽度 */
-                max-width: 35px;
+                padding: 6px 2px;
+                font-size: 10px;
+                width: 5%; /* 保持固定宽度比例 */
+                min-width: 28px; /* 设置最小像素宽度 */
             }
             
             td {
-                padding: 8px 3px;
+                padding: 8px 2px;
                 font-size: 12px;
-                min-height: 45px; /* 增加触摸目标高度 */
-                min-width: 35px; /* 设置最小宽度，确保触摸友好 */
-                width: 35px; /* 固定宽度 */
-                max-width: 35px;
-                position: relative;
+                height: 45px;
+                width: 5%; /* 保持固定宽度比例 */
+                min-width: 28px; /* 设置最小像素宽度 */
                 box-sizing: border-box;
             }
             
@@ -146,7 +142,7 @@
                 cursor: pointer;
                 -webkit-tap-highlight-color: rgba(52, 152, 219, 0.3);
                 /* 增加内边距提升触摸体验 */
-                padding: 10px 3px;
+                padding: 10px 2px;
             }
             
             /* 手机端长按提示 */
@@ -169,16 +165,12 @@
             }
             
             .timer-cell {
-                font-size: 10px;
-                padding: 4px 2px;
-                min-height: 35px;
-                height: 35px;
-                line-height: 1.2;
-                /* 使用更小的字体但保持可读性 */
-                font-family: 'Courier New', monospace;
-                min-width: 35px;
-                width: 35px;
-                max-width: 35px;
+                font-size: 9px;
+                padding: 4px 1px;
+                height: 32px;
+                line-height: 1.1;
+                width: 5%; /* 保持固定宽度比例 */
+                min-width: 28px; /* 设置最小像素宽度 */
             }
             
             /* 控制面板适配 */
@@ -222,30 +214,34 @@
             }
             
             table {
-                min-width: 700px; /* 稍微减小但保持可用性 */
-                border-spacing: 2px;
+                min-width: 500px; /* 进一步减小但确保可用性 */
+                border-spacing: 1px;
             }
             
             th, td {
-                min-width: 32px;
-                width: 32px;
-                max-width: 32px;
-                font-size: 11px;
+                min-width: 24px; /* 进一步减小最小宽度 */
+            }
+            
+            th {
+                padding: 4px 1px;
+                font-size: 9px;
             }
             
             td {
-                min-height: 40px;
-                padding: 6px 2px;
+                padding: 6px 1px;
+                font-size: 11px;
+                height: 40px;
+            }
+            
+            td:not(.timer-cell) {
+                padding: 8px 1px;
             }
             
             .timer-cell {
-                font-size: 9px;
-                min-height: 30px;
-                height: 30px;
-                min-width: 32px;
-                width: 32px;
-                max-width: 32px;
-                padding: 2px 1px;
+                font-size: 8px;
+                padding: 3px 1px;
+                height: 28px;
+                min-width: 24px;
             }
         }
         
@@ -451,45 +447,48 @@
         table {
             width: 100%;
             border-collapse: separate;
-            border-spacing: 5px;
-            table-layout: auto; /* 改为自动布局，让浏览器自动计算列宽 */
+            border-spacing: 3px;
+            table-layout: fixed; /* 恢复固定布局以控制列宽 */
+            min-width: 1200px; /* 设置最小宽度确保所有列都能显示 */
         }
         
         th {
             background: linear-gradient(to bottom, #3498db, #2980b9);
             color: white;
-            padding: 15px 8px;
+            padding: 12px 4px;
             font-weight: 600;
             text-align: center;
-            min-width: 50px;
             border-radius: 8px;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-            width: auto; /* 改为自动宽度 */
+            width: 5%; /* 固定每列宽度为5%，20列正好100% */
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         
         td {
             background: linear-gradient(to bottom right, #34495e, #2c3e50);
             color: #ecf0f1;
-            padding: 18px 5px;
+            padding: 12px 4px;
             text-align: center;
             font-weight: bold;
-            font-size: 18px;
+            font-size: 16px;
             border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             position: relative;
-            height: 65px;
+            height: 55px;
             box-shadow: 0 3px 6px rgba(0, 0, 0, 0.2);
-            width: auto; /* 改为自动宽度 */
-            min-width: 50px; /* 保持最小宽度 */
+            width: 5%; /* 固定每列宽度为5% */
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
         }
         
         td:hover {
-            transform: scale(1.05);
-            box-shadow: 0 0 15px rgba(52, 152, 219, 0.8);
+            transform: scale(1.03); /* 减小缩放比例，避免影响布局 */
+            box-shadow: 0 0 12px rgba(52, 152, 219, 0.8);
             z-index: 10;
         }
         
@@ -512,16 +511,17 @@
         .timer-cell {
             background: linear-gradient(to bottom right, #8e44ad, #9b59b6) !important;
             color: white;
-            font-size: 14px;
+            font-size: 11px;
             font-weight: normal;
-            padding: 8px 2px;
-            height: 45px;
-            width: auto; /* 改为自动宽度 */
-            min-width: 50px; /* 保持最小宽度 */
+            padding: 6px 2px;
+            height: 40px;
+            width: 5%; /* 与td保持一致的固定宽度 */
             overflow: hidden;
             white-space: nowrap;
             text-overflow: ellipsis;
             font-family: 'Courier New', monospace; /* 使用等宽字体确保时间显示一致 */
+            line-height: 1.2;
+            box-sizing: border-box;
         }
         
         @keyframes pulse-red {
@@ -867,6 +867,21 @@
             }
         }
         
+        /* 横向滚动提示 */
+        .scroll-hint {
+            text-align: center;
+            color: #bdc3c7;
+            font-size: 0.9rem;
+            margin-bottom: 10px;
+            opacity: 0.8;
+        }
+        
+        @media (min-width: 769px) {
+            .scroll-hint {
+                display: none; /* 桌面端隐藏滚动提示 */
+            }
+        }
+        
     </style>
 </head>
 <body>
@@ -1035,6 +1050,9 @@
         </div>
         
         <div class="table-container">
+            <div class="scroll-hint">
+                ⬅️ 向左滑动查看更多线路 ➡️
+            </div>
             <table id="line-table">
                 <tr>
                     <th>A</th><th>B</th><th>C</th><th>D</th><th>E</th><th>F</th><th>G</th><th>H</th>
@@ -1990,7 +2008,7 @@
                     // 默认显示每日击杀图表，延迟一点确保Canvas大小正确
                     setTimeout(() => {
                         renderDailyChart();
-                    }, 100);
+                    },  100);
                     
                 } catch (error) {
                     console.error('初始化图表错误:', error);
