@@ -2150,8 +2150,14 @@
                         // 添加三连击视觉反馈
                         cell.classList.add('triple-click-active');
                         
+                        // 创建一个模拟的右键事件
+                        const rightClickEvent = new Event('contextmenu', { bubbles: true, cancelable: true });
+                        // 确保事件对象包含必要的属性
+                        Object.defineProperty(rightClickEvent, 'currentTarget', { value: cell });
+                        Object.defineProperty(rightClickEvent, 'target', { value: cell });
+                        
                         // 触发右键点击事件
-                        handleCellRightClick(e);
+                        handleCellRightClick(rightClickEvent);
                         
                         // 显示三连击提示
                         showMobileHint('三连击标记击杀但不知时间 ⚡');
@@ -2171,11 +2177,19 @@
                             isProcessing = true;
                             
                             if (clickCount === 1) {
-                                // 单击操作
-                                handleCellClick(e);
+                                // 单击操作 - 创建模拟点击事件
+                                const clickEvent = new Event('click', { bubbles: true, cancelable: true });
+                                Object.defineProperty(clickEvent, 'currentTarget', { value: cell });
+                                Object.defineProperty(clickEvent, 'target', { value: cell });
+                                
+                                handleCellClick(clickEvent);
                             } else if (clickCount === 2) {
-                                // 双击操作（取消击杀状态）
-                                handleCellDoubleClick(e);
+                                // 双击操作 - 创建模拟双击事件
+                                const dblClickEvent = new Event('dblclick', { bubbles: true, cancelable: true });
+                                Object.defineProperty(dblClickEvent, 'currentTarget', { value: cell });
+                                Object.defineProperty(dblClickEvent, 'target', { value: cell });
+                                
+                                handleCellDoubleClick(dblClickEvent);
                             }
                             
                             // 重置状态
@@ -2191,6 +2205,9 @@
                 
                 // 绑定点击事件
                 cell.addEventListener('click', function(e) {
+                    // 阻止默认行为和冒泡，完全由我们控制
+                    e.preventDefault();
+                    e.stopPropagation();
                     handleMobileClick(e);
                 }, { passive: false });
             }
@@ -2363,7 +2380,7 @@
     
     <!-- 手机端操作提示 -->
     <div class="mobile-hint">
-        📱 点击格子标记击杀，三连击标记不知时间
+        点击格子标记击杀，三连击标记不知时间
     </div>
 </body>
 </html>
