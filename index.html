@@ -145,7 +145,7 @@
                 padding: 10px 2px;
             }
             
-            /* 手机端长按提示 */
+            /* 手机端长按提示样式保留用于其他用途 */
             td:not(.timer-cell):after {
                 content: '';
                 position: absolute;
@@ -156,12 +156,6 @@
                 background: transparent;
                 transition: background 0.3s ease;
                 border-radius: 8px;
-            }
-            
-            /* 长按激活状态 */
-            td.long-press-active:after {
-                background: rgba(241, 196, 15, 0.3);
-                animation: longPressIndicator 0.5s ease-in-out;
             }
             
             .timer-cell {
@@ -258,6 +252,49 @@
             100% {
                 background: rgba(241, 196, 15, 0.3);
                 transform: scale(1);
+            }
+        }
+        
+        /* 三连击动画效果 */
+        .double-click-active {
+            animation: doubleClickPulse 0.2s ease-in-out;
+        }
+        
+        .triple-click-active {
+            animation: tripleClickSuccess 0.3s ease-in-out;
+        }
+        
+        @keyframes doubleClickPulse {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0.7);
+            }
+            50% {
+                transform: scale(1.05);
+                box-shadow: 0 0 0 8px rgba(52, 152, 219, 0.3);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(52, 152, 219, 0);
+            }
+        }
+        
+        @keyframes tripleClickSuccess {
+            0% {
+                transform: scale(1);
+                box-shadow: 0 0 0 0 rgba(241, 196, 15, 0.8);
+            }
+            33% {
+                transform: scale(1.1);
+                box-shadow: 0 0 0 5px rgba(241, 196, 15, 0.6);
+            }
+            66% {
+                transform: scale(0.95);
+                box-shadow: 0 0 0 10px rgba(241, 196, 15, 0.3);
+            }
+            100% {
+                transform: scale(1);
+                box-shadow: 0 0 0 15px rgba(241, 196, 15, 0);
             }
         }
         
@@ -915,7 +952,7 @@
                         </li>
                         <li class="mobile-instruction">
                             👆
-                            <span class="highlight">长按线路格子</span> - 标记金猪被击杀但不知时间
+                            <span class="highlight">快速三连击线路格子</span> - 标记金猪被击杀但不知时间
                         </li>
                         <li>
                             🔄
@@ -1163,15 +1200,17 @@
                         tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
                         cell.appendChild(tooltip);
                         
-                        // 添加点击事件
-                        cell.addEventListener('click', handleCellClick);
-                        // 添加右键点击事件
-                        cell.addEventListener('contextmenu', handleCellRightClick);
-                        // 添加双击事件（取消倒计时）
-                        cell.addEventListener('dblclick', handleCellDoubleClick);
-                        
-                        // 添加手机端长按事件
-                        addMobileLongPressEvent(cell);
+                        // 添加事件监听器
+                        // 检测是否为移动设备来决定绑定方式
+                        if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) {
+                            // 手机端：使用三连击事件处理
+                            addMobileTripleClickEvent(cell);
+                        } else {
+                            // 桌面端：使用传统的点击事件
+                            cell.addEventListener('click', handleCellClick);
+                            cell.addEventListener('contextmenu', handleCellRightClick);
+                            cell.addEventListener('dblclick', handleCellDoubleClick);
+                        }
                         
                         row.appendChild(cell);
                         lineNumber++;
@@ -1258,7 +1297,7 @@
                 // 手机端初始提示
                 if (window.innerWidth <= 768) {
                     setTimeout(() => {
-                        showMobileHint('💡 点击格子标记击杀，长按标记不知时间');
+                        showMobileHint('💡 点击格子标记击杀，三连击标记不知时间');
                     }, 1000);
                 }
             }
@@ -2057,74 +2096,86 @@
             }
             
             // 手机端长按事件处理
-            function addMobileLongPressEvent(cell) {
-                let longPressTimer;
-                let touchStartTime;
-                let isLongPress = false;
+            // 手机端三连击事件处理
+            function addMobileTripleClickEvent(cell) {
+                let clickCount = 0;
+                let clickTimer;
+                let lastClickTime = 0;
                 
-                // 检测是否为移动设备
-                function isMobileDevice() {
-                    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
-                        || window.innerWidth <= 768;
-                }
-                
-                // 长按开始
-                function startLongPress(e) {
-                    if (!isMobileDevice()) return;
+                // 处理点击事件
+                function handleMobileClick(e) {
+                    const currentTime = Date.now();
+                    const timeBetweenClicks = currentTime - lastClickTime;
                     
-                    touchStartTime = Date.now();
-                    isLongPress = false;
+                    // 如果两次点击间隔超过800ms，重置计数
+                    if (timeBetweenClicks > 800) {
+                        clickCount = 0;
+                    }
+                    
+                    clickCount++;
+                    lastClickTime = currentTime;
+                    
+                    // 清除之前的计时器
+                    if (clickTimer) {
+                        clearTimeout(clickTimer);
+                    }
                     
                     // 添加视觉反馈
-                    cell.classList.add('long-press-active');
+                    if (clickCount === 1) {
+                        // 第一次点击，添加轻微反馈
+                        cell.style.transform = 'scale(0.98)';
+                        setTimeout(() => {
+                            cell.style.transform = '';
+                        }, 100);
+                    } else if (clickCount === 2) {
+                        // 第二次点击，添加中等反馈
+                        cell.classList.add('double-click-active');
+                        setTimeout(() => {
+                            cell.classList.remove('double-click-active');
+                        }, 200);
+                    }
                     
-                    longPressTimer = setTimeout(() => {
-                        isLongPress = true;
-                        // 触发长按事件（相当于右键点击）
+                    if (clickCount === 3) {
+                        // 三连击触发特殊操作（相当于右键点击）
+                        e.preventDefault(); // 阻止默认点击行为
+                        
+                        // 添加三连击视觉反馈
+                        cell.classList.add('triple-click-active');
+                        
+                        // 触发右键点击事件
                         handleCellRightClick(e);
                         
-                        // 显示长按提示
-                        showMobileHint('长按标记击杀但不知时间 ⏰');
+                        // 显示三连击提示
+                        showMobileHint('三连击标记击杀但不知时间 ⚡');
+                        
+                        // 重置计数
+                        clickCount = 0;
                         
                         // 移除视觉反馈
-                        cell.classList.remove('long-press-active');
-                    }, 600); // 600ms长按阈值
-                }
-                
-                // 长按结束
-                function endLongPress(e) {
-                    if (!isMobileDevice()) return;
-                    
-                    clearTimeout(longPressTimer);
-                    cell.classList.remove('long-press-active');
-                    
-                    // 如果是短按且不是长按，则正常处理点击
-                    const touchDuration = Date.now() - touchStartTime;
-                    if (touchDuration < 600 && !isLongPress) {
-                        // 延迟一点执行，避免与长按冲突
                         setTimeout(() => {
-                            if (!isLongPress) {
-                                // 这里不需要手动调用handleCellClick，
-                                // 因为浏览器会自动触发click事件
+                            cell.classList.remove('triple-click-active');
+                        }, 300);
+                        
+                    } else {
+                        // 设置延迟，如果800ms内没有下一次点击，执行单击操作
+                        clickTimer = setTimeout(() => {
+                            if (clickCount === 1) {
+                                // 单击操作
+                                handleCellClick(e);
+                            } else if (clickCount === 2) {
+                                // 双击操作（取消击杀状态）
+                                handleCellDoubleClick(e);
                             }
-                        }, 50);
+                            clickCount = 0;
+                        }, 300); // 300ms的等待时间
                     }
                 }
                 
-                // 长按取消
-                function cancelLongPress() {
-                    if (!isMobileDevice()) return;
-                    
-                    clearTimeout(longPressTimer);
-                    cell.classList.remove('long-press-active');
-                    isLongPress = false;
-                }
-                
-                // 绑定触摸事件
-                cell.addEventListener('touchstart', startLongPress, { passive: false });
-                cell.addEventListener('touchend', endLongPress, { passive: false });
-                cell.addEventListener('touchcancel', cancelLongPress, { passive: false });
-                cell.addEventListener('touchmove', cancelLongPress, { passive: false });
+                // 绑定点击事件
+                cell.addEventListener('click', function(e) {
+                    e.preventDefault(); // 阻止默认点击，我们手动处理
+                    handleMobileClick(e);
+                }, { passive: false });
             }
             
             // 显示手机端操作提示
@@ -2295,7 +2346,7 @@
     
     <!-- 手机端操作提示 -->
     <div class="mobile-hint">
-        📱 点击格子标记击杀，长按标记不知时间
+        📱 点击格子标记击杀，三连击标记不知时间
     </div>
 </body>
 </html>
