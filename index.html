@@ -93,6 +93,165 @@
                 font-size: 14px;
             }
         }
+
+        /* 手机端专用样式 */
+        @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
+            h1 {
+                font-size: 2rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            /* 优化表格在手机端的显示 */
+            .table-container {
+                padding: 10px;
+                overflow-x: auto;
+                -webkit-overflow-scrolling: touch;
+            }
+            
+            table {
+                min-width: 100%;
+                font-size: 14px;
+            }
+            
+            th {
+                padding: 10px 4px;
+                font-size: 12px;
+                white-space: nowrap;
+            }
+            
+            td {
+                padding: 12px 4px;
+                font-size: 14px;
+                min-height: 50px; /* 增加触摸目标大小 */
+                position: relative;
+            }
+            
+            /* 增大可点击区域 */
+            td:not(.timer-cell) {
+                min-width: 50px;
+                cursor: pointer;
+                -webkit-tap-highlight-color: rgba(52, 152, 219, 0.3);
+            }
+            
+            /* 手机端长按提示 */
+            td:not(.timer-cell):after {
+                content: '';
+                position: absolute;
+                top: 0;
+                left: 0;
+                right: 0;
+                bottom: 0;
+                background: transparent;
+                transition: background 0.3s ease;
+            }
+            
+            /* 长按激活状态 */
+            td.long-press-active:after {
+                background: rgba(241, 196, 15, 0.3);
+                animation: longPressIndicator 0.5s ease-in-out;
+            }
+            
+            .timer-cell {
+                font-size: 11px;
+                padding: 4px 2px;
+            }
+            
+            /* 控制面板适配 */
+            .controls, .stats {
+                padding: 15px;
+                margin-bottom: 15px;
+            }
+            
+            .panel-title {
+                font-size: 1.2rem;
+                margin-bottom: 15px;
+            }
+            
+            .instructions h3 {
+                font-size: 1.1rem;
+            }
+            
+            .instructions li {
+                font-size: 0.9rem;
+                margin-bottom: 8px;
+            }
+            
+            /* 统计卡片适配 */
+            .stat-card {
+                padding: 15px;
+            }
+            
+            .stat-value {
+                font-size: 2rem;
+            }
+            
+            .stat-label {
+                font-size: 0.9rem;
+            }
+        }
+        
+        /* 长按动画效果 */
+        @keyframes longPressIndicator {
+            0% {
+                background: rgba(241, 196, 15, 0.1);
+                transform: scale(1);
+            }
+            50% {
+                background: rgba(241, 196, 15, 0.5);
+                transform: scale(1.02);
+            }
+            100% {
+                background: rgba(241, 196, 15, 0.3);
+                transform: scale(1);
+            }
+        }
+        
+        /* 手机端触摸反馈 */
+        @media (hover: none) and (pointer: coarse) {
+            td:not(.timer-cell) {
+                /* 移除hover效果，使用触摸态 */
+                transition: all 0.2s ease;
+            }
+            
+            td:not(.timer-cell):active {
+                transform: scale(0.95);
+                background: rgba(52, 152, 219, 0.2);
+            }
+        }
+        
+        /* 手机端操作提示样式 */
+        .mobile-hint {
+            display: none;
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 14px;
+            z-index: 10000;
+            animation: fadeInOut 3s ease-in-out;
+        }
+        
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; transform: translateX(-50%) translateY(20px); }
+            20%, 80% { opacity: 1; transform: translateX(-50%) translateY(0); }
+        }
+        
+        @media (max-width: 768px) {
+            .mobile-hint {
+                display: block;
+            }
+        }
         
         .controls {
             background: rgba(30, 40, 80, 0.7);
@@ -641,6 +800,23 @@
                 opacity: 0;
             }
         }
+        
+        /* 桌面端和移动端操作说明显示控制 */
+        .desktop-instruction {
+            display: list-item;
+        }
+        .mobile-instruction {
+            display: none;
+        }
+        
+        @media (max-width: 768px) {
+            .desktop-instruction {
+                display: none;
+            }
+            .mobile-instruction {
+                display: list-item;
+            }
+        }
     </style>
 </head>
 <body>
@@ -660,13 +836,21 @@
                 <div class="instructions">
                     <h3>📖 使用说明</h3>
                     <ul>
-                        <li>
+                        <li class="desktop-instruction">
                             🖱️
                             <span class="highlight">左键单击线路格子</span> - 标记金猪被击杀（开始24小时倒计时）
                         </li>
-                        <li>
+                        <li class="desktop-instruction">
                             👆
                             <span class="highlight">右键单击线路格子</span> - 标记金猪被击杀但不知时间
+                        </li>
+                        <li class="mobile-instruction">
+                            📱
+                            <span class="highlight">点击线路格子</span> - 标记金猪被击杀（开始24小时倒计时）
+                        </li>
+                        <li class="mobile-instruction">
+                            👆
+                            <span class="highlight">长按线路格子</span> - 标记金猪被击杀但不知时间
                         </li>
                         <li>
                             🔄
@@ -918,6 +1102,9 @@
                         // 添加双击事件（取消倒计时）
                         cell.addEventListener('dblclick', handleCellDoubleClick);
                         
+                        // 添加手机端长按事件
+                        addMobileLongPressEvent(cell);
+                        
                         row.appendChild(cell);
                         lineNumber++;
                     }
@@ -999,6 +1186,13 @@
                 
                 // 初始化备注输入框
                 initNotesInput();
+                
+                // 手机端初始提示
+                if (window.innerWidth <= 768) {
+                    setTimeout(() => {
+                        showMobileHint('💡 点击格子标记击杀，长按标记不知时间');
+                    }, 1000);
+                }
             }
             
             // 处理单元格单击
@@ -1794,6 +1988,113 @@
                 });
             }
             
+            // 手机端长按事件处理
+            function addMobileLongPressEvent(cell) {
+                let longPressTimer;
+                let touchStartTime;
+                let isLongPress = false;
+                
+                // 检测是否为移动设备
+                function isMobileDevice() {
+                    return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) 
+                        || window.innerWidth <= 768;
+                }
+                
+                // 长按开始
+                function startLongPress(e) {
+                    if (!isMobileDevice()) return;
+                    
+                    touchStartTime = Date.now();
+                    isLongPress = false;
+                    
+                    // 添加视觉反馈
+                    cell.classList.add('long-press-active');
+                    
+                    longPressTimer = setTimeout(() => {
+                        isLongPress = true;
+                        // 触发长按事件（相当于右键点击）
+                        handleCellRightClick(e);
+                        
+                        // 显示长按提示
+                        showMobileHint('长按标记击杀但不知时间 ⏰');
+                        
+                        // 移除视觉反馈
+                        cell.classList.remove('long-press-active');
+                    }, 600); // 600ms长按阈值
+                }
+                
+                // 长按结束
+                function endLongPress(e) {
+                    if (!isMobileDevice()) return;
+                    
+                    clearTimeout(longPressTimer);
+                    cell.classList.remove('long-press-active');
+                    
+                    // 如果是短按且不是长按，则正常处理点击
+                    const touchDuration = Date.now() - touchStartTime;
+                    if (touchDuration < 600 && !isLongPress) {
+                        // 延迟一点执行，避免与长按冲突
+                        setTimeout(() => {
+                            if (!isLongPress) {
+                                // 这里不需要手动调用handleCellClick，
+                                // 因为浏览器会自动触发click事件
+                            }
+                        }, 50);
+                    }
+                }
+                
+                // 长按取消
+                function cancelLongPress() {
+                    if (!isMobileDevice()) return;
+                    
+                    clearTimeout(longPressTimer);
+                    cell.classList.remove('long-press-active');
+                    isLongPress = false;
+                }
+                
+                // 绑定触摸事件
+                cell.addEventListener('touchstart', startLongPress, { passive: false });
+                cell.addEventListener('touchend', endLongPress, { passive: false });
+                cell.addEventListener('touchcancel', cancelLongPress, { passive: false });
+                cell.addEventListener('touchmove', cancelLongPress, { passive: false });
+            }
+            
+            // 显示手机端操作提示
+            function showMobileHint(message) {
+                // 移除已有的提示
+                const existingHint = document.querySelector('.mobile-hint-popup');
+                if (existingHint) {
+                    existingHint.remove();
+                }
+                
+                // 创建新的提示
+                const hint = document.createElement('div');
+                hint.className = 'mobile-hint-popup';
+                hint.textContent = message;
+                hint.style.cssText = `
+                    position: fixed;
+                    bottom: 20px;
+                    left: 50%;
+                    transform: translateX(-50%);
+                    background: rgba(0, 0, 0, 0.8);
+                    color: white;
+                    padding: 10px 20px;
+                    border-radius: 25px;
+                    font-size: 14px;
+                    z-index: 10000;
+                    animation: fadeInOut 2s ease-in-out forwards;
+                `;
+                
+                document.body.appendChild(hint);
+                
+                // 2秒后自动移除
+                setTimeout(() => {
+                    if (hint.parentNode) {
+                        hint.parentNode.removeChild(hint);
+                    }
+                }, 2000);
+            }
+            
             // 初始化表格
             initializeTable();
             
@@ -1923,5 +2224,10 @@
             
         });
     </script>
+    
+    <!-- 手机端操作提示 -->
+    <div class="mobile-hint">
+        📱 点击格子标记击杀，长按标记不知时间
+    </div>
 </body>
 </html>
