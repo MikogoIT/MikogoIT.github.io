@@ -15,7 +15,7 @@
         }
         
         body {
-            background: url('巨塔遗迹.png') no-repeat center center fixed;
+            background: url('./巨塔遗迹.png') no-repeat center center fixed;
             background-size: cover;
             background-blend-mode: overlay;
             background-color: rgba(26, 42, 108, 0.7);
@@ -818,19 +818,17 @@
                     table.appendChild(row);
                     
                     // 在每行后添加一行用于倒计时显示
-                    if (i < rows - 1) {
-                        const timerRow = document.createElement('tr');
-                        timerRow.id = `timer-row-${i}`;
-                        
-                        for (let j = 0; j < cols; j++) {
-                            const timerCell = document.createElement('td');
-                            timerCell.classList.add('timer-cell');
-                            timerCell.id = `timer-${lineNumber - cols + j}`;
-                            timerRow.appendChild(timerCell);
-                        }
-                        
-                        table.appendChild(timerRow);
+                    const timerRow = document.createElement('tr');
+                    timerRow.id = `timer-row-${i}`;
+                    
+                    for (let j = 0; j < cols; j++) {
+                        const timerCell = document.createElement('td');
+                        timerCell.classList.add('timer-cell');
+                        timerCell.id = `timer-${lineNumber - cols + j}`;
+                        timerRow.appendChild(timerCell);
                     }
+                    
+                    table.appendChild(timerRow);
                 }
                 
                 // 检查所有线路状态
