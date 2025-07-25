@@ -1203,8 +1203,9 @@
                         // 添加事件监听器
                         // 检测是否为移动设备来决定绑定方式
                         if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768) {
-                            // 手机端：使用三连击事件处理
+                            // 手机端：使用三连击事件处理，同时保留双击事件用于取消
                             addMobileTripleClickEvent(cell);
+                            // 不绑定常规的click事件，避免重复处理
                         } else {
                             // 桌面端：使用传统的点击事件
                             cell.addEventListener('click', handleCellClick);
@@ -2101,9 +2102,13 @@
                 let clickCount = 0;
                 let clickTimer;
                 let lastClickTime = 0;
+                let isProcessing = false; // 防止重复处理
                 
                 // 处理点击事件
                 function handleMobileClick(e) {
+                    // 如果正在处理中，忽略
+                    if (isProcessing) return;
+                    
                     const currentTime = Date.now();
                     const timeBetweenClicks = currentTime - lastClickTime;
                     
@@ -2137,7 +2142,10 @@
                     
                     if (clickCount === 3) {
                         // 三连击触发特殊操作（相当于右键点击）
-                        e.preventDefault(); // 阻止默认点击行为
+                        e.preventDefault();
+                        e.stopPropagation();
+                        
+                        isProcessing = true;
                         
                         // 添加三连击视觉反馈
                         cell.classList.add('triple-click-active');
@@ -2148,17 +2156,20 @@
                         // 显示三连击提示
                         showMobileHint('三连击标记击杀但不知时间 ⚡');
                         
-                        // 重置计数
+                        // 重置状态
                         clickCount = 0;
                         
-                        // 移除视觉反馈
+                        // 移除视觉反馈并解除处理状态
                         setTimeout(() => {
                             cell.classList.remove('triple-click-active');
+                            isProcessing = false;
                         }, 300);
                         
                     } else {
-                        // 设置延迟，如果800ms内没有下一次点击，执行单击操作
+                        // 设置延迟，如果300ms内没有下一次点击，执行对应操作
                         clickTimer = setTimeout(() => {
+                            isProcessing = true;
+                            
                             if (clickCount === 1) {
                                 // 单击操作
                                 handleCellClick(e);
@@ -2166,14 +2177,20 @@
                                 // 双击操作（取消击杀状态）
                                 handleCellDoubleClick(e);
                             }
+                            
+                            // 重置状态
                             clickCount = 0;
+                            
+                            // 解除处理状态
+                            setTimeout(() => {
+                                isProcessing = false;
+                            }, 100);
                         }, 300); // 300ms的等待时间
                     }
                 }
                 
                 // 绑定点击事件
                 cell.addEventListener('click', function(e) {
-                    e.preventDefault(); // 阻止默认点击，我们手动处理
                     handleMobileClick(e);
                 }, { passive: false });
             }
