@@ -467,6 +467,14 @@
             position: relative;
         }
         
+        #stats-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 8px;
+            background: rgba(0, 0, 0, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
         .status-indicator {
             display: inline-block;
             width: 10px;
@@ -654,24 +662,7 @@
                         </div>
                     </div>
                     <div class="chart-box">
-                        <div id="stats-display" style="padding: 20px; color: #ecf0f1; font-size: 16px; line-height: 1.6;">
-                            <div class="stats-section">
-                                <h3 style="color: #f1c40f; margin-bottom: 15px;">📊 击杀统计</h3>
-                                <div id="daily-stats">
-                                    <p><strong>今日击杀:</strong> <span id="today-kills">0</span> 只</p>
-                                    <p><strong>本周击杀:</strong> <span id="week-kills">0</span> 只</p>
-                                    <p><strong>总计击杀:</strong> <span id="total-kills">0</span> 只</p>
-                                </div>
-                                <div id="hourly-stats" style="display: none;">
-                                    <p><strong>今日活跃时段:</strong> <span id="active-hours">暂无数据</span></p>
-                                    <p><strong>最佳击杀时间:</strong> <span id="best-hour">暂无数据</span></p>
-                                </div>
-                                <div id="trend-stats" style="display: none;">
-                                    <p><strong>平均每日击杀:</strong> <span id="avg-daily">0</span> 只</p>
-                                    <p><strong>最高单日击杀:</strong> <span id="max-daily">0</span> 只</p>
-                                </div>
-                            </div>
-                        </div>
+                        <canvas id="stats-chart" width="800" height="300" style="width: 100%; height: 300px; background: rgba(0,0,0,0.1); border-radius: 8px;"></canvas>
                     </div>
                 </div>
                 
@@ -1119,112 +1110,347 @@
                 }
             }
             
-            // 简化的图表显示函数
+            // 自定义图表渲染函数
             function renderDailyChart() {
                 try {
-                    updateStatsDisplay();
+                    const canvas = document.getElementById('stats-chart');
+                    if (!canvas) return;
+                    
+                    // 设置Canvas尺寸
+                    setupCanvas(canvas);
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 清除画布
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 获取最近7天的数据
+                    const dates = [];
+                    const now = new Date();
+                    for (let i = 6; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(now.getDate() - i);
+                        dates.push({
+                            label: `${date.getMonth() + 1}/${date.getDate()}`,
+                            fullDate: date.toLocaleDateString()
+                        });
+                    }
+                    
+                    // 统计每日击杀数量
+                    const dailyKills = dates.map(dateInfo => {
+                        return killEvents.filter(event => {
+                            const eventDate = new Date(event.timestamp).toLocaleDateString();
+                            return eventDate === dateInfo.fullDate;
+                        }).length;
+                    });
+                    
+                    // 绘制折线图
+                    drawLineChart(ctx, canvas, dates.map(d => d.label), dailyKills, '每日金猪击杀趋势', '#3498db');
+                    
                 } catch (error) {
-                    console.error('更新统计显示出错:', error);
+                    console.error('渲染每日图表出错:', error);
                 }
             }
             
             function renderTotalChart() {
                 try {
-                    updateStatsDisplay();
+                    const canvas = document.getElementById('stats-chart');
+                    if (!canvas) return;
+                    
+                    // 设置Canvas尺寸
+                    setupCanvas(canvas);
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 清除画布
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 获取最近7天的数据
+                    const dates = [];
+                    const now = new Date();
+                    for (let i = 6; i >= 0; i--) {
+                        const date = new Date();
+                        date.setDate(now.getDate() - i);
+                        dates.push({
+                            label: `${date.getMonth() + 1}/${date.getDate()}`,
+                            fullDate: date.toLocaleDateString()
+                        });
+                    }
+                    
+                    // 统计每日击杀数量
+                    const dailyKills = dates.map(dateInfo => {
+                        return killEvents.filter(event => {
+                            const eventDate = new Date(event.timestamp).toLocaleDateString();
+                            return eventDate === dateInfo.fullDate;
+                        }).length;
+                    });
+                    
+                    // 绘制柱状图
+                    drawBarChart(ctx, canvas, dates.map(d => d.label), dailyKills, '每日击杀统计', '#e74c3c');
+                    
                 } catch (error) {
-                    console.error('更新统计显示出错:', error);
+                    console.error('渲染总击杀图表出错:', error);
                 }
             }
             
             function renderHourlyChart() {
                 try {
-                    updateStatsDisplay();
+                    const canvas = document.getElementById('stats-chart');
+                    if (!canvas) return;
+                    
+                    // 设置Canvas尺寸
+                    setupCanvas(canvas);
+                    const ctx = canvas.getContext('2d');
+                    
+                    // 清除画布
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+                    
+                    // 创建24小时的时间段标签
+                    const hours = [];
+                    const hourlyKills = new Array(24).fill(0);
+                    
+                    for (let i = 0; i < 24; i++) {
+                        hours.push(`${i.toString().padStart(2, '0')}:00`);
+                    }
+                    
+                    // 统计每小时的击杀数量
+                    killEvents.forEach(event => {
+                        const eventDate = new Date(event.timestamp);
+                        const hour = eventDate.getHours();
+                        hourlyKills[hour]++;
+                    });
+                    
+                    // 只显示前12个小时避免图表过于拥挤
+                    const displayHours = hours.slice(0, 12);
+                    const displayKills = hourlyKills.slice(0, 12);
+                    
+                    // 绘制柱状图
+                    drawBarChart(ctx, canvas, displayHours, displayKills, '24小时击杀效率分析 (0-11点)', '#f1c40f');
+                    
                 } catch (error) {
-                    console.error('更新统计显示出错:', error);
+                    console.error('渲染小时图表出错:', error);
                 }
             }
             
-            // 更新统计显示
-            function updateStatsDisplay() {
-                // 计算今日击杀
-                const now = new Date();
-                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-                const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+            // 设置Canvas尺寸和分辨率
+            function setupCanvas(canvas) {
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
                 
-                const todayKills = killEvents.filter(event => {
-                    return event.timestamp >= todayStart && event.timestamp < todayEnd;
-                }).length;
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
                 
-                // 计算本周击杀
-                const weekStart = todayStart - (now.getDay() * 24 * 60 * 60 * 1000);
-                const weekKills = killEvents.filter(event => {
-                    return event.timestamp >= weekStart;
-                }).length;
+                const ctx = canvas.getContext('2d');
+                ctx.scale(dpr, dpr);
                 
-                // 总击杀数
-                const totalKills = killEvents.length;
+                // 设置Canvas样式尺寸
+                canvas.style.width = rect.width + 'px';
+                canvas.style.height = rect.height + 'px';
+            }
+            
+            // 绘制折线图
+            function drawLineChart(ctx, canvas, labels, data, title, color) {
+                const rect = canvas.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+                const padding = 60;
+                const chartWidth = width - padding * 2;
+                const chartHeight = height - padding * 2;
+                const maxValue = Math.max(...data, 1);
                 
-                // 更新显示
-                const todayKillsSpan = document.getElementById('today-kills');
-                const weekKillsSpan = document.getElementById('week-kills');
-                const totalKillsSpan = document.getElementById('total-kills');
+                // 设置字体
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
                 
-                if (todayKillsSpan) todayKillsSpan.textContent = todayKills;
-                if (weekKillsSpan) weekKillsSpan.textContent = weekKills;
-                if (totalKillsSpan) totalKillsSpan.textContent = totalKills;
+                // 绘制标题
+                ctx.fillStyle = '#f1c40f';
+                ctx.font = 'bold 18px Arial';
+                ctx.fillText(title, width / 2, 30);
                 
-                // 计算时段统计
-                const hourlyStats = new Array(24).fill(0);
-                killEvents.forEach(event => {
-                    const hour = new Date(event.timestamp).getHours();
-                    hourlyStats[hour]++;
+                // 重置字体
+                ctx.font = '12px Arial';
+                
+                // 绘制坐标轴
+                ctx.strokeStyle = '#bdc3c7';
+                ctx.lineWidth = 1;
+                
+                // Y轴
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, height - padding);
+                ctx.stroke();
+                
+                // X轴
+                ctx.beginPath();
+                ctx.moveTo(padding, height - padding);
+                ctx.lineTo(width - padding, height - padding);
+                ctx.stroke();
+                
+                // 绘制Y轴刻度
+                ctx.fillStyle = '#bdc3c7';
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (chartHeight / 5) * i;
+                    const value = Math.round(maxValue * (5 - i) / 5);
+                    ctx.fillText(value.toString(), padding - 10, y + 5);
+                    
+                    // 绘制网格线
+                    if (i > 0) {
+                        ctx.strokeStyle = 'rgba(189, 195, 199, 0.3)';
+                        ctx.beginPath();
+                        ctx.moveTo(padding, y);
+                        ctx.lineTo(width - padding, y);
+                        ctx.stroke();
+                    }
+                }
+                
+                // 绘制X轴标签
+                ctx.textAlign = 'center';
+                const stepX = chartWidth / (labels.length - 1);
+                labels.forEach((label, index) => {
+                    const x = padding + stepX * index;
+                    ctx.fillText(label, x, height - padding + 20);
                 });
                 
-                // 找到最活跃时段
-                const maxHour = hourlyStats.indexOf(Math.max(...hourlyStats));
-                const activeHoursSpan = document.getElementById('active-hours');
-                const bestHourSpan = document.getElementById('best-hour');
+                // 绘制折线
+                ctx.strokeStyle = color;
+                ctx.lineWidth = 3;
+                ctx.beginPath();
                 
-                if (activeHoursSpan) {
-                    if (totalKills > 0) {
-                        activeHoursSpan.textContent = `${maxHour}:00-${maxHour + 1}:00`;
+                data.forEach((value, index) => {
+                    const x = padding + stepX * index;
+                    const y = height - padding - (value / maxValue) * chartHeight;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
                     } else {
-                        activeHoursSpan.textContent = '暂无数据';
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    // 绘制数据点
+                    ctx.fillStyle = color;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 4, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+                
+                ctx.stroke();
+                
+                // 绘制数据标签
+                ctx.fillStyle = '#ecf0f1';
+                ctx.font = 'bold 12px Arial';
+                data.forEach((value, index) => {
+                    const x = padding + stepX * index;
+                    const y = height - padding - (value / maxValue) * chartHeight - 15;
+                    ctx.fillText(value.toString(), x, y);
+                });
+            }
+            
+            // 绘制柱状图
+            function drawBarChart(ctx, canvas, labels, data, title, color) {
+                const rect = canvas.getBoundingClientRect();
+                const width = rect.width;
+                const height = rect.height;
+                const padding = 60;
+                const chartWidth = width - padding * 2;
+                const chartHeight = height - padding * 2;
+                const maxValue = Math.max(...data, 1);
+                const barWidth = chartWidth / labels.length * 0.8;
+                const barSpacing = chartWidth / labels.length * 0.2;
+                
+                // 设置字体
+                ctx.font = '14px Arial';
+                ctx.textAlign = 'center';
+                
+                // 绘制标题
+                ctx.fillStyle = '#f1c40f';
+                ctx.font = 'bold 18px Arial';
+                ctx.fillText(title, width / 2, 30);
+                
+                // 重置字体
+                ctx.font = '12px Arial';
+                
+                // 绘制坐标轴
+                ctx.strokeStyle = '#bdc3c7';
+                ctx.lineWidth = 1;
+                
+                // Y轴
+                ctx.beginPath();
+                ctx.moveTo(padding, padding);
+                ctx.lineTo(padding, height - padding);
+                ctx.stroke();
+                
+                // X轴
+                ctx.beginPath();
+                ctx.moveTo(padding, height - padding);
+                ctx.lineTo(width - padding, height - padding);
+                ctx.stroke();
+                
+                // 绘制Y轴刻度
+                ctx.fillStyle = '#bdc3c7';
+                ctx.textAlign = 'right';
+                for (let i = 0; i <= 5; i++) {
+                    const y = padding + (chartHeight / 5) * i;
+                    const value = Math.round(maxValue * (5 - i) / 5);
+                    ctx.fillText(value.toString(), padding - 10, y + 5);
+                    
+                    // 绘制网格线
+                    if (i > 0) {
+                        ctx.strokeStyle = 'rgba(189, 195, 199, 0.3)';
+                        ctx.beginPath();
+                        ctx.moveTo(padding, y);
+                        ctx.lineTo(width - padding, y);
+                        ctx.stroke();
                     }
                 }
                 
-                if (bestHourSpan) {
-                    if (totalKills > 0) {
-                        bestHourSpan.textContent = `${maxHour}:00 (${Math.max(...hourlyStats)}次)`;
-                    } else {
-                        bestHourSpan.textContent = '暂无数据';
+                // 绘制柱状图
+                data.forEach((value, index) => {
+                    const x = padding + (chartWidth / labels.length) * index + barSpacing / 2;
+                    const barHeight = (value / maxValue) * chartHeight;
+                    const y = height - padding - barHeight;
+                    
+                    // 创建渐变色
+                    const gradient = ctx.createLinearGradient(0, y, 0, height - padding);
+                    gradient.addColorStop(0, color);
+                    gradient.addColorStop(1, color + '80'); // 添加透明度
+                    
+                    // 绘制柱子
+                    ctx.fillStyle = gradient;
+                    ctx.fillRect(x, y, barWidth, barHeight);
+                    
+                    // 绘制柱子边框
+                    ctx.strokeStyle = color;
+                    ctx.lineWidth = 2;
+                    ctx.strokeRect(x, y, barWidth, barHeight);
+                    
+                    // 绘制数据标签
+                    ctx.fillStyle = '#ecf0f1';
+                    ctx.font = 'bold 12px Arial';
+                    ctx.textAlign = 'center';
+                    if (value > 0) {
+                        ctx.fillText(value.toString(), x + barWidth / 2, y - 8);
                     }
-                }
+                });
                 
-                // 计算平均和最高
-                const avgDailySpan = document.getElementById('avg-daily');
-                const maxDailySpan = document.getElementById('max-daily');
-                
-                if (avgDailySpan && maxDailySpan) {
-                    // 计算每日击杀数组
-                    const dailyKills = {};
-                    killEvents.forEach(event => {
-                        const date = new Date(event.timestamp).toDateString();
-                        dailyKills[date] = (dailyKills[date] || 0) + 1;
-                    });
-                    
-                    const dailyValues = Object.values(dailyKills);
-                    const avgDaily = dailyValues.length > 0 ? (dailyValues.reduce((a, b) => a + b, 0) / dailyValues.length).toFixed(1) : 0;
-                    const maxDaily = dailyValues.length > 0 ? Math.max(...dailyValues) : 0;
-                    
-                    avgDailySpan.textContent = avgDaily;
-                    maxDailySpan.textContent = maxDaily;
-                }
+                // 绘制X轴标签
+                ctx.fillStyle = '#bdc3c7';
+                ctx.font = '11px Arial';
+                ctx.textAlign = 'center';
+                labels.forEach((label, index) => {
+                    const x = padding + (chartWidth / labels.length) * index + (chartWidth / labels.length) / 2;
+                    ctx.fillText(label, x, height - padding + 20);
+                });
             }
             
             // 初始化图表
             function initChart() {
                 try {
+                    // 确保 Canvas 元素存在
+                    const canvas = document.getElementById('stats-chart');
+                    if (!canvas) {
+                        console.error('找不到图表容器 stats-chart');
+                        return;
+                    }
+                    
                     // 添加标签页切换事件
                     document.querySelectorAll('.chart-tab').forEach(tab => {
                         tab.addEventListener('click', function() {
@@ -1232,47 +1458,49 @@
                             document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
                             this.classList.add('active');
                             
-                            // 根据选择的图表类型显示不同内容
+                            // 根据选择的图表类型渲染
                             const chartType = this.dataset.chart;
-                            showStatsSection(chartType);
+                            try {
+                                // 延迟一点确保Canvas大小正确
+                                setTimeout(() => {
+                                    if (chartType === 'daily') {
+                                        renderDailyChart();
+                                    } else if (chartType === 'total') {
+                                        renderTotalChart();
+                                    } else if (chartType === 'hourly') {
+                                        renderHourlyChart();
+                                    }
+                                }, 50);
+                            } catch (error) {
+                                console.error('图表渲染错误:', error);
+                            }
                         });
                     });
                     
-                    // 默认显示每日统计
-                    showStatsSection('daily');
+                    // 默认显示每日击杀图表，延迟一点确保Canvas大小正确
+                    setTimeout(() => {
+                        renderDailyChart();
+                    }, 100);
+                    
                 } catch (error) {
                     console.error('初始化图表错误:', error);
                 }
             }
             
-            // 显示对应的统计区域
-            function showStatsSection(type) {
-                // 隐藏所有统计区域
-                const dailyStats = document.getElementById('daily-stats');
-                const hourlyStats = document.getElementById('hourly-stats');
-                const trendStats = document.getElementById('trend-stats');
-                
-                if (dailyStats) dailyStats.style.display = 'none';
-                if (hourlyStats) hourlyStats.style.display = 'none';
-                if (trendStats) trendStats.style.display = 'none';
-                
-                // 显示对应的统计区域
-                if (type === 'daily' && dailyStats) {
-                    dailyStats.style.display = 'block';
-                } else if (type === 'hourly' && hourlyStats) {
-                    hourlyStats.style.display = 'block';
-                } else if (type === 'total' && trendStats) {
-                    trendStats.style.display = 'block';
-                }
-                
-                // 更新统计数据
-                updateStatsDisplay();
-            }
-            
             // 更新图表
             function updateChart() {
                 try {
-                    updateStatsDisplay();
+                    const activeTab = document.querySelector('.chart-tab.active');
+                    if (!activeTab) return;
+                    
+                    const chartType = activeTab.dataset.chart;
+                    if (chartType === 'daily') {
+                        renderDailyChart();
+                    } else if (chartType === 'total') {
+                        renderTotalChart();
+                    } else if (chartType === 'hourly') {
+                        renderHourlyChart();
+                    }
                 } catch (error) {
                     console.error('更新图表错误:', error);
                 }
