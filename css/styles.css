@@ -292,22 +292,6 @@ td:hover {
     animation: pulse-green 2s infinite;
 }
 
-.timer-cell {
-    background: linear-gradient(to bottom right, #8e44ad, #9b59b6) !important;
-    color: white;
-    font-size: 11px;
-    font-weight: normal;
-    padding: 6px 2px;
-    height: 40px;
-    width: 5%;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-family: 'Courier New', monospace;
-    line-height: 1.2;
-    box-sizing: border-box;
-}
-
 /* 定时器显示样式 */
 .timer-display {
     position: absolute;

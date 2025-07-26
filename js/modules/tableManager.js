@@ -7,13 +7,28 @@ export class TableManager {
 
     // 初始化表格
     initializeTable(table, eventManager) {
-        let lineNumber = 1;
+        // 检查是否已有测试行，如果有就从第21个开始
+        const existingCells = table.querySelectorAll('td[data-line]');
+        let lineNumber = existingCells.length > 0 ? existingCells.length + 1 : 1;
+        let startRow = existingCells.length > 0 ? 1 : 0; // 如果已有测试行，从第二行开始
         
-        // 创建20行（每行20列）
-        for (let i = 0; i < this.rows; i++) {
+        console.log(`表格初始化: 现有单元格${existingCells.length}个, 从线路${lineNumber}开始`);
+        
+        // 为现有的测试单元格绑定事件
+        existingCells.forEach(cell => {
+            this.bindCellEvents(cell, eventManager);
+        });
+        
+        // 创建剩余的行
+        for (let i = startRow; i < this.rows; i++) {
             const row = document.createElement('tr');
             
             for (let j = 0; j < this.cols; j++) {
+                // 如果是第一行且已有测试单元格，跳过已存在的
+                if (i === 0 && j < existingCells.length) {
+                    continue;
+                }
+                
                 const cell = document.createElement('td');
                 cell.textContent = lineNumber;
                 cell.dataset.line = lineNumber;
@@ -37,21 +52,13 @@ export class TableManager {
                 lineNumber++;
             }
             
-            table.appendChild(row);
-            
-            // 在每行后添加一行用于倒计时显示
-            const timerRow = document.createElement('tr');
-            timerRow.id = `timer-row-${i}`;
-            
-            for (let j = 0; j < this.cols; j++) {
-                const timerCell = document.createElement('td');
-                timerCell.classList.add('timer-cell');
-                timerCell.id = `timer-${lineNumber - this.cols + j}`;
-                timerRow.appendChild(timerCell);
+            // 只添加非空行
+            if (row.children.length > 0) {
+                table.appendChild(row);
             }
-            
-            table.appendChild(timerRow);
         }
+        
+        console.log(`表格初始化完成: 总共${lineNumber - 1}个线路`);
     }
 
     // 绑定单元格事件
@@ -94,7 +101,7 @@ export class TableManager {
     resetAllCells() {
         for (let i = 1; i <= 400; i++) {
             const cell = document.querySelector(`td[data-line="${i}"]`);
-            const timerCell = document.getElementById(`timer-${i}`);
+            const timerDisplay = document.getElementById(`timer-${i}`);
             
             if (cell) {
                 // 移除所有状态类
@@ -112,8 +119,8 @@ export class TableManager {
             }
             
             // 清除倒计时显示
-            if (timerCell) {
-                timerCell.textContent = '';
+            if (timerDisplay) {
+                timerDisplay.textContent = '';
             }
         }
     }
