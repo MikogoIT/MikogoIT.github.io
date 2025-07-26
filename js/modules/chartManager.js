@@ -537,6 +537,3 @@ export class ChartManager {
         }
     }
 }
-
-// 导出图表管理器
-export { ChartManager };
