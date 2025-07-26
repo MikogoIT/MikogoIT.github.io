@@ -148,7 +148,7 @@
                     🔬 开启测试模式（10秒倒计时）
                 </button>
                 
-                <button class="action-btn collaboration" onclick="window.goldPigApp ? window.goldPigApp.showCollaborationChoice() : showCollaboration()">
+                <button class="action-btn collaboration" onclick="window.goldPigApp && window.goldPigApp.firebaseCollaborationManager ? window.goldPigApp.firebaseCollaborationManager.showCollaborationDialog() : (window.showFirebaseCollaboration ? window.showFirebaseCollaboration() : alert('协作功能未初始化'))">
                     🤝 多人协作
                 </button>
                 
