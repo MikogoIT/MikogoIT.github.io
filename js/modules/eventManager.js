@@ -54,9 +54,7 @@ export class EventManager {
             const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
             console.log('记录击杀事件到统计，里程碑:', isMilestone);
             
-            // 添加到击杀事件列表
-            this.statsManager.addKillEvent(lineNumber, killTime);
-            console.log('添加击杀事件到列表');
+            // recordKillEvent 已经添加了击杀事件到列表，不需要重复调用 addKillEvent
             
             // 同步到其他用户（本地P2P协作）
             if (this.collaborationManager) {
@@ -163,8 +161,7 @@ export class EventManager {
         // 记录击杀事件
         this.statsManager.recordKillEvent(lineNumber, killTime);
         
-        // 添加到击杀事件列表（时间未知）
-        this.statsManager.addKillEvent(lineNumber, null);
+        // recordKillEvent 已经添加了击杀事件到列表，不需要重复调用
         
         // 同步到其他用户（本地P2P协作）
         if (this.collaborationManager) {

@@ -744,7 +744,7 @@ export class CollaborationManager {
         // 如果是击杀事件，需要同步到统计管理器
         if (state === 'killed' && killTime) {
             console.log('添加远程击杀事件到统计');
-            this.statsManager.addKillEvent(lineNumber, killTime);
+            // recordKillEvent 已经包含了添加事件到列表的功能
             this.statsManager.recordKillEvent(lineNumber, killTime);
         } else if (state === 'cancelled') {
             console.log('移除远程击杀事件从统计');
