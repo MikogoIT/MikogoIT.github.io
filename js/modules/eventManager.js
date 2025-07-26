@@ -74,6 +74,8 @@ export class EventManager {
         
         // 更新统计
         this.statsManager.updateStats();
+        
+        console.log(`击杀事件处理完成，线路${lineNumber}，统计已更新`);
     }
 
     // 处理单元格右键点击（标记为击杀但不知时间）

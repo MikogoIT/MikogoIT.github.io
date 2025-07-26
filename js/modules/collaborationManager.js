@@ -714,14 +714,37 @@ export class CollaborationManager {
         
         if (!cell) return;
         
+        console.log(`处理远程状态变更: 线路${lineNumber} -> ${state}, 操作者: ${userName}`);
+        
         // 显示操作者信息
         this.showUserAction(cell, userName, state);
         
         // 更新本地状态（不触发同步）
         this.updateLocalLineState(lineNumber, state, killTime, false);
         
-        // 更新统计
+        // 如果是击杀事件，需要同步到统计管理器
+        if (state === 'killed' && killTime) {
+            console.log('添加远程击杀事件到统计');
+            this.statsManager.addKillEvent(lineNumber, killTime);
+            this.statsManager.recordKillEvent(lineNumber, killTime);
+        } else if (state === 'cancelled') {
+            console.log('移除远程击杀事件从统计');
+            // 从统计中移除对应的击杀事件
+            this.statsManager.removeKillEvent(lineNumber);
+        }
+        
+        // 更新统计显示
         this.statsManager.updateStats();
+        
+        // 更新图表
+        if (window.app && window.app.chartManager) {
+            window.app.chartManager.updateChart();
+        }
+        
+        // 触发状态变更事件
+        document.dispatchEvent(new CustomEvent('lineStateChanged', {
+            detail: { lineNumber, state, killTime, isRemote: true }
+        }));
     }
 
     // 更新本地线路状态（不触发同步）
@@ -729,8 +752,15 @@ export class CollaborationManager {
         const cell = document.querySelector(`td[data-line="${lineNumber}"]`);
         if (!cell) return;
         
+        console.log(`更新本地状态: 线路${lineNumber} -> ${state}`);
+        
         // 移除所有状态类
         cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+        
+        // 停止现有定时器
+        if (window.app && window.app.timerManager) {
+            window.app.timerManager.stopTimer(lineNumber);
+        }
         
         // 添加新状态
         if (state === 'killed' || state === 'killed-unknown') {
@@ -740,7 +770,12 @@ export class CollaborationManager {
                 // 启动倒计时
                 if (window.app && window.app.timerManager) {
                     window.app.timerManager.startTimer(lineNumber, killTime, null, cell, 
-                        window.app.onTimerComplete.bind(window.app));
+                        (lineNum) => {
+                            // 倒计时完成回调
+                            if (window.app && window.app.eventManager) {
+                                window.app.eventManager.onTimerComplete(lineNum);
+                            }
+                        });
                 }
             }
             
@@ -749,13 +784,30 @@ export class CollaborationManager {
             if (killTime) {
                 this.storageManager.setKillTime(lineNumber, killTime);
             }
+            
+            // 更新提示文本
+            if (window.app && window.app.uiManager) {
+                window.app.uiManager.updateCellTooltip(cell, '双击取消击杀状态');
+            }
+            
         } else if (state === 'refreshed') {
             cell.classList.add('refreshed');
             this.storageManager.setLineState(lineNumber, 'refreshed');
-        } else {
+            
+            // 更新提示文本
+            if (window.app && window.app.uiManager) {
+                window.app.uiManager.updateCellTooltip(cell, '金猪已刷新！点击标记击杀');
+            }
+            
+        } else if (state === 'cancelled') {
             // 清除状态
             this.storageManager.removeLineState(lineNumber);
             this.storageManager.removeKillTime(lineNumber);
+            
+            // 更新提示文本
+            if (window.app && window.app.uiManager) {
+                window.app.uiManager.updateCellTooltip(cell, '点击标记金猪被击杀');
+            }
         }
         
         // 同步到其他用户（如果需要）

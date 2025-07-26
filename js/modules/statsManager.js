@@ -45,6 +45,8 @@ export class StatsManager {
             else available++;
         });
         
+        console.log(`统计更新: 击杀=${killed}, 未知=${killedUnknown}, 刷新=${refreshed}, 可用=${available}`);
+        
         this.killedCountSpan.textContent = killed;
         this.killedUnknownCountSpan.textContent = killedUnknown;
         this.refreshedCountSpan.textContent = refreshed;

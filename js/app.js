@@ -32,11 +32,18 @@ class GoldPigMonitorApp {
             console.log('协作管理器初始化成功');
         } catch (error) {
             console.error('协作管理器初始化失败:', error);
-            // 创建一个简单的协作管理器作为后备
+            // 创建一个完整的后备协作管理器
             this.collaborationManager = {
                 showCollaborationDialog: () => {
                     alert('协作功能暂时不可用，请刷新页面重试');
-                }
+                },
+                syncLineStateChange: () => {
+                    // 空实现，不做任何操作
+                    console.log('协作功能不可用，跳过状态同步');
+                },
+                roomId: null,
+                isHost: false,
+                connectedPeers: new Map()
             };
         }
         
