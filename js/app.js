@@ -125,6 +125,9 @@ class GoldPigMonitorApp {
             // 设置初始化完成标志
             this.initialized = true;
             
+            // 添加响应式监听
+            this.setupResponsiveHandlers();
+            
             console.log('应用初始化完成！');
             
         } catch (error) {
@@ -324,6 +327,53 @@ class GoldPigMonitorApp {
         } catch (error) {
             console.error('数据导入失败:', error);
             this.uiManager.showImportError();
+        }
+    }
+
+    // 设置响应式处理
+    setupResponsiveHandlers() {
+        let resizeTimeout;
+        
+        window.addEventListener('resize', () => {
+            // 防抖处理，避免频繁重新生成表格
+            clearTimeout(resizeTimeout);
+            resizeTimeout = setTimeout(() => {
+                const oldCols = this.tableManager.cols;
+                this.tableManager.updateLayoutSettings();
+                
+                // 如果列数发生变化，重新生成表格
+                if (oldCols !== this.tableManager.cols) {
+                    console.log(`屏幕大小变化，从 ${oldCols} 列改为 ${this.tableManager.cols} 列`);
+                    this.tableManager.regenerateTable(
+                        this.elements.table, 
+                        this.eventManager, 
+                        this.storageManager
+                    );
+                    
+                    // 重新恢复状态
+                    this.restoreTableState();
+                }
+            }, 500); // 500ms 延迟
+        });
+        
+        // 监听设备方向变化（手机端）
+        if (window.orientation !== undefined) {
+            window.addEventListener('orientationchange', () => {
+                setTimeout(() => {
+                    const oldCols = this.tableManager.cols;
+                    this.tableManager.updateLayoutSettings();
+                    
+                    if (oldCols !== this.tableManager.cols) {
+                        console.log('设备方向变化，重新生成表格布局');
+                        this.tableManager.regenerateTable(
+                            this.elements.table, 
+                            this.eventManager, 
+                            this.storageManager
+                        );
+                        this.restoreTableState();
+                    }
+                }, 200); // 等待方向变化完成
+            });
         }
     }
 }

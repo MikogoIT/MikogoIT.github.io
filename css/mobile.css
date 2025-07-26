@@ -3,15 +3,27 @@
 /* 手机端专用样式 */
 @media (max-width: 768px) {
     body {
-        padding: 10px;
+        padding: 5px;
+    }
+    
+    .container {
+        max-width: 100%;
     }
     
     h1 {
-        font-size: 2rem;
+        font-size: 1.8rem;
     }
     
     .subtitle {
-        font-size: 1rem;
+        font-size: 0.9rem;
+        padding: 0 10px;
+    }
+    
+    /* 仪表盘布局调整 */
+    .dashboard {
+        grid-template-columns: 1fr;
+        gap: 10px;
+        margin-bottom: 15px;
     }
     
     /* 桌面端和移动端操作说明切换 */
@@ -25,131 +37,148 @@
     
     /* 优化表格在手机端的显示 */
     .table-container {
-        padding: 8px;
+        padding: 5px;
         overflow-x: auto;
         -webkit-overflow-scrolling: touch;
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 10px;
+        margin-bottom: 60px; /* 为底部提示留出空间 */
     }
     
     table {
-        min-width: 600px;
-        font-size: 12px;
-        border-spacing: 2px;
+        min-width: 100%;
+        font-size: 14px;
+        border-spacing: 3px;
+        width: 100%;
     }
     
     th {
-        padding: 6px 2px;
-        font-size: 10px;
-        width: 5%;
-        min-width: 28px;
+        padding: 8px 4px;
+        font-size: 12px;
+        min-width: 35px;
+        height: 35px;
     }
     
     td {
-        padding: 8px 2px;
-        font-size: 12px;
-        height: 45px;
-        width: 5%;
-        min-width: 28px;
+        padding: 10px 4px;
+        font-size: 14px;
+        height: 50px;
+        min-width: 35px;
         box-sizing: border-box;
+        text-align: center;
+        font-weight: bold;
     }
     
-    /* 增大可点击区域 */
+    /* 增大可点击区域和触摸反馈 */
     td:not(.timer-cell) {
         cursor: pointer;
-        -webkit-tap-highlight-color: rgba(52, 152, 219, 0.3);
-        padding: 10px 2px;
-    }
-    
-    /* 手机端长按提示样式保留用于其他用途 */
-    td:not(.timer-cell):after {
-        content: '';
-        position: absolute;
-        top: 0;
-        left: 0;
-        right: 0;
-        bottom: 0;
-        background: transparent;
-        transition: background 0.3s ease;
+        -webkit-tap-highlight-color: rgba(52, 152, 219, 0.4);
+        padding: 12px 4px;
+        transition: all 0.2s ease;
         border-radius: 8px;
     }
     
+    td:not(.timer-cell):active {
+        transform: scale(0.95);
+        background: rgba(52, 152, 219, 0.3) !important;
+        box-shadow: 0 0 10px rgba(52, 152, 219, 0.5);
+    }
+    
     .timer-cell {
-        font-size: 9px;
-        padding: 4px 1px;
-        height: 32px;
-        line-height: 1.1;
-        width: 5%;
-        min-width: 28px;
+        font-size: 11px;
+        padding: 6px 2px;
+        height: 40px;
+        line-height: 1.2;
+        min-width: 35px;
+        font-weight: normal;
     }
     
     /* 控制面板适配 */
     .controls, .stats {
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: 12px;
+        margin-bottom: 10px;
     }
     
     .panel-title {
-        font-size: 1.2rem;
-        margin-bottom: 15px;
+        font-size: 1.1rem;
+        margin-bottom: 12px;
     }
     
     .instructions h3 {
-        font-size: 1.1rem;
+        font-size: 1rem;
     }
     
     .instructions li {
-        font-size: 0.9rem;
-        margin-bottom: 8px;
+        font-size: 0.85rem;
+        margin-bottom: 6px;
+        line-height: 1.4;
     }
     
     /* 统计卡片适配 */
     .stat-card {
-        padding: 15px;
+        padding: 12px;
     }
     
     .stat-value {
-        font-size: 2rem;
+        font-size: 1.6rem;
     }
     
     .stat-label {
-        font-size: 0.9rem;
+        font-size: 0.8rem;
     }
 }
 
 /* 超小屏幕（小于480px）进一步优化 */
 @media (max-width: 480px) {
+    body {
+        padding: 3px;
+    }
+    
     .table-container {
-        padding: 5px;
+        padding: 3px;
+        margin-bottom: 80px; /* 为底部提示留出更多空间 */
     }
     
     table {
-        min-width: 500px;
-        border-spacing: 1px;
-    }
-    
-    th, td {
-        min-width: 24px;
+        border-spacing: 2px;
+        font-size: 13px;
     }
     
     th {
-        padding: 4px 1px;
-        font-size: 9px;
+        padding: 6px 2px;
+        font-size: 11px;
+        min-width: 32px;
+        height: 32px;
     }
     
     td {
-        padding: 6px 1px;
-        font-size: 11px;
-        height: 40px;
+        padding: 8px 2px;
+        font-size: 13px;
+        height: 45px;
+        min-width: 32px;
     }
     
     td:not(.timer-cell) {
-        padding: 8px 1px;
+        padding: 10px 2px;
     }
     
     .timer-cell {
-        font-size: 8px;
-        padding: 3px 1px;
-        height: 28px;
-        min-width: 24px;
+        font-size: 10px;
+        padding: 5px 1px;
+        height: 35px;
+        min-width: 32px;
+    }
+    
+    .controls, .stats {
+        padding: 8px;
+    }
+    
+    .panel-title {
+        font-size: 1rem;
+    }
+    
+    .instructions li {
+        font-size: 0.8rem;
     }
 }
 
@@ -169,20 +198,172 @@
 .mobile-hint {
     display: none;
     position: fixed;
-    bottom: 20px;
+    bottom: 10px;
     left: 50%;
     transform: translateX(-50%);
-    background: rgba(0, 0, 0, 0.8);
+    background: rgba(0, 0, 0, 0.9);
     color: white;
-    padding: 10px 20px;
-    border-radius: 25px;
-    font-size: 14px;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 12px;
     z-index: 10000;
     animation: fadeInOut 3s ease-in-out;
+    max-width: 90%;
+    text-align: center;
+    border: 1px solid rgba(255, 215, 0, 0.3);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.5);
 }
 
 @media (max-width: 768px) {
     .mobile-hint {
         display: block;
     }
+}
+
+/* 添加手机端专用的操作状态指示 */
+@media (max-width: 768px) {
+    .killed, .killed-unknown, .refreshed {
+        position: relative;
+    }
+    
+    .killed::after {
+        content: '🔴';
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 8px;
+    }
+    
+    .killed-unknown::after {
+        content: '🟠';
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 8px;
+    }
+    
+    .refreshed::after {
+        content: '🟢';
+        position: absolute;
+        top: 2px;
+        right: 2px;
+        font-size: 8px;
+    }
+}
+
+/* 响应式表格布局 */
+@media (max-width: 768px) {
+    /* 动态列数布局 */
+    table {
+        table-layout: fixed;
+        width: 100%;
+    }
+    
+    /* 10列布局（超小屏幕） */
+    @media (max-width: 480px) {
+        th, td {
+            width: 10%;
+        }
+    }
+    
+    /* 15列布局（手机端） */
+    @media (min-width: 481px) and (max-width: 768px) {
+        th, td {
+            width: 6.67%;
+        }
+    }
+}
+
+/* 改进表格视觉效果 */
+@media (max-width: 768px) {
+    table {
+        background: rgba(0, 0, 0, 0.1);
+        border-radius: 8px;
+        overflow: hidden;
+    }
+    
+    tr:nth-child(even) {
+        background: rgba(255, 255, 255, 0.02);
+    }
+    
+    tr:nth-child(odd) {
+        background: rgba(255, 255, 255, 0.05);
+    }
+    
+    /* 改进状态颜色在手机端的显示 */
+    .killed {
+        background: linear-gradient(135deg, #e74c3c, #c0392b) !important;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .killed-unknown {
+        background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    .refreshed {
+        background: linear-gradient(135deg, #27ae60, #2ecc71) !important;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+}
+
+/* 手机端表格边框优化 */
+@media (max-width: 768px) {
+    td, th {
+        border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+    
+    td:first-child, th:first-child {
+        border-left: 2px solid rgba(52, 152, 219, 0.3);
+    }
+    
+    td:last-child, th:last-child {
+        border-right: 2px solid rgba(52, 152, 219, 0.3);
+    }
+}
+
+/* 手机端加载和重新生成提示 */
+.mobile-loading {
+    display: none;
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.9);
+    color: white;
+    padding: 20px;
+    border-radius: 15px;
+    z-index: 11000;
+    text-align: center;
+    font-size: 16px;
+    border: 2px solid rgba(52, 152, 219, 0.5);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.7);
+}
+
+@media (max-width: 768px) {
+    .mobile-loading {
+        display: block;
+    }
+}
+
+.mobile-loading.show {
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+.mobile-loading.hide {
+    animation: fadeOut 0.3s ease-in-out;
+    pointer-events: none;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+}
+
+@keyframes fadeOut {
+    from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+    to { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
 }

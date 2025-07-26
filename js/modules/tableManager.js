@@ -1,8 +1,28 @@
 // 表格管理器
 export class TableManager {
     constructor() {
-        this.rows = 20;
-        this.cols = 20;
+        this.updateLayoutSettings();
+        
+        // 监听窗口大小变化
+        window.addEventListener('resize', () => {
+            this.updateLayoutSettings();
+        });
+    }
+    
+    // 根据屏幕大小更新布局设置
+    updateLayoutSettings() {
+        const screenWidth = window.innerWidth;
+        if (screenWidth <= 480) {
+            this.cols = 10; // 超小屏幕：10列
+            this.rows = 40;
+        } else if (screenWidth <= 768) {
+            this.cols = 15; // 手机端：15列
+            this.rows = Math.ceil(400 / 15);
+        } else {
+            this.cols = 20; // 桌面端：20列
+            this.rows = 20;
+        }
+        console.log(`屏幕宽度: ${screenWidth}px, 使用布局: ${this.cols}列 x ${this.rows}行`);
     }
 
     // 初始化表格
@@ -83,6 +103,75 @@ export class TableManager {
         }
         
         console.log(`表格初始化完成: 总共400个线路`);
+    }
+
+    // 重新生成表格布局（响应式）
+    regenerateTable(table, eventManager, storageManager) {
+        if (!table) return;
+        
+        console.log('重新生成表格布局...');
+        
+        // 保存当前状态
+        const currentStates = {};
+        const existingCells = table.querySelectorAll('td[data-line]');
+        existingCells.forEach(cell => {
+            const lineNumber = cell.dataset.line;
+            if (lineNumber) {
+                currentStates[lineNumber] = {
+                    classes: Array.from(cell.classList),
+                    timer: cell.querySelector('.timer-display')?.textContent || '',
+                    state: storageManager ? storageManager.getLineState(lineNumber) : null
+                };
+            }
+        });
+        
+        // 清空表格
+        table.innerHTML = '';
+        
+        // 重新生成表格结构
+        let lineNumber = 1;
+        for (let row = 0; row < this.rows; row++) {
+            const tr = document.createElement('tr');
+            
+            for (let col = 0; col < this.cols && lineNumber <= 400; col++) {
+                const cell = document.createElement('td');
+                cell.textContent = lineNumber;
+                cell.dataset.line = lineNumber;
+                
+                // 添加提示
+                const tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
+                cell.appendChild(tooltip);
+                
+                // 添加定时器显示
+                const timerDisplay = document.createElement('div');
+                timerDisplay.id = `timer-${lineNumber}`;
+                timerDisplay.className = 'timer-display';
+                cell.appendChild(timerDisplay);
+                
+                // 恢复状态
+                if (currentStates[lineNumber]) {
+                    const state = currentStates[lineNumber];
+                    state.classes.forEach(cls => {
+                        if (cls !== 'td') cell.classList.add(cls);
+                    });
+                    if (state.timer) {
+                        timerDisplay.textContent = state.timer;
+                    }
+                }
+                
+                // 绑定事件
+                this.bindCellEvents(cell, eventManager);
+                
+                tr.appendChild(cell);
+                lineNumber++;
+            }
+            
+            table.appendChild(tr);
+        }
+        
+        console.log(`表格重新生成完成: ${this.cols}列 x ${this.rows}行`);
     }
 
     // 绑定单元格事件
