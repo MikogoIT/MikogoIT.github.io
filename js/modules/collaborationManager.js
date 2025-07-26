@@ -766,56 +766,6 @@ export class CollaborationManager {
         };
     }
 
-    // 显示房间信息
-    showRoomInfo() {
-        const roomInfo = document.createElement('div');
-        roomInfo.id = 'room-info';
-        roomInfo.className = 'room-info';
-        roomInfo.innerHTML = `
-            <div class="room-header">
-                <h3>🏠 协作房间</h3>
-                <button id="leave-room-btn" class="leave-room-btn">离开房间</button>
-            </div>
-            <div class="room-details">
-                <p><strong>房间号:</strong> <span id="room-id-display">${this.roomId}</span> 
-                   <button id="copy-room-id" class="copy-btn">📋</button></p>
-                <p><strong>角色:</strong> ${this.isHost ? '房主' : '成员'}</p>
-                <p><strong>在线用户:</strong></p>
-                <div id="users-list" class="users-list"></div>
-            </div>
-        `;
-        
-        // 添加样式
-        roomInfo.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            border: 2px solid #3498db;
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 10000;
-            min-width: 250px;
-            max-width: 300px;
-        `;
-        
-        document.body.appendChild(roomInfo);
-        
-        // 绑定事件
-        document.getElementById('leave-room-btn').addEventListener('click', () => {
-            this.leaveRoom();
-        });
-        
-        document.getElementById('copy-room-id').addEventListener('click', () => {
-            navigator.clipboard.writeText(this.roomId).then(() => {
-                this.uiManager.showSuccess('房间号已复制到剪贴板');
-            });
-        });
-        
-        this.updateUsersList();
-    }
-
     // 隐藏房间信息
     hideRoomInfo() {
         const roomInfo = document.getElementById('room-info');
@@ -1105,4 +1055,3 @@ export class CollaborationManager {
         this.leaveRoom();
     }
 }
-

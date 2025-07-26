@@ -22,11 +22,23 @@ class GoldPigMonitorApp {
         this.chartManager = new ChartManager(this.statsManager);
         
         // 初始化协作管理器
-        this.collaborationManager = new CollaborationManager(
-            this.storageManager,
-            this.uiManager,
-            this.statsManager
-        );
+        try {
+            console.log('开始初始化协作管理器...');
+            this.collaborationManager = new CollaborationManager(
+                this.storageManager,
+                this.uiManager,
+                this.statsManager
+            );
+            console.log('协作管理器初始化成功');
+        } catch (error) {
+            console.error('协作管理器初始化失败:', error);
+            // 创建一个简单的协作管理器作为后备
+            this.collaborationManager = {
+                showCollaborationDialog: () => {
+                    alert('协作功能暂时不可用，请刷新页面重试');
+                }
+            };
+        }
         
         this.eventManager = new EventManager(
             this.timerManager, 
@@ -305,23 +317,6 @@ class GoldPigMonitorApp {
                 return false;
             }
         };
-        
-        // 多人协作功能
-        window.showCollaboration = () => {
-            this.collaborationManager.showCollaborationDialog();
-        };
-        
-        window.createRoom = () => {
-            this.collaborationManager.createRoom();
-        };
-        
-        window.joinRoom = (roomId) => {
-            this.collaborationManager.joinRoom(roomId);
-        };
-        
-        window.leaveRoom = () => {
-            this.collaborationManager.leaveRoom();
-        };
     }
 
     // 初始化备注输入框
@@ -440,6 +435,58 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
         app.init().then(() => {
             console.log('应用初始化成功');
+            
+            // 先暴露应用实例到全局
+            window.goldPigApp = app;
+            window.app = app;
+            
+            // 然后定义协作相关全局函数
+            window.showCollaboration = function() {
+                console.log('showCollaboration函数被调用');
+                try {
+                    if (app && app.collaborationManager) {
+                        console.log('调用协作管理器的showCollaborationDialog方法');
+                        app.collaborationManager.showCollaborationDialog();
+                    } else {
+                        console.error('协作管理器未初始化');
+                        alert('协作功能暂不可用，请刷新页面重试');
+                    }
+                } catch (error) {
+                    console.error('显示协作对话框失败:', error);
+                    alert('协作功能出错：' + error.message);
+                }
+            };
+            
+            window.createRoom = function() {
+                try {
+                    if (app && app.collaborationManager) {
+                        app.collaborationManager.createRoom();
+                    }
+                } catch (error) {
+                    console.error('创建房间失败:', error);
+                }
+            };
+            
+            window.joinRoom = function(roomId) {
+                try {
+                    if (app && app.collaborationManager) {
+                        app.collaborationManager.joinRoom(roomId);
+                    }
+                } catch (error) {
+                    console.error('加入房间失败:', error);
+                }
+            };
+            
+            window.leaveRoom = function() {
+                try {
+                    if (app && app.collaborationManager) {
+                        app.collaborationManager.leaveRoom();
+                    }
+                } catch (error) {
+                    console.error('离开房间失败:', error);
+                }
+            };
+            
         }).catch(error => {
             console.error('应用初始化异步错误:', error);
         });
@@ -453,83 +500,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 });
-
-// 导出应用实例供调试使用
-window.goldPigApp = app;
-window.app = app;
-
-// 确保协作功能始终可用（即使应用部分初始化失败）
-window.showCollaboration = function() {
-    console.log('showCollaboration函数被调用');
-    console.log('window.goldPigApp:', window.goldPigApp);
-    console.log('collaborationManager:', window.goldPigApp ? window.goldPigApp.collaborationManager : 'app不存在');
-    
-    try {
-        if (window.goldPigApp && window.goldPigApp.collaborationManager) {
-            console.log('调用协作管理器的showCollaborationDialog方法');
-            window.goldPigApp.collaborationManager.showCollaborationDialog();
-        } else {
-            console.error('协作管理器未初始化');
-            console.log('尝试直接创建协作管理器...');
-            
-            // 尝试直接创建一个简单的协作管理器
-            const simpleDialog = document.createElement('div');
-            simpleDialog.className = 'collaboration-modal show';
-            simpleDialog.innerHTML = `
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h3>⚠️ 协作功能初始化中...</h3>
-                        <button class="modal-close" onclick="this.closest('.collaboration-modal').remove()">✕</button>
-                    </div>
-                    <div class="modal-body">
-                        <p>协作功能正在初始化，请稍后再试或刷新页面。</p>
-                        <button onclick="location.reload()" class="action-btn">刷新页面</button>
-                    </div>
-                </div>
-            `;
-            document.body.appendChild(simpleDialog);
-        }
-    } catch (error) {
-        console.error('显示协作对话框失败:', error);
-        alert('协作功能出错：' + error.message);
-    }
-};
-
-window.createRoom = function() {
-    try {
-        if (window.goldPigApp && window.goldPigApp.collaborationManager) {
-            window.goldPigApp.collaborationManager.createRoom();
-        } else {
-            console.error('协作管理器未初始化');
-        }
-    } catch (error) {
-        console.error('创建房间失败:', error);
-    }
-};
-
-window.joinRoom = function(roomId) {
-    try {
-        if (window.goldPigApp && window.goldPigApp.collaborationManager) {
-            window.goldPigApp.collaborationManager.joinRoom(roomId);
-        } else {
-            console.error('协作管理器未初始化');
-        }
-    } catch (error) {
-        console.error('加入房间失败:', error);
-    }
-};
-
-window.leaveRoom = function() {
-    try {
-        if (window.goldPigApp && window.goldPigApp.collaborationManager) {
-            window.goldPigApp.collaborationManager.leaveRoom();
-        } else {
-            console.error('协作管理器未初始化');
-        }
-    } catch (error) {
-        console.error('离开房间失败:', error);
-    }
-};
 
 // 调试函数：测试CSV导出
 window.debugCSV = function() {
