@@ -15,8 +15,35 @@ export class TimerManager {
 
     // 启动倒计时
     startTimer(lineNumber, killTime, initialRemaining = null, cellElement = null, onComplete = null) {
+        console.log(`启动定时器: 线路${lineNumber}`);
+        
         const timerCell = document.getElementById(`timer-${lineNumber}`);
-        if (!timerCell) return;
+        console.log(`定时器元素查找结果:`, timerCell);
+        
+        if (!timerCell) {
+            console.error(`定时器元素不存在: timer-${lineNumber}`);
+            
+            // 尝试从单元格中查找或创建定时器元素
+            const lineCell = cellElement || document.querySelector(`td[data-line="${lineNumber}"]`);
+            if (lineCell) {
+                let existingTimer = lineCell.querySelector('.timer-display');
+                if (!existingTimer) {
+                    console.log('创建新的定时器显示元素');
+                    existingTimer = document.createElement('div');
+                    existingTimer.id = `timer-${lineNumber}`;
+                    existingTimer.className = 'timer-display';
+                    lineCell.appendChild(existingTimer);
+                }
+                // 重新获取定时器元素
+                const newTimerCell = document.getElementById(`timer-${lineNumber}`);
+                if (newTimerCell) {
+                    console.log('成功创建并获取定时器元素');
+                    return this.startTimer(lineNumber, killTime, initialRemaining, cellElement, onComplete);
+                }
+            }
+            console.error('无法创建定时器元素，退出');
+            return;
+        }
 
         // 清除已有的计时器（如果有）
         if (this.timers[lineNumber]) {
@@ -36,8 +63,11 @@ export class TimerManager {
             const elapsed = currentTime - killTime;
             remaining = timerDuration - elapsed;
 
+            console.log(`更新定时器显示: 线路${lineNumber}, 剩余时间=${remaining}ms`);
+
             // 如果倒计时结束
             if (remaining <= 0) {
+                console.log(`定时器完成: 线路${lineNumber}`);
                 clearInterval(this.timers[lineNumber]);
                 delete this.timers[lineNumber];
                 timerCell.textContent = '';
@@ -94,14 +124,20 @@ export class TimerManager {
             const seconds = Math.floor((remaining % (1000 * 60)) / 1000);
 
             // 显示倒计时
-            timerCell.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            const timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+            timerCell.textContent = timeStr;
+            console.log(`定时器显示更新: 线路${lineNumber} -> ${timeStr}`);
         };
 
         // 立即更新一次显示
+        console.log('立即执行第一次定时器显示更新');
         updateTimerDisplay();
 
         // 启动计时器
+        console.log(`设置定时器间隔: 线路${lineNumber}`);
         this.timers[lineNumber] = setInterval(updateTimerDisplay, 1000);
+        
+        console.log(`定时器启动完成: 线路${lineNumber}, 活跃定时器数量:`, Object.keys(this.timers).length);
     }
 
     // 清除单个计时器

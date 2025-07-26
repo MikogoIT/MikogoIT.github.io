@@ -58,9 +58,9 @@ export class EventManager {
             this.statsManager.addKillEvent(lineNumber, killTime);
             console.log('添加击杀事件到列表');
             
-            // 同步到其他用户（暂时禁用以排查问题）
-            if (this.collaborationManager && false) {
-                console.log('协作同步被暂时禁用');
+            // 同步到其他用户
+            if (this.collaborationManager) {
+                console.log('同步状态到协作用户');
                 this.collaborationManager.syncLineStateChange(lineNumber, 'killed', killTime);
             }
             
@@ -89,6 +89,21 @@ export class EventManager {
             }
             
             // 开始倒计时
+            console.log('准备启动倒计时...');
+            
+            // 确保定时器元素存在
+            let timerElement = document.getElementById(`timer-${lineNumber}`);
+            if (!timerElement) {
+                console.log('定时器元素不存在，创建新的');
+                timerElement = document.createElement('div');
+                timerElement.id = `timer-${lineNumber}`;
+                timerElement.className = 'timer-display';
+                cell.appendChild(timerElement);
+                console.log('定时器元素创建完成');
+            } else {
+                console.log('定时器元素已存在');
+            }
+            
             this.timerManager.startTimer(lineNumber, killTime, null, cell, this.onTimerComplete.bind(this));
             console.log('启动倒计时');
             
