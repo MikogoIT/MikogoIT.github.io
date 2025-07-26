@@ -350,6 +350,18 @@ td:hover {
     background: linear-gradient(to right, #f39c12, #e67e22);
 }
 
+/* 数据管理按钮特殊样式 */
+.action-btn.data-management {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    border: 2px solid rgba(155, 89, 182, 0.3);
+}
+
+.action-btn.data-management:hover {
+    background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    border-color: rgba(155, 89, 182, 0.5);
+    box-shadow: 0 8px 25px rgba(155, 89, 182, 0.4);
+}
+
 /* 提示框样式 */
 .tooltip {
     position: absolute;
@@ -545,5 +557,229 @@ footer {
 @media (min-width: 769px) {
     .scroll-hint {
         display: none;
+    }
+}
+
+/* 数据管理模态框样式 */
+.data-management-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.data-management-modal.show {
+    opacity: 1;
+}
+
+.modal-content {
+    background: linear-gradient(135deg, #2c3e50, #34495e);
+    border-radius: 15px;
+    max-width: 600px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+    border: 2px solid rgba(52, 152, 219, 0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+
+@keyframes modalSlideIn {
+    from {
+        transform: translateY(-50px) scale(0.9);
+        opacity: 0;
+    }
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px;
+    border-bottom: 2px solid rgba(52, 152, 219, 0.3);
+}
+
+.modal-header h3 {
+    color: #f1c40f;
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    background: none;
+    border: none;
+    color: #bdc3c7;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.modal-close:hover {
+    background: rgba(231, 76, 60, 0.2);
+    color: #e74c3c;
+}
+
+.modal-body {
+    padding: 25px;
+}
+
+.data-section {
+    margin-bottom: 30px;
+    padding: 20px;
+    background: rgba(0, 0, 0, 0.2);
+    border-radius: 10px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.data-section h4 {
+    color: #3498db;
+    margin: 0 0 10px 0;
+    font-size: 1.2rem;
+}
+
+.data-section p {
+    color: #bdc3c7;
+    margin: 0 0 15px 0;
+    line-height: 1.5;
+}
+
+.button-group {
+    display: flex;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.export-btn, .import-btn {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.export-btn:hover, .import-btn:hover {
+    background: linear-gradient(135deg, #219a52, #27ae60);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(46, 204, 113, 0.4);
+}
+
+.danger-btn {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    color: white;
+    border: none;
+    padding: 12px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+.danger-btn:hover {
+    background: linear-gradient(135deg, #c0392b, #a93226);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(231, 76, 60, 0.4);
+}
+
+.import-area {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.import-status {
+    padding: 10px;
+    border-radius: 5px;
+    background: rgba(0, 0, 0, 0.3);
+    color: #bdc3c7;
+    min-height: 20px;
+    font-size: 14px;
+}
+
+/* 手机端适配 */
+@media (max-width: 768px) {
+    .modal-content {
+        width: 95%;
+        margin: 20px;
+    }
+    
+    .modal-header {
+        padding: 15px 20px;
+    }
+    
+    .modal-body {
+        padding: 20px;
+    }
+    
+    .data-section {
+        padding: 15px;
+        margin-bottom: 20px;
+    }
+    
+    .button-group {
+        flex-direction: column;
+    }
+    
+    .export-btn, .import-btn, .danger-btn {
+        width: 100%;
+    }
+}
+
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    padding: 15px 20px;
+    border-radius: 8px;
+    color: white;
+    font-weight: bold;
+    z-index: 11000;
+    animation: messageSlideIn 0.3s ease;
+}
+
+.temporary-message.success {
+    background: linear-gradient(135deg, #27ae60, #2ecc71);
+    box-shadow: 0 4px 15px rgba(46, 204, 113, 0.3);
+}
+
+.temporary-message.warning {
+    background: linear-gradient(135deg, #f39c12, #e67e22);
+    box-shadow: 0 4px 15px rgba(243, 156, 18, 0.3);
+}
+
+.temporary-message.error {
+    background: linear-gradient(135deg, #e74c3c, #c0392b);
+    box-shadow: 0 4px 15px rgba(231, 76, 60, 0.3);
+}
+
+@keyframes messageSlideIn {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
     }
 }

@@ -216,4 +216,156 @@ export class StatsManager {
             return event.timestamp >= todayStart && event.timestamp < todayEnd;
         }).length;
     }
+
+    // 导出所有数据
+    exportAllData() {
+        const exportData = {
+            version: "1.0",
+            exportDate: new Date().toISOString(),
+            killEvents: this.killEvents,
+            lineStates: this.getLineStatesData(),
+            statistics: this.getStatsSummary(),
+            notes: this.getNotesData()
+        };
+        
+        return exportData;
+    }
+    
+    // 获取线路状态数据（从localStorage）
+    getLineStatesData() {
+        const lineStates = {};
+        const killTimes = {};
+        
+        for (let i = 1; i <= 400; i++) {
+            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
+            const killTime = localStorage.getItem(`pigTimer_line_${i}_killTime`);
+            
+            if (state) {
+                lineStates[i] = state;
+            }
+            if (killTime) {
+                killTimes[i] = parseInt(killTime);
+            }
+        }
+        
+        return { lineStates, killTimes };
+    }
+    
+    // 获取备注数据
+    getNotesData() {
+        return localStorage.getItem('pigTimer_notes') || '';
+    }
+    
+    // 导出为JSON文件
+    exportToJSON() {
+        const data = this.exportAllData();
+        const jsonString = JSON.stringify(data, null, 2);
+        const blob = new Blob([jsonString], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `金猪监控数据_${this.formatDateForFilename(new Date())}.json`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        console.log('数据导出完成');
+        return true;
+    }
+    
+    // 导出为CSV文件（击杀记录）
+    exportToCSV() {
+        if (this.killEvents.length === 0) {
+            alert('暂无击杀记录可导出');
+            return false;
+        }
+        
+        let csvContent = '线路号,击杀时间,击杀日期\n';
+        
+        this.killEvents.forEach(event => {
+            const date = new Date(event.timestamp);
+            const dateStr = date.toLocaleDateString('zh-CN');
+            const timeStr = date.toLocaleTimeString('zh-CN');
+            csvContent += `${event.line},${timeStr},${dateStr}\n`;
+        });
+        
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = `金猪击杀记录_${this.formatDateForFilename(new Date())}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+        
+        console.log('CSV导出完成');
+        return true;
+    }
+    
+    // 格式化日期用于文件名
+    formatDateForFilename(date) {
+        const year = date.getFullYear();
+        const month = (date.getMonth() + 1).toString().padStart(2, '0');
+        const day = date.getDate().toString().padStart(2, '0');
+        const hours = date.getHours().toString().padStart(2, '0');
+        const minutes = date.getMinutes().toString().padStart(2, '0');
+        return `${year}${month}${day}_${hours}${minutes}`;
+    }
+    
+    // 导入数据
+    importData(jsonData) {
+        try {
+            const data = typeof jsonData === 'string' ? JSON.parse(jsonData) : jsonData;
+            
+            if (!data.version || !data.killEvents) {
+                throw new Error('无效的数据格式');
+            }
+            
+            // 导入击杀事件
+            if (Array.isArray(data.killEvents)) {
+                this.killEvents = data.killEvents;
+                localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+            }
+            
+            // 导入线路状态
+            if (data.lineStates) {
+                const { lineStates, killTimes } = data.lineStates;
+                
+                // 清除现有状态
+                for (let i = 1; i <= 400; i++) {
+                    localStorage.removeItem(`pigTimer_line_${i}_state`);
+                    localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+                }
+                
+                // 设置新状态
+                Object.entries(lineStates).forEach(([line, state]) => {
+                    localStorage.setItem(`pigTimer_line_${line}_state`, state);
+                });
+                
+                Object.entries(killTimes).forEach(([line, time]) => {
+                    localStorage.setItem(`pigTimer_line_${line}_killTime`, time.toString());
+                });
+            }
+            
+            // 导入备注
+            if (data.notes) {
+                localStorage.setItem('pigTimer_notes', data.notes);
+            }
+            
+            // 更新统计
+            this.updateStats();
+            
+            console.log('数据导入完成');
+            return true;
+            
+        } catch (error) {
+            console.error('数据导入失败:', error);
+            alert('数据导入失败: ' + error.message);
+            return false;
+        }
+    }
 }

@@ -272,6 +272,14 @@ class GoldPigMonitorApp {
                 this.chartManager.updateChart();
             }
         };
+        
+        // 数据管理功能
+        window.showDataManagement = () => {
+            console.log('显示数据管理界面');
+            if (this.uiManager) {
+                this.uiManager.showDataManagementDialog();
+            }
+        };
     }
 
     // 初始化备注输入框

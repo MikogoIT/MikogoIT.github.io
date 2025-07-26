@@ -349,4 +349,191 @@ export class UIManager {
         
         this.showAlert(shortcuts);
     }
+
+    // 显示导出导入界面
+    showDataManagementDialog() {
+        // 创建模态框
+        const modal = document.createElement('div');
+        modal.className = 'data-management-modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>📁 数据管理</h3>
+                    <button class="modal-close" onclick="this.closest('.data-management-modal').remove()">✕</button>
+                </div>
+                <div class="modal-body">
+                    <div class="data-section">
+                        <h4>📤 导出数据</h4>
+                        <p>备份您的击杀记录和线路状态</p>
+                        <div class="button-group">
+                            <button id="export-json-btn" class="export-btn">
+                                💾 导出完整数据 (JSON)
+                            </button>
+                            <button id="export-csv-btn" class="export-btn">
+                                📊 导出击杀记录 (CSV)
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <div class="data-section">
+                        <h4>📥 导入数据</h4>
+                        <p>从备份文件恢复数据（会覆盖当前数据）</p>
+                        <div class="import-area">
+                            <input type="file" id="import-file" accept=".json" style="display: none;">
+                            <button id="import-btn" class="import-btn">
+                                📂 选择备份文件
+                            </button>
+                            <div id="import-status" class="import-status"></div>
+                        </div>
+                    </div>
+                    
+                    <div class="data-section">
+                        <h4>🗑️ 清除数据</h4>
+                        <p>⚠️ 危险操作：将清除所有数据</p>
+                        <button id="clear-all-btn" class="danger-btn">
+                            🗑️ 清除所有数据
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // 绑定事件
+        this.bindDataManagementEvents(modal);
+        
+        // 显示动画
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+    
+    // 绑定数据管理事件
+    bindDataManagementEvents(modal) {
+        const exportJsonBtn = modal.querySelector('#export-json-btn');
+        const exportCsvBtn = modal.querySelector('#export-csv-btn');
+        const importBtn = modal.querySelector('#import-btn');
+        const importFile = modal.querySelector('#import-file');
+        const clearAllBtn = modal.querySelector('#clear-all-btn');
+        const importStatus = modal.querySelector('#import-status');
+        
+        // 导出JSON
+        exportJsonBtn.addEventListener('click', () => {
+            if (window.app && window.app.statsManager) {
+                const success = window.app.statsManager.exportToJSON();
+                if (success) {
+                    this.showTemporaryMessage('数据导出成功！', 'success');
+                }
+            }
+        });
+        
+        // 导出CSV
+        exportCsvBtn.addEventListener('click', () => {
+            if (window.app && window.app.statsManager) {
+                const success = window.app.statsManager.exportToCSV();
+                if (success) {
+                    this.showTemporaryMessage('击杀记录导出成功！', 'success');
+                }
+            }
+        });
+        
+        // 选择导入文件
+        importBtn.addEventListener('click', () => {
+            importFile.click();
+        });
+        
+        // 文件选择处理
+        importFile.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                importStatus.textContent = `已选择: ${file.name}`;
+                
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    try {
+                        const jsonData = event.target.result;
+                        if (window.app && window.app.statsManager) {
+                            const success = window.app.statsManager.importData(jsonData);
+                            if (success) {
+                                importStatus.innerHTML = '<span style="color: #27ae60;">✅ 导入成功！页面将刷新以加载新数据。</span>';
+                                setTimeout(() => {
+                                    window.location.reload();
+                                }, 2000);
+                            } else {
+                                importStatus.innerHTML = '<span style="color: #e74c3c;">❌ 导入失败</span>';
+                            }
+                        }
+                    } catch (error) {
+                        importStatus.innerHTML = '<span style="color: #e74c3c;">❌ 文件格式错误</span>';
+                    }
+                };
+                reader.readAsText(file);
+            }
+        });
+        
+        // 清除所有数据
+        clearAllBtn.addEventListener('click', () => {
+            const confirmed = confirm('⚠️ 确定要清除所有数据吗？\n\n这将删除：\n• 所有击杀记录\n• 所有线路状态\n• 所有备注\n\n此操作不可恢复！');
+            if (confirmed) {
+                const doubleConfirmed = confirm('🔥 最后确认：真的要删除所有数据吗？');
+                if (doubleConfirmed) {
+                    this.clearAllData();
+                    modal.remove();
+                    this.showTemporaryMessage('所有数据已清除，页面将刷新', 'warning');
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                }
+            }
+        });
+        
+        // 点击模态框外部关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+    
+    // 清除所有数据
+    clearAllData() {
+        // 清除击杀事件
+        localStorage.removeItem('killEvents');
+        
+        // 清除所有线路状态
+        for (let i = 1; i <= 400; i++) {
+            localStorage.removeItem(`pigTimer_line_${i}_state`);
+            localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+        }
+        
+        // 清除备注
+        localStorage.removeItem('pigTimer_notes');
+        
+        // 清除其他可能的数据
+        Object.keys(localStorage).forEach(key => {
+            if (key.startsWith('pigTimer_')) {
+                localStorage.removeItem(key);
+            }
+        });
+        
+        console.log('所有数据已清除');
+    }
+
+    // 显示临时消息
+    showTemporaryMessage(message, type = 'success', duration = 3000) {
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `temporary-message ${type}`;
+        messageDiv.textContent = message;
+        
+        document.body.appendChild(messageDiv);
+        
+        // 自动移除
+        setTimeout(() => {
+            messageDiv.style.animation = 'messageSlideIn 0.3s ease reverse';
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 300);
+        }, duration);
+    }
 }
