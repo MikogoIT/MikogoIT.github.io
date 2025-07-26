@@ -24,6 +24,12 @@ export class TableManager {
                 tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
                 cell.appendChild(tooltip);
                 
+                // 添加定时器显示元素
+                const timerDisplay = document.createElement('div');
+                timerDisplay.id = `timer-${lineNumber}`;
+                timerDisplay.className = 'timer-display';
+                cell.appendChild(timerDisplay);
+                
                 // 绑定事件
                 this.bindCellEvents(cell, eventManager);
                 

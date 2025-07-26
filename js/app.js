@@ -56,6 +56,9 @@ class GoldPigMonitorApp {
             // 初始化图表
             this.chartManager.initChart();
             
+            // 确保统计管理器元素绑定完成
+            this.statsManager.bindElements();
+            
             // 初始化UI
             this.uiManager.showRestoreStatus();
             

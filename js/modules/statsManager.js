@@ -7,11 +7,26 @@ class StatsManager {
 
     // 初始化统计元素
     initElements() {
+        // 使用延迟初始化确保DOM元素已加载
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => this.bindElements());
+        } else {
+            this.bindElements();
+        }
+    }
+
+    // 绑定DOM元素
+    bindElements() {
         this.killedCountSpan = document.getElementById('killed-count');
         this.killedUnknownCountSpan = document.getElementById('killed-unknown-count');
         this.refreshedCountSpan = document.getElementById('refreshed-count');
         this.availableCountSpan = document.getElementById('available-count');
         this.todayCountSpan = document.getElementById('today-count');
+        
+        // 检查元素是否正确绑定
+        if (!this.todayCountSpan) {
+            console.error('统计元素绑定失败：today-count 元素未找到');
+        }
     }
 
     // 更新统计信息
@@ -49,7 +64,13 @@ class StatsManager {
             return event.timestamp >= todayStart && event.timestamp < todayEnd;
         }).length;
         
-        this.todayCountSpan.textContent = todayKills;
+        console.log(`更新今日击杀数: ${todayKills}, 总事件数: ${this.killEvents.length}`);
+        
+        if (this.todayCountSpan) {
+            this.todayCountSpan.textContent = todayKills;
+        } else {
+            console.error('today-count 元素未找到，无法更新今日击杀数');
+        }
     }
 
     // 记录击杀事件
@@ -57,6 +78,8 @@ class StatsManager {
         const event = { line: lineNumber, timestamp: timestamp };
         this.killEvents.push(event);
         localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+        
+        console.log(`记录击杀事件: 线路${lineNumber}, 时间${new Date(timestamp)}, 总事件数: ${this.killEvents.length}`);
         
         // 检查是否达到里程碑（每10次击杀触发庆祝动画）
         const totalKills = this.killEvents.length;

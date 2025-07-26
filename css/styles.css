@@ -308,6 +308,31 @@ td:hover {
     box-sizing: border-box;
 }
 
+/* 定时器显示样式 */
+.timer-display {
+    position: absolute;
+    bottom: 2px;
+    left: 2px;
+    right: 2px;
+    font-size: 10px;
+    color: #fff;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 3px;
+    padding: 1px 2px;
+    text-align: center;
+    white-space: nowrap;
+    z-index: 5;
+    pointer-events: none;
+}
+
+.killed .timer-display {
+    background: rgba(231, 76, 60, 0.9);
+}
+
+.killed-unknown .timer-display {
+    background: rgba(230, 126, 34, 0.9);
+}
+
 /* 按钮样式 */
 .action-btn {
     display: block;
