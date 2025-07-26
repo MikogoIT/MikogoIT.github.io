@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房间信息组件测试</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+        }
+        
+        .test-container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+            transform: translateY(-2px);
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🏠 房间信息组件测试</h1>
+        
+        <div style="text-align: center;">
+            <button class="test-button" onclick="showTestRoom()">显示Firebase房间</button>
+            <button class="test-button" onclick="showP2PRoom()">显示P2P房间</button>
+            <button class="test-button" onclick="hideRoom()">隐藏房间信息</button>
+        </div>
+        
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px;">
+            <h3>测试说明：</h3>
+            <ol>
+                <li>点击"显示Firebase房间"或"显示P2P房间"按钮</li>
+                <li>观察右上角出现的房间信息组件</li>
+                <li>点击房间号旁边的📋按钮测试复制功能</li>
+                <li>检查是否出现复制成功的消息和按钮动画</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        function showTestRoom() {
+            showRoomInfo('room_firebase_test_123', 'Firebase', true);
+        }
+        
+        function showP2PRoom() {
+            showRoomInfo('room_p2p_test_456', 'P2P', false);
+        }
+        
+        function hideRoom() {
+            const roomInfo = document.getElementById('room-info');
+            if (roomInfo) {
+                roomInfo.remove();
+            }
+        }
+        
+        function showRoomInfo(roomId, type, isHost) {
+            // 移除已存在的房间信息
+            const existingRoomInfo = document.getElementById('room-info');
+            if (existingRoomInfo) {
+                existingRoomInfo.remove();
+            }
+
+            const roomInfo = document.createElement('div');
+            roomInfo.id = 'room-info';
+            roomInfo.className = 'room-info';
+            roomInfo.innerHTML = `
+                <div class="room-header">
+                    <h3>🏠 ${type}协作房间</h3>
+                    <button id="leave-room-btn" class="leave-room-btn">离开房间</button>
+                </div>
+                <div class="room-details">
+                    <p><strong>房间号:</strong> <span id="room-id-display">${roomId}</span> 
+                       <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button></p>
+                    <p><strong>状态:</strong> <span id="connection-status">🟢 在线</span></p>
+                    <p><strong>模式:</strong> ${isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
+                    <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
+                    <div id="users-list" class="users-list">
+                        <div class="user-item">
+                            <div class="user-color" style="background-color: #3498db"></div>
+                            <span class="user-name">测试用户 ${isHost ? '(房主)' : ''}</span>
+                            <span class="user-status connected">在线</span>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            // 添加样式
+            roomInfo.style.cssText = `
+                position: fixed;
+                top: 20px;
+                right: 20px;
+                background: white;
+                border: 2px solid ${isHost ? '#e74c3c' : '#3498db'};
+                border-radius: 10px;
+                padding: 15px;
+                box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+                z-index: 10000;
+                min-width: 280px;
+                max-width: 350px;
+                animation: slideInFromRight 0.3s ease;
+            `;
+            
+            document.body.appendChild(roomInfo);
+            
+            // 绑定事件
+            document.getElementById('leave-room-btn').addEventListener('click', () => {
+                hideRoom();
+                showTemporaryMessage('已离开房间', 'success');
+            });
+            
+            document.getElementById('copy-room-id').addEventListener('click', async () => {
+                await copyRoomId(roomId);
+            });
+        }
+        
+        async function copyRoomId(roomId) {
+            const copyBtn = document.getElementById('copy-room-id');
+            
+            if (!roomId) {
+                showTemporaryMessage('没有房间号可复制', 'error');
+                return;
+            }
+            
+            try {
+                // 优先使用现代Clipboard API
+                if (navigator.clipboard && window.isSecureContext) {
+                    await navigator.clipboard.writeText(roomId);
+                } else {
+                    // 降级使用传统方法
+                    const textArea = document.createElement('textarea');
+                    textArea.value = roomId;
+                    textArea.style.position = 'fixed';
+                    textArea.style.opacity = '0';
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    textArea.setSelectionRange(0, 99999);
+                    const success = document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    
+                    if (!success) {
+                        throw new Error('execCommand failed');
+                    }
+                }
+                
+                // 显示复制成功动画
+                if (copyBtn) {
+                    const originalText = copyBtn.textContent;
+                    copyBtn.textContent = '✅';
+                    copyBtn.style.background = '#28a745';
+                    
+                    setTimeout(() => {
+                        copyBtn.textContent = originalText;
+                        copyBtn.style.background = '';
+                    }, 1000);
+                }
+                
+                showTemporaryMessage(`房间号已复制到剪贴板: ${roomId}`, 'success');
+                
+            } catch (err) {
+                console.error('复制失败:', err);
+                
+                // 显示房间号给用户手动复制
+                const roomIdSpan = document.getElementById('room-id-display');
+                if (roomIdSpan) {
+                    // 创建临时选择
+                    const range = document.createRange();
+                    range.selectNode(roomIdSpan);
+                    const selection = window.getSelection();
+                    selection.removeAllRanges();
+                    selection.addRange(range);
+                    
+                    showTemporaryMessage('自动复制失败，房间号已选中，请使用 Ctrl+C 手动复制', 'warning');
+                } else {
+                    showTemporaryMessage(`复制失败，房间号: ${roomId}`, 'error');
+                }
+            }
+        }
+        
+        function showTemporaryMessage(message, type = 'success') {
+            // 移除已存在的消息
+            const existingMessage = document.querySelector('.temporary-message');
+            if (existingMessage) {
+                existingMessage.remove();
+            }
+            
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `temporary-message ${type}`;
+            messageDiv.textContent = message;
+            messageDiv.style.cssText = `
+                position: fixed;
+                top: 100px;
+                right: 20px;
+                padding: 12px 20px;
+                border-radius: 8px;
+                color: white;
+                font-weight: 500;
+                z-index: 10001;
+                max-width: 300px;
+                word-wrap: break-word;
+                animation: messageSlideIn 0.3s ease;
+            `;
+            
+            // 设置背景颜色
+            switch (type) {
+                case 'success':
+                    messageDiv.style.background = '#28a745';
+                    break;
+                case 'warning':
+                    messageDiv.style.background = '#ffc107';
+                    messageDiv.style.color = '#212529';
+                    break;
+                case 'error':
+                    messageDiv.style.background = '#dc3545';
+                    break;
+                default:
+                    messageDiv.style.background = '#17a2b8';
+            }
+            
+            document.body.appendChild(messageDiv);
+            
+            // 自动隐藏
+            setTimeout(() => {
+                messageDiv.style.animation = 'messageSlideOut 0.3s ease';
+                setTimeout(() => {
+                    if (document.body.contains(messageDiv)) {
+                        document.body.removeChild(messageDiv);
+                    }
+                }, 300);
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

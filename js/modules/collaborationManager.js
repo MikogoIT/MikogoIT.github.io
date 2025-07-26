@@ -247,11 +247,7 @@ export class CollaborationManager {
         
         this.uiManager.showSuccess(`房间创建成功！房间号: ${this.roomId}`);
         
-        // 显示房间状态组件
-        if (typeof window.showRoomStatus === 'function') {
-            window.showRoomStatus(this.roomId, 'P2P本地');
-        }
-        
+        // 显示房间信息组件
         this.showRoomInfo();
         
         console.log('房间已创建:', this.roomId);
@@ -1172,7 +1168,7 @@ export class CollaborationManager {
             </div>
             <div class="room-details">
                 <p><strong>房间号:</strong> <span id="room-id-display">${this.roomId}</span> 
-                   <button id="copy-room-id" class="copy-btn">📋</button></p>
+                   <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button></p>
                 <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
                 <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
                 <div id="users-list" class="users-list"></div>
@@ -1201,13 +1197,75 @@ export class CollaborationManager {
             this.leaveRoom();
         });
         
-        document.getElementById('copy-room-id').addEventListener('click', () => {
-            navigator.clipboard.writeText(this.roomId).then(() => {
-                this.uiManager.showSuccess('房间号已复制到剪贴板');
-            });
+        document.getElementById('copy-room-id').addEventListener('click', async () => {
+            await this.copyRoomId();
         });
         
         this.updateUsersList();
+    }
+
+    // 复制房间号
+    async copyRoomId() {
+        const copyBtn = document.getElementById('copy-room-id');
+        
+        if (!this.roomId) {
+            this.uiManager.showError('没有房间号可复制');
+            return;
+        }
+        
+        try {
+            // 优先使用现代Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(this.roomId);
+            } else {
+                // 降级使用传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = this.roomId;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                textArea.setSelectionRange(0, 99999); // 移动端兼容
+                const success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (!success) {
+                    throw new Error('execCommand failed');
+                }
+            }
+            
+            // 显示复制成功动画
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅';
+                copyBtn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '';
+                }, 1000);
+            }
+            
+            this.uiManager.showSuccess(`房间号已复制到剪贴板: ${this.roomId}`);
+            
+        } catch (err) {
+            console.error('复制失败:', err);
+            
+            // 显示房间号给用户手动复制
+            const roomIdSpan = document.getElementById('room-id-display');
+            if (roomIdSpan) {
+                // 创建临时选择
+                const range = document.createRange();
+                range.selectNode(roomIdSpan);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                this.uiManager.showWarning('自动复制失败，房间号已选中，请使用 Ctrl+C 手动复制');
+            } else {
+                this.uiManager.showError(`复制失败，房间号: ${this.roomId}`);
+            }
+        }
     }
 
     // 断开连接（清理方法）

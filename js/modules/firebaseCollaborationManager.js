@@ -220,10 +220,8 @@ export class FirebaseCollaborationManager {
             // 同步当前游戏状态到Firebase
             await this.syncCurrentGameState();
             
-            // 显示房间状态组件
-            if (typeof window.showRoomStatus === 'function') {
-                window.showRoomStatus(roomId, 'Firebase');
-            }
+            // 显示房间信息组件
+            this.showRoomInfo();
             
             console.log('✅ 房间创建成功:', roomId);
             
@@ -303,10 +301,8 @@ export class FirebaseCollaborationManager {
             // 同步房间状态到本地
             await this.syncRoomStateToLocal(roomData.gameState);
             
-            // 显示房间状态组件
-            if (typeof window.showRoomStatus === 'function') {
-                window.showRoomStatus(roomId, 'Firebase');
-            }
+            // 显示房间信息组件
+            this.showRoomInfo();
             
             console.log('✅ 成功加入房间:', roomId);
             
@@ -358,10 +354,8 @@ export class FirebaseCollaborationManager {
             this.usersRef = null;
             this.gameStateRef = null;
             
-            // 隐藏房间状态组件
-            if (typeof window.hideRoomStatus === 'function') {
-                window.hideRoomStatus();
-            }
+            // 隐藏房间信息
+            this.hideRoomInfo();
             
             console.log('✅ 已离开房间');
             
@@ -924,120 +918,213 @@ export class FirebaseCollaborationManager {
         }
     }
     
-    // 绑定本地事件（与现有事件系统集成）
-    bindLocalEvents() {
-        // 监听本地线路状态变化
-        document.addEventListener('lineStateChanged', (event) => {
-            const { lineNumber, state, killTime } = event.detail;
-            
-            // 标记为本地更新，避免循环
-            this._isLocalUpdate = true;
-            
-            // 同步到Firebase
-            this.syncLineStateChange(lineNumber, state, killTime);
+    // 显示房间信息
+    showRoomInfo() {
+        // 移除已存在的房间信息
+        const existingRoomInfo = document.getElementById('room-info');
+        if (existingRoomInfo) {
+            existingRoomInfo.remove();
+        }
+
+        const roomInfo = document.createElement('div');
+        roomInfo.id = 'room-info';
+        roomInfo.className = 'room-info';
+        roomInfo.innerHTML = `
+            <div class="room-header">
+                <h3>🏠 Firebase协作房间</h3>
+                <button id="leave-room-btn" class="leave-room-btn">离开房间</button>
+            </div>
+            <div class="room-details">
+                <p><strong>房间号:</strong> <span id="room-id-display">${this.roomId}</span> 
+                   <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button></p>
+                <p><strong>状态:</strong> <span id="connection-status">${this.isConnected ? '🟢 在线' : '🔴 离线'}</span></p>
+                <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
+                <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
+                <div id="users-list" class="users-list"></div>
+            </div>
+        `;
+        
+        // 添加样式
+        roomInfo.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: white;
+            border: 2px solid ${this.isHost ? '#e74c3c' : '#3498db'};
+            border-radius: 10px;
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+            z-index: 10000;
+            min-width: 280px;
+            max-width: 350px;
+        `;
+        
+        document.body.appendChild(roomInfo);
+        
+        // 绑定事件
+        document.getElementById('leave-room-btn').addEventListener('click', () => {
+            this.leaveRoom();
         });
         
-        console.log('✅ Firebase协作事件绑定完成');
+        document.getElementById('copy-room-id').addEventListener('click', async () => {
+            await this.copyRoomId();
+        });
+        
+        // 更新用户列表
+        this.updateRoomInfoUsersList();
     }
 
-    // 启用模拟模式
-    enableDemoMode() {
-        console.log('🎭 启用Firebase模拟模式');
-        this.isDemoMode = true;
-        this.isInitialized = true;
-        this.isConnected = true;
-        this.userId = 'demo_user_' + Math.random().toString(36).substring(7);
-        this.userName = '演示用户';
-        this.userColor = '#3498db';
+    // 复制房间号
+    async copyRoomId() {
+        const copyBtn = document.getElementById('copy-room-id');
         
-        // 模拟Firebase功能
-        console.log('✅ Firebase模拟模式初始化完成');
-    }
-
-    // 处理初始化错误
-    handleInitError(error) {
-        console.error('Firebase初始化错误详情:', error);
+        if (!this.roomId) {
+            this.showTemporaryMessage('没有房间号可复制', 'error');
+            return;
+        }
         
-        if (error.code === 'auth/network-request-failed') {
-            this.showNetworkError();
-        } else if (error.code === 'permission-denied') {
-            this.showPermissionError();
-        } else {
-            this.showGenericError(error);
+        try {
+            // 优先使用现代Clipboard API
+            if (navigator.clipboard && window.isSecureContext) {
+                await navigator.clipboard.writeText(this.roomId);
+            } else {
+                // 降级使用传统方法
+                const textArea = document.createElement('textarea');
+                textArea.value = this.roomId;
+                textArea.style.position = 'fixed';
+                textArea.style.opacity = '0';
+                document.body.appendChild(textArea);
+                textArea.select();
+                textArea.setSelectionRange(0, 99999); // 移动端兼容
+                const success = document.execCommand('copy');
+                document.body.removeChild(textArea);
+                
+                if (!success) {
+                    throw new Error('execCommand failed');
+                }
+            }
+            
+            // 显示复制成功动画
+            if (copyBtn) {
+                const originalText = copyBtn.textContent;
+                copyBtn.textContent = '✅';
+                copyBtn.style.background = '#28a745';
+                
+                setTimeout(() => {
+                    copyBtn.textContent = originalText;
+                    copyBtn.style.background = '';
+                }, 1000);
+            }
+            
+            this.showTemporaryMessage(`房间号已复制到剪贴板: ${this.roomId}`, 'success');
+            
+        } catch (err) {
+            console.error('复制失败:', err);
+            
+            // 显示房间号给用户手动复制
+            const roomIdSpan = document.getElementById('room-id-display');
+            if (roomIdSpan) {
+                // 创建临时选择
+                const range = document.createRange();
+                range.selectNode(roomIdSpan);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+                
+                this.showTemporaryMessage('自动复制失败，房间号已选中，请使用 Ctrl+C 手动复制', 'warning');
+            } else {
+                this.showTemporaryMessage(`复制失败，房间号: ${this.roomId}`, 'error');
+            }
         }
     }
 
-    // 显示网络错误
-    showNetworkError() {
-        const dialog = document.createElement('div');
-        dialog.className = 'dialog-overlay';
-        dialog.innerHTML = `
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h3>🌐 网络连接错误</h3>
-                    <button class="dialog-close" onclick="this.closest('.dialog-overlay').remove()">×</button>
-                </div>
-                <div class="dialog-body">
-                    <p>无法连接到Firebase服务器，可能原因：</p>
-                    <ul>
-                        <li>网络连接不稳定</li>
-                        <li>防火墙阻止了连接</li>
-                        <li>Firebase服务暂时不可用</li>
-                    </ul>
-                    <p>建议：检查网络连接后刷新页面重试，或使用本地P2P协作功能。</p>
-                </div>
-            </div>
+    // 更新房间信息用户列表
+    updateRoomInfoUsersList() {
+        const usersList = document.getElementById('users-list');
+        const connectionCount = document.getElementById('connection-count');
+        
+        if (!usersList || !connectionCount) {
+            return;
+        }
+        
+        // 清空现有列表
+        usersList.innerHTML = '';
+        
+        // 添加当前用户
+        const currentUserDiv = document.createElement('div');
+        currentUserDiv.className = 'user-item';
+        currentUserDiv.innerHTML = `
+            <div class="user-color" style="background-color: ${this.userColor || '#3498db'}"></div>
+            <span class="user-name">${this.userName || '我'} ${this.isHost ? '(房主)' : ''}</span>
+            <span class="user-status connected">在线</span>
         `;
-        document.body.appendChild(dialog);
+        usersList.appendChild(currentUserDiv);
+        
+        // 更新连接数（这里可以后续扩展来显示真实的用户数）
+        connectionCount.textContent = '1 人在线';
     }
 
-    // 显示权限错误
-    showPermissionError() {
-        const dialog = document.createElement('div');
-        dialog.className = 'dialog-overlay';
-        dialog.innerHTML = `
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h3>🔒 权限错误</h3>
-                    <button class="dialog-close" onclick="this.closest('.dialog-overlay').remove()">×</button>
-                </div>
-                <div class="dialog-body">
-                    <p>Firebase访问权限被拒绝，可能原因：</p>
-                    <ul>
-                        <li>Firebase项目配置不正确</li>
-                        <li>数据库安全规则过于严格</li>
-                        <li>匿名登录未启用</li>
-                    </ul>
-                    <p>请参考 <code>FIREBASE_SETUP.md</code> 文档正确配置Firebase项目。</p>
-                </div>
-            </div>
+    // 显示临时消息
+    showTemporaryMessage(message, type = 'success') {
+        // 移除已存在的消息
+        const existingMessage = document.querySelector('.temporary-message');
+        if (existingMessage) {
+            existingMessage.remove();
+        }
+        
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `temporary-message ${type}`;
+        messageDiv.textContent = message;
+        messageDiv.style.cssText = `
+            position: fixed;
+            top: 100px;
+            right: 20px;
+            padding: 12px 20px;
+            border-radius: 8px;
+            color: white;
+            font-weight: 500;
+            z-index: 10001;
+            max-width: 300px;
+            word-wrap: break-word;
+            animation: messageSlideIn 0.3s ease;
         `;
-        document.body.appendChild(dialog);
+        
+        // 设置背景颜色
+        switch (type) {
+            case 'success':
+                messageDiv.style.background = '#28a745';
+                break;
+            case 'warning':
+                messageDiv.style.background = '#ffc107';
+                messageDiv.style.color = '#212529';
+                break;
+            case 'error':
+                messageDiv.style.background = '#dc3545';
+                break;
+            default:
+                messageDiv.style.background = '#17a2b8';
+        }
+        
+        document.body.appendChild(messageDiv);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            messageDiv.style.animation = 'messageSlideOut 0.3s ease';
+            setTimeout(() => {
+                if (document.body.contains(messageDiv)) {
+                    document.body.removeChild(messageDiv);
+                }
+            }, 300);
+        }, 3000);
     }
 
-    // 显示通用错误
-    showGenericError(error) {
-        const dialog = document.createElement('div');
-        dialog.className = 'dialog-overlay';
-        dialog.innerHTML = `
-            <div class="dialog-content">
-                <div class="dialog-header">
-                    <h3>❌ Firebase初始化失败</h3>
-                    <button class="dialog-close" onclick="this.closest('.dialog-overlay').remove()">×</button>
-                </div>
-                <div class="dialog-body">
-                    <p>Firebase服务初始化失败：</p>
-                    <pre style="background: #f8f9fa; padding: 10px; border-radius: 5px; color: #333; white-space: pre-wrap;">${error.message}</pre>
-                    <p>请检查：</p>
-                    <ul>
-                        <li>Firebase配置是否正确</li>
-                        <li>网络连接是否正常</li>
-                        <li>Firebase项目是否已正确设置</li>
-                    </ul>
-                    <p>详细设置说明请参考 <code>FIREBASE_SETUP.md</code> 文档。</p>
-                </div>
-            </div>
-        `;
-        document.body.appendChild(dialog);
+    // 隐藏房间信息
+    hideRoomInfo() {
+        const roomInfo = document.getElementById('room-info');
+        if (roomInfo) {
+            roomInfo.remove();
+        }
     }
+
+    // ...existing code...
 }

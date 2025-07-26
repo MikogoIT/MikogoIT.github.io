@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>房间状态调试</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            background: #f5f5f5;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            padding: 20px;
+        }
+        .debug-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .debug-btn {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        .debug-btn:hover {
+            background: #0056b3;
+        }
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <!-- 房间状态组件 -->
+    <div id="room-status-widget" class="room-status-widget" style="display: none;">
+        <div class="room-status-header">
+            <span class="room-status-icon">🏠</span>
+            <span class="room-status-title">协作房间</span>
+            <button class="room-status-close" onclick="hideRoomStatus()">×</button>
+        </div>
+        <div class="room-status-content">
+            <div class="room-info">
+                <div class="room-id-section">
+                    <label>房间号: <small style="color: rgba(255,255,255,0.6);">(点击📋复制)</small></label>
+                    <div class="room-id-display">
+                        <input type="text" id="room-id-input" readonly class="room-id-input" placeholder="暂无房间号">
+                        <button class="copy-btn" onclick="copyRoomId()" title="复制房间号">📋</button>
+                    </div>
+                </div>
+                <div class="room-details">
+                    <div class="room-detail-item">
+                        <span class="label">状态:</span>
+                        <span id="room-connection-status" class="status">离线</span>
+                    </div>
+                    <div class="room-detail-item">
+                        <span class="label">用户:</span>
+                        <span id="room-user-count" class="count">0</span>
+                    </div>
+                    <div class="room-detail-item">
+                        <span class="label">类型:</span>
+                        <span id="room-type" class="type">-</span>
+                    </div>
+                </div>
+            </div>
+            <div class="room-actions">
+                <button class="action-btn small secondary" onclick="leaveRoom()">离开房间</button>
+                <button class="action-btn small primary" onclick="showRoomDetails()">房间详情</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="debug-container">
+        <h1>🔧 房间状态组件调试</h1>
+        
+        <div class="debug-section">
+            <h2>测试操作</h2>
+            <button class="debug-btn" onclick="testShowRoom()">显示测试房间</button>
+            <button class="debug-btn" onclick="testShowLongRoomId()">显示长房间号</button>
+            <button class="debug-btn" onclick="testShowEmptyRoom()">显示空房间号</button>
+            <button class="debug-btn" onclick="hideRoomStatus()">隐藏房间</button>
+            <button class="debug-btn" onclick="testCopyFunction()">测试复制功能</button>
+            <button class="debug-btn" onclick="debugElements()">检查DOM元素</button>
+            <button class="debug-btn" onclick="clearLog()">清空日志</button>
+        </div>
+
+        <div class="log-area" id="log-area">
+            调试日志将显示在这里...<br>
+        </div>
+
+        <div class="debug-section">
+            <h2>当前状态</h2>
+            <p>房间状态组件显示: <span id="widget-visible">否</span></p>
+            <p>房间号输入框值: <span id="room-id-value">空</span></p>
+            <p>房间号输入框样式: <span id="room-id-style">检查中...</span></p>
+        </div>
+    </div>
+
+    <script>
+        // 日志功能
+        function log(message) {
+            const logArea = document.getElementById('log-area');
+            const timestamp = new Date().toLocaleTimeString();
+            logArea.innerHTML += `[${timestamp}] ${message}<br>`;
+            logArea.scrollTop = logArea.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog() {
+            document.getElementById('log-area').innerHTML = '日志已清空<br>';
+        }
+
+        // 当前房间信息
+        let currentRoomInfo = {
+            roomId: null,
+            type: null,
+            userCount: 0,
+            isConnected: false
+        };
+
+        // 显示房间状态组件
+        function showRoomStatus(roomId, type = 'Firebase') {
+            log(`showRoomStatus 被调用，参数: roomId="${roomId}", type="${type}"`);
+            
+            currentRoomInfo.roomId = roomId;
+            currentRoomInfo.type = type;
+            currentRoomInfo.isConnected = true;
+            
+            const widget = document.getElementById('room-status-widget');
+            const roomIdInput = document.getElementById('room-id-input');
+            const roomType = document.getElementById('room-type');
+            const connectionStatus = document.getElementById('room-connection-status');
+            
+            log(`DOM 元素查找结果: widget=${!!widget}, roomIdInput=${!!roomIdInput}, roomType=${!!roomType}, connectionStatus=${!!connectionStatus}`);
+            
+            if (roomIdInput) {
+                log(`设置房间号输入框值: "${roomId}"`);
+                roomIdInput.value = roomId;
+                log(`输入框值设置后: "${roomIdInput.value}"`);
+                
+                // 检查样式
+                const computedStyle = window.getComputedStyle(roomIdInput);
+                log(`输入框计算样式 - color: ${computedStyle.color}, background: ${computedStyle.backgroundColor}`);
+            } else {
+                log('❌ 房间号输入框未找到');
+            }
+            
+            if (roomType) {
+                roomType.textContent = type;
+                log(`房间类型设置为: ${type}`);
+            }
+            
+            if (connectionStatus) {
+                connectionStatus.textContent = '在线';
+                connectionStatus.className = 'status online';
+                log('连接状态设置为: 在线');
+            }
+            
+            if (widget) {
+                widget.style.display = 'block';
+                log('房间状态组件显示');
+            } else {
+                log('❌ 房间状态组件未找到');
+            }
+            
+            updateStatus();
+            log('✅ 房间状态组件设置完成');
+        }
+
+        // 隐藏房间状态组件
+        function hideRoomStatus() {
+            log('hideRoomStatus 被调用');
+            const widget = document.getElementById('room-status-widget');
+            if (widget) {
+                widget.style.display = 'none';
+                log('房间状态组件已隐藏');
+            }
+            
+            currentRoomInfo = {
+                roomId: null,
+                type: null,
+                userCount: 0,
+                isConnected: false
+            };
+            
+            updateStatus();
+        }
+
+        // 更新房间用户数
+        function updateRoomUserCount(count) {
+            log(`updateRoomUserCount 被调用: ${count}`);
+            const userCountElement = document.getElementById('room-user-count');
+            if (userCountElement) {
+                userCountElement.textContent = count;
+                currentRoomInfo.userCount = count;
+                log(`用户数已更新: ${count}`);
+            }
+        }
+
+        // 更新连接状态
+        function updateConnectionStatus(isConnected) {
+            log(`updateConnectionStatus 被调用: ${isConnected}`);
+            const statusElement = document.getElementById('room-connection-status');
+            if (statusElement) {
+                currentRoomInfo.isConnected = isConnected;
+                if (isConnected) {
+                    statusElement.textContent = '在线';
+                    statusElement.className = 'status online';
+                } else {
+                    statusElement.textContent = '离线';
+                    statusElement.className = 'status offline';
+                }
+                log(`连接状态已更新: ${isConnected ? '在线' : '离线'}`);
+            }
+        }
+
+        // 复制房间号
+        async function copyRoomId() {
+            log('copyRoomId 被调用');
+            const roomIdInput = document.getElementById('room-id-input');
+            const copyBtn = document.querySelector('.copy-btn');
+            
+            if (roomIdInput && roomIdInput.value) {
+                const roomId = roomIdInput.value;
+                log(`尝试复制房间号: "${roomId}"`);
+                
+                try {
+                    // 优先使用现代Clipboard API
+                    if (navigator.clipboard && window.isSecureContext) {
+                        await navigator.clipboard.writeText(roomId);
+                        log('使用 Clipboard API 复制成功');
+                    } else {
+                        // 降级使用传统方法
+                        roomIdInput.select();
+                        roomIdInput.setSelectionRange(0, 99999);
+                        document.execCommand('copy');
+                        log('使用 execCommand 复制成功');
+                    }
+                    
+                    // 显示复制成功动画
+                    if (copyBtn) {
+                        copyBtn.classList.add('copied');
+                        copyBtn.textContent = '✅';
+                        
+                        setTimeout(() => {
+                            copyBtn.classList.remove('copied');
+                            copyBtn.textContent = '📋';
+                        }, 1000);
+                    }
+                    
+                    log('✅ 复制成功');
+                    
+                } catch (err) {
+                    log(`❌ 复制失败: ${err.message}`);
+                    
+                    // 备用方法：选择文本让用户手动复制
+                    roomIdInput.select();
+                    roomIdInput.setSelectionRange(0, 99999);
+                }
+            } else {
+                log('❌ 没有房间号可复制');
+            }
+        }
+
+        // 其他功能函数
+        function leaveRoom() {
+            log('leaveRoom 被调用');
+            if (confirm('确定要离开当前房间吗？')) {
+                hideRoomStatus();
+            }
+        }
+
+        function showRoomDetails() {
+            log('showRoomDetails 被调用');
+            const details = `房间详情：
+房间号: ${currentRoomInfo.roomId}
+类型: ${currentRoomInfo.type}
+用户数: ${currentRoomInfo.userCount}
+状态: ${currentRoomInfo.isConnected ? '在线' : '离线'}`;
+            
+            alert(details);
+        }
+
+        // 测试函数
+        function testShowRoom() {
+            const testRoomId = 'test_room_' + Math.random().toString(36).substring(7);
+            log(`测试显示房间: ${testRoomId}`);
+            showRoomStatus(testRoomId, 'Firebase测试');
+            updateRoomUserCount(1);
+        }
+
+        function testShowLongRoomId() {
+            const longRoomId = 'very_long_room_id_with_many_characters_' + Math.random().toString(36).substring(7);
+            log(`测试显示长房间号: ${longRoomId}`);
+            showRoomStatus(longRoomId, 'Firebase');
+            updateRoomUserCount(3);
+        }
+
+        function testShowEmptyRoom() {
+            log('测试显示空房间号');
+            showRoomStatus('', 'Firebase');
+        }
+
+        function testCopyFunction() {
+            log('测试复制功能');
+            if (currentRoomInfo.roomId) {
+                copyRoomId();
+            } else {
+                log('❌ 当前没有房间号，先显示一个测试房间');
+                testShowRoom();
+                setTimeout(() => {
+                    copyRoomId();
+                }, 100);
+            }
+        }
+
+        function debugElements() {
+            log('=== DOM 元素调试信息 ===');
+            
+            const widget = document.getElementById('room-status-widget');
+            const roomIdInput = document.getElementById('room-id-input');
+            
+            log(`房间状态组件存在: ${!!widget}`);
+            if (widget) {
+                log(`组件显示状态: ${widget.style.display}`);
+                log(`组件类名: ${widget.className}`);
+            }
+            
+            log(`房间号输入框存在: ${!!roomIdInput}`);
+            if (roomIdInput) {
+                log(`输入框值: "${roomIdInput.value}"`);
+                log(`输入框占位符: "${roomIdInput.placeholder}"`);
+                log(`输入框类名: ${roomIdInput.className}`);
+                
+                const computedStyle = window.getComputedStyle(roomIdInput);
+                log(`计算样式 - color: ${computedStyle.color}`);
+                log(`计算样式 - backgroundColor: ${computedStyle.backgroundColor}`);
+                log(`计算样式 - fontSize: ${computedStyle.fontSize}`);
+                log(`计算样式 - fontFamily: ${computedStyle.fontFamily}`);
+            }
+            
+            log('=== 调试信息结束 ===');
+        }
+
+        function updateStatus() {
+            const widget = document.getElementById('room-status-widget');
+            const roomIdInput = document.getElementById('room-id-input');
+            
+            document.getElementById('widget-visible').textContent = 
+                widget && widget.style.display !== 'none' ? '是' : '否';
+            
+            document.getElementById('room-id-value').textContent = 
+                roomIdInput ? `"${roomIdInput.value}"` : '元素不存在';
+            
+            if (roomIdInput) {
+                const computedStyle = window.getComputedStyle(roomIdInput);
+                document.getElementById('room-id-style').textContent = 
+                    `color: ${computedStyle.color}, background: ${computedStyle.backgroundColor}`;
+            }
+        }
+
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('页面加载完成，开始调试');
+            updateStatus();
+            debugElements();
+        });
+
+        // 定期更新状态显示
+        setInterval(updateStatus, 1000);
+    </script>
+</body>
+</html>
