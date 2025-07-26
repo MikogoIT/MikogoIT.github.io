@@ -220,13 +220,11 @@ export class ChartManager {
             // 清除画布
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
             
-            // 获取数据（只显示前12个小时避免图表过于拥挤）
+            // 获取完整24小时数据
             const hourlyData = this.statsManager.getHourlyKillData(24);
-            const displayLabels = hourlyData.labels.slice(0, 12);
-            const displayData = hourlyData.data.slice(0, 12);
             
-            // 绘制柱状图
-            this.drawBarChart(displayLabels, displayData, '24小时击杀效率分析 (0-11点)', '#f1c40f');
+            // 绘制柱状图 - 显示完整24小时
+            this.drawBarChart(hourlyData.labels, hourlyData.data, '24小时击杀效率分析 (0-23点)', '#f1c40f');
             
         } catch (error) {
             console.error('渲染小时图表出错:', error);
@@ -320,8 +318,15 @@ export class ChartManager {
         const chartWidth = width - padding * 2;
         const chartHeight = height - padding * 2;
         const maxValue = Math.max(...data, 1);
-        const barWidth = chartWidth / labels.length * 0.8;
-        const barSpacing = chartWidth / labels.length * 0.2;
+        
+        // 根据数据点数量调整柱子宽度比例
+        let barWidthRatio = 0.8;
+        if (labels.length > 20) {
+            barWidthRatio = 0.9; // 更宽的柱子，更少的间距
+        }
+        
+        const barWidth = chartWidth / labels.length * barWidthRatio;
+        const barSpacing = chartWidth / labels.length * (1 - barWidthRatio);
         
         // 设置字体
         this.ctx.font = '14px Arial';
@@ -402,12 +407,30 @@ export class ChartManager {
     // 绘制X轴标签（柱状图）
     drawXAxisLabelsForBars(labels, width, height, padding, chartWidth) {
         this.ctx.fillStyle = '#bdc3c7';
-        this.ctx.font = '11px Arial';
+        
+        // 根据标签数量调整字体大小
+        let fontSize = 11;
+        if (labels.length > 20) {
+            fontSize = 9;
+        } else if (labels.length > 15) {
+            fontSize = 10;
+        }
+        
+        this.ctx.font = `${fontSize}px Arial`;
         this.ctx.textAlign = 'center';
         
         labels.forEach((label, index) => {
             const x = padding + (chartWidth / labels.length) * index + (chartWidth / labels.length) / 2;
-            this.ctx.fillText(label, x, height - padding + 20);
+            
+            // 对于24小时数据，可能需要旋转或简化标签
+            if (labels.length === 24) {
+                // 只显示偶数小时，减少拥挤
+                if (index % 2 === 0) {
+                    this.ctx.fillText(label, x, height - padding + 20);
+                }
+            } else {
+                this.ctx.fillText(label, x, height - padding + 20);
+            }
         });
     }
 
