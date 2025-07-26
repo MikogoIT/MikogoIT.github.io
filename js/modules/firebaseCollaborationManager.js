@@ -746,10 +746,17 @@ export class FirebaseCollaborationManager {
             };
             
             // 更新Firebase
-            await this.gameStateRef.update({
+            const updateData = {
                 lineStates: lineStates,
                 statistics: statistics
-            });
+            };
+            
+            if (this.firebaseUtils && this.firebaseUtils.update && this.gameStateRef) {
+                await this.firebaseUtils.update(this.gameStateRef, updateData);
+            } else {
+                console.warn('Firebase更新功能不可用，跳过同步');
+                return;
+            }
             
             console.log('✅ 游戏状态同步完成，同步了', Object.keys(lineStates).length, '个线路状态');
             
@@ -1444,6 +1451,101 @@ export class FirebaseCollaborationManager {
         if (panel) {
             panel.remove();
             console.log('✅ 悬浮协作面板已隐藏');
+        }
+    }
+
+    // 显示临时消息
+    showTemporaryMessage(message, type = 'info') {
+        console.log(`💬 ${type.toUpperCase()}: ${message}`);
+        
+        // 创建消息元素
+        const messageDiv = document.createElement('div');
+        messageDiv.className = `temporary-message ${type}`;
+        messageDiv.textContent = message;
+        
+        // 添加样式
+        messageDiv.style.cssText = `
+            position: fixed !important;
+            top: 80px !important;
+            right: 20px !important;
+            background: ${this.getMessageColor(type)} !important;
+            color: white !important;
+            padding: 12px 20px !important;
+            border-radius: 8px !important;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2) !important;
+            z-index: 10001 !important;
+            font-family: Arial, sans-serif !important;
+            font-size: 14px !important;
+            max-width: 300px !important;
+            word-wrap: break-word !important;
+            opacity: 0 !important;
+            transition: opacity 0.3s ease !important;
+        `;
+        
+        document.body.appendChild(messageDiv);
+        
+        // 显示动画
+        setTimeout(() => {
+            messageDiv.style.opacity = '1';
+        }, 10);
+        
+        // 自动隐藏
+        setTimeout(() => {
+            messageDiv.style.opacity = '0';
+            setTimeout(() => {
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    // 获取消息颜色
+    getMessageColor(type) {
+        switch (type) {
+            case 'success': return '#27ae60';
+            case 'error': return '#e74c3c';
+            case 'warning': return '#f39c12';
+            case 'info':
+            default: return '#3498db';
+        }
+    }
+
+    // 复制房间号到剪贴板
+    async copyRoomId() {
+        if (!this.roomId) {
+            this.showTemporaryMessage('当前没有加入任何房间', 'warning');
+            return false;
+        }
+
+        try {
+            await navigator.clipboard.writeText(this.roomId);
+            this.showTemporaryMessage('房间号已复制到剪贴板', 'success');
+            console.log('📋 房间号已复制:', this.roomId);
+            return true;
+        } catch (error) {
+            console.error('复制房间号失败:', error);
+            
+            // 降级方案：创建临时输入框
+            const tempInput = document.createElement('input');
+            tempInput.value = this.roomId;
+            tempInput.style.position = 'absolute';
+            tempInput.style.left = '-9999px';
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            
+            try {
+                document.execCommand('copy');
+                this.showTemporaryMessage('房间号已复制到剪贴板', 'success');
+                console.log('📋 房间号已复制（降级方案）:', this.roomId);
+                return true;
+            } catch (fallbackError) {
+                this.showTemporaryMessage('复制失败，请手动复制房间号', 'error');
+                console.error('复制房间号失败（降级方案）:', fallbackError);
+                return false;
+            } finally {
+                document.body.removeChild(tempInput);
+            }
         }
     }
 }
