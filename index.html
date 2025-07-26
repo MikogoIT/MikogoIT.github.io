@@ -253,19 +253,32 @@
             existingCells.forEach(cell => {
                 if (!cell.onclick) {
                     cell.addEventListener('click', function() {
-                        this.classList.toggle('killed');
-                        console.log('点击单元格:', this.dataset.line);
+                        // 尝试使用主应用的事件处理器，如果不存在则使用备用方式
+                        if (window.goldPigApp && window.goldPigApp.eventManager) {
+                            const mockEvent = { currentTarget: this };
+                            window.goldPigApp.eventManager.handleCellClick(mockEvent);
+                        } else {
+                            handleCellClickFallback(this);
+                        }
                     });
                     
                     cell.addEventListener('contextmenu', function(e) {
                         e.preventDefault();
-                        this.classList.toggle('killed-unknown');
-                        console.log('右击单元格:', this.dataset.line);
+                        if (window.goldPigApp && window.goldPigApp.eventManager) {
+                            const mockEvent = { currentTarget: this, preventDefault: () => {} };
+                            window.goldPigApp.eventManager.handleCellRightClick(mockEvent);
+                        } else {
+                            handleCellRightClickFallback(this);
+                        }
                     });
                     
                     cell.addEventListener('dblclick', function() {
-                        this.classList.remove('killed', 'killed-unknown', 'refreshed');
-                        console.log('双击单元格:', this.dataset.line);
+                        if (window.goldPigApp && window.goldPigApp.eventManager) {
+                            const mockEvent = { currentTarget: this };
+                            window.goldPigApp.eventManager.handleCellDoubleClick(mockEvent);
+                        } else {
+                            handleCellDoubleClickFallback(this);
+                        }
                     });
                 }
             });
@@ -295,19 +308,38 @@
                 
                 // 绑定事件
                 cell.addEventListener('click', function() {
-                    this.classList.toggle('killed');
-                    console.log('点击单元格:', this.dataset.line);
+                    // 尝试使用主应用的事件处理器，如果不存在则使用备用方式
+                    if (window.goldPigApp && window.goldPigApp.eventManager) {
+                        // 创建模拟事件
+                        const mockEvent = { currentTarget: this };
+                        window.goldPigApp.eventManager.handleCellClick(mockEvent);
+                    } else {
+                        // 备用处理方式
+                        handleCellClickFallback(this);
+                    }
                 });
                 
                 cell.addEventListener('contextmenu', function(e) {
                     e.preventDefault();
-                    this.classList.toggle('killed-unknown');
-                    console.log('右击单元格:', this.dataset.line);
+                    // 尝试使用主应用的事件处理器
+                    if (window.goldPigApp && window.goldPigApp.eventManager) {
+                        const mockEvent = { currentTarget: this, preventDefault: () => {} };
+                        window.goldPigApp.eventManager.handleCellRightClick(mockEvent);
+                    } else {
+                        // 备用处理方式
+                        handleCellRightClickFallback(this);
+                    }
                 });
                 
                 cell.addEventListener('dblclick', function() {
-                    this.classList.remove('killed', 'killed-unknown', 'refreshed');
-                    console.log('双击单元格:', this.dataset.line);
+                    // 尝试使用主应用的事件处理器
+                    if (window.goldPigApp && window.goldPigApp.eventManager) {
+                        const mockEvent = { currentTarget: this };
+                        window.goldPigApp.eventManager.handleCellDoubleClick(mockEvent);
+                    } else {
+                        // 备用处理方式
+                        handleCellDoubleClickFallback(this);
+                    }
                 });
                 
                 currentRow.appendChild(cell);
@@ -329,6 +361,176 @@
             }
         }
         
+        // 备用事件处理函数
+        function handleCellClickFallback(cell) {
+            const lineNumber = cell.dataset.line;
+            console.log('备用处理-点击单元格:', lineNumber);
+            
+            // 如果已经是击杀状态，则忽略
+            if (cell.classList.contains('killed') || cell.classList.contains('killed-unknown')) {
+                return;
+            }
+            
+            // 移除刷新状态
+            if (cell.classList.contains('refreshed')) {
+                cell.classList.remove('refreshed');
+            }
+            
+            // 添加击杀状态
+            cell.classList.add('killed');
+            
+            // 记录击杀时间和状态
+            const killTime = new Date().getTime();
+            localStorage.setItem(`pigTimer_line-${lineNumber}`, 'killed');
+            localStorage.setItem(`pigTimer_killTime-${lineNumber}`, killTime);
+            
+            // 开始倒计时
+            startTimerFallback(lineNumber, killTime, cell);
+            
+            // 更新统计
+            updateStatsFallback();
+        }
+        
+        function handleCellRightClickFallback(cell) {
+            const lineNumber = cell.dataset.line;
+            console.log('备用处理-右击单元格:', lineNumber);
+            
+            // 如果已经是击杀状态，则忽略
+            if (cell.classList.contains('killed') || cell.classList.contains('killed-unknown')) {
+                return;
+            }
+            
+            // 移除刷新状态
+            if (cell.classList.contains('refreshed')) {
+                cell.classList.remove('refreshed');
+            }
+            
+            // 添加击杀未知状态
+            cell.classList.add('killed-unknown');
+            
+            // 记录状态（不记录时间）
+            localStorage.setItem(`pigTimer_line-${lineNumber}`, 'killed-unknown');
+            
+            // 更新统计
+            updateStatsFallback();
+        }
+        
+        function handleCellDoubleClickFallback(cell) {
+            const lineNumber = cell.dataset.line;
+            console.log('备用处理-双击单元格:', lineNumber);
+            
+            // 移除所有状态
+            cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+            
+            // 清除计时器
+            const timerDisplay = document.getElementById(`timer-${lineNumber}`);
+            if (timerDisplay) {
+                timerDisplay.textContent = '';
+            }
+            
+            // 清除存储
+            localStorage.removeItem(`pigTimer_line-${lineNumber}`);
+            localStorage.removeItem(`pigTimer_killTime-${lineNumber}`);
+            
+            // 停止倒计时
+            if (window.fallbackTimers && window.fallbackTimers[lineNumber]) {
+                clearInterval(window.fallbackTimers[lineNumber]);
+                delete window.fallbackTimers[lineNumber];
+            }
+            
+            // 更新统计
+            updateStatsFallback();
+        }
+        
+        // 备用倒计时函数
+        function startTimerFallback(lineNumber, killTime, cell) {
+            if (!window.fallbackTimers) {
+                window.fallbackTimers = {};
+            }
+            
+            // 如果已有倒计时，先清除
+            if (window.fallbackTimers[lineNumber]) {
+                clearInterval(window.fallbackTimers[lineNumber]);
+            }
+            
+            const timerDisplay = document.getElementById(`timer-${lineNumber}`);
+            if (!timerDisplay) return;
+            
+            // 检查测试模式
+            const testMode = localStorage.getItem('pigTimer_testMode') === 'true';
+            const timerDuration = testMode ? 10000 : (24 * 60 * 60 * 1000); // 10秒或24小时
+            
+            window.fallbackTimers[lineNumber] = setInterval(() => {
+                const currentTime = new Date().getTime();
+                const elapsed = currentTime - killTime;
+                const remaining = timerDuration - elapsed;
+                
+                if (remaining <= 0) {
+                    // 倒计时结束
+                    clearInterval(window.fallbackTimers[lineNumber]);
+                    delete window.fallbackTimers[lineNumber];
+                    
+                    // 设置为刷新状态
+                    cell.classList.remove('killed');
+                    cell.classList.add('refreshed');
+                    timerDisplay.textContent = '';
+                    
+                    localStorage.setItem(`pigTimer_line-${lineNumber}`, 'refreshed');
+                    updateStatsFallback();
+                } else {
+                    // 显示剩余时间
+                    const hours = Math.floor(remaining / (60 * 60 * 1000));
+                    const minutes = Math.floor((remaining % (60 * 60 * 1000)) / (60 * 1000));
+                    const seconds = Math.floor((remaining % (60 * 1000)) / 1000);
+                    
+                    if (testMode) {
+                        timerDisplay.textContent = `${seconds}s`;
+                    } else {
+                        timerDisplay.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                    }
+                }
+            }, 1000);
+        }
+        
+        // 备用统计更新函数
+        function updateStatsFallback() {
+            let killedCount = 0;
+            let killedUnknownCount = 0;
+            let refreshedCount = 0;
+            let availableCount = 0;
+            
+            const cells = document.querySelectorAll('td[data-line]');
+            cells.forEach(cell => {
+                if (cell.classList.contains('killed')) {
+                    killedCount++;
+                } else if (cell.classList.contains('killed-unknown')) {
+                    killedUnknownCount++;
+                } else if (cell.classList.contains('refreshed')) {
+                    refreshedCount++;
+                } else {
+                    availableCount++;
+                }
+            });
+            
+            // 更新统计显示
+            const elements = {
+                'killed-count': killedCount,
+                'killed-unknown-count': killedUnknownCount,
+                'refreshed-count': refreshedCount,
+                'available-count': availableCount,
+                'total-lines': cells.length
+            };
+            
+            Object.entries(elements).forEach(([id, value]) => {
+                const element = document.getElementById(id);
+                if (element) {
+                    element.textContent = value;
+                }
+            });
+            
+            console.log('统计更新:', elements);
+        }
+        
         // 全局重置函数（备用）
         function resetAll() {
             console.log('执行全局重置');
@@ -339,11 +541,20 @@
                 if (timer) timer.textContent = '';
             });
             
+            // 清除所有倒计时
+            if (window.fallbackTimers) {
+                Object.values(window.fallbackTimers).forEach(timerId => clearInterval(timerId));
+                window.fallbackTimers = {};
+            }
+            
             // 清除本地存储
             for (let i = 1; i <= 400; i++) {
                 localStorage.removeItem(`pigTimer_line-${i}`);
                 localStorage.removeItem(`pigTimer_killTime-${i}`);
             }
+            
+            // 更新统计
+            updateStatsFallback();
             
             console.log('重置完成');
         }
@@ -358,11 +569,20 @@
                 if (timer) timer.textContent = '';
             });
             
+            // 清除所有倒计时
+            if (window.fallbackTimers) {
+                Object.values(window.fallbackTimers).forEach(timerId => clearInterval(timerId));
+                window.fallbackTimers = {};
+            }
+            
             // 清除倒计时存储但保留历史
             for (let i = 1; i <= 400; i++) {
                 localStorage.removeItem(`pigTimer_line-${i}`);
                 localStorage.removeItem(`pigTimer_killTime-${i}`);
             }
+            
+            // 更新统计
+            updateStatsFallback();
             
             console.log('倒计时重置完成');
         }
@@ -392,10 +612,63 @@
             if (cells.length < 400) {
                 console.log('表格不完整，使用备用生成器');
                 generateTableFallback();
+                
+                // 生成完成后恢复状态
+                setTimeout(() => {
+                    restoreStateFallback();
+                }, 500);
             } else {
                 console.log('表格已完整');
+                // 如果表格完整但主应用未工作，恢复状态
+                setTimeout(() => {
+                    if (!window.goldPigApp || !window.goldPigApp.initialized) {
+                        console.log('主应用未初始化，使用备用状态恢复');
+                        restoreStateFallback();
+                    }
+                }, 1000);
             }
         }, 3000); // 延迟3秒检查，给主应用足够时间初始化
+        
+        // 备用状态恢复函数
+        function restoreStateFallback() {
+            console.log('开始恢复状态');
+            const cells = document.querySelectorAll('td[data-line]');
+            
+            cells.forEach(cell => {
+                const lineNumber = cell.dataset.line;
+                const savedState = localStorage.getItem(`pigTimer_line-${lineNumber}`);
+                const killTime = localStorage.getItem(`pigTimer_killTime-${lineNumber}`);
+                
+                if (savedState) {
+                    if (savedState === 'killed' && killTime) {
+                        cell.classList.add('killed');
+                        const killTimeNum = parseInt(killTime);
+                        const currentTime = new Date().getTime();
+                        const testMode = localStorage.getItem('pigTimer_testMode') === 'true';
+                        const timerDuration = testMode ? 10000 : (24 * 60 * 60 * 1000);
+                        const elapsed = currentTime - killTimeNum;
+                        
+                        if (elapsed < timerDuration) {
+                            // 继续倒计时
+                            startTimerFallback(lineNumber, killTimeNum, cell);
+                        } else {
+                            // 时间已到，设为刷新状态
+                            cell.classList.remove('killed');
+                            cell.classList.add('refreshed');
+                            localStorage.setItem(`pigTimer_line-${lineNumber}`, 'refreshed');
+                        }
+                    } else if (savedState === 'killed-unknown') {
+                        cell.classList.add('killed-unknown');
+                    } else if (savedState === 'refreshed') {
+                        cell.classList.add('refreshed');
+                    }
+                }
+            });
+            
+            // 更新统计
+            updateStatsFallback();
+            console.log('状态恢复完成');
+        }
     </script>
     
     <!-- 调试脚本 -->
