@@ -516,10 +516,9 @@ export class UIManager {
                         if (window.app && window.app.statsManager) {
                             const success = window.app.statsManager.importData(jsonData);
                             if (success) {
-                                importStatus.innerHTML = '<span style="color: #27ae60;">✅ 导入成功！页面将刷新以加载新数据。</span>';
-                                setTimeout(() => {
-                                    window.location.reload();
-                                }, 2000);
+                                importStatus.innerHTML = '<span style="color: #27ae60;">✅ 导入成功！数据已恢复，格子状态和倒计时已更新。</span>';
+                                // 不再需要刷新页面，因为状态已经恢复
+                                console.log('导入完成，无需刷新页面');
                             } else {
                                 importStatus.innerHTML = '<span style="color: #e74c3c;">❌ 导入失败</span>';
                             }

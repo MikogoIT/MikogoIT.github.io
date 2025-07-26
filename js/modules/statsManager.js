@@ -723,6 +723,9 @@ export class StatsManager {
             // 更新统计
             this.updateStats();
             
+            // 恢复表格状态和倒计时
+            this.restoreTableStateAfterImport();
+            
             console.log('数据导入完成');
             return true;
             
@@ -730,6 +733,94 @@ export class StatsManager {
             console.error('数据导入失败:', error);
             alert('数据导入失败: ' + error.message);
             return false;
+        }
+    }
+
+    // 导入后恢复表格状态
+    restoreTableStateAfterImport() {
+        console.log('开始恢复表格状态...');
+        
+        const lineCells = document.querySelectorAll('td[data-line]');
+        let restoredCount = 0;
+        
+        lineCells.forEach(cell => {
+            const lineNumber = cell.dataset.line;
+            if (!lineNumber) return;
+            
+            // 清除所有状态类
+            cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+            
+            // 获取存储的状态
+            const state = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
+            const killTime = localStorage.getItem(`pigTimer_line_${lineNumber}_killTime`);
+            
+            if (state) {
+                console.log(`恢复线路${lineNumber}状态: ${state}`);
+                
+                // 恢复状态类
+                cell.classList.add(state);
+                
+                // 更新提示文本
+                const tooltip = cell.querySelector('.tooltip');
+                if (tooltip) {
+                    if (state === 'killed' || state === 'killed-unknown') {
+                        tooltip.textContent = '双击取消击杀状态';
+                    } else if (state === 'refreshed') {
+                        tooltip.textContent = '金猪已刷新！点击标记击杀';
+                    } else {
+                        tooltip.textContent = '点击标记金猪被击杀';
+                    }
+                }
+                
+                // 如果是击杀状态且有击杀时间，恢复倒计时
+                if (state === 'killed' && killTime) {
+                    const killTimeNum = parseInt(killTime);
+                    console.log(`恢复线路${lineNumber}倒计时，击杀时间: ${new Date(killTimeNum)}`);
+                    
+                    // 确保定时器元素存在
+                    let timerElement = cell.querySelector('.timer-display');
+                    if (!timerElement) {
+                        timerElement = document.createElement('div');
+                        timerElement.id = `timer-${lineNumber}`;
+                        timerElement.className = 'timer-display';
+                        cell.appendChild(timerElement);
+                    }
+                    
+                    // 启动倒计时（如果应用和定时器管理器可用）
+                    if (window.app && window.app.timerManager) {
+                        window.app.timerManager.startTimer(lineNumber, killTimeNum, null, cell, 
+                            (completedLine) => {
+                                if (window.app && window.app.eventManager) {
+                                    window.app.eventManager.onTimerComplete(completedLine);
+                                }
+                            });
+                    }
+                }
+                
+                restoredCount++;
+            }
+        });
+        
+        console.log(`表格状态恢复完成，共恢复 ${restoredCount} 个线路状态`);
+        
+        // 如果在协作房间中，同步状态给其他用户
+        if (window.app && window.app.collaborationManager && window.app.collaborationManager.roomId) {
+            console.log('检测到协作模式，同步导入的状态给其他用户');
+            this.syncImportedStateToCollaborators();
+        }
+    }
+    
+    // 同步导入的状态给协作用户
+    syncImportedStateToCollaborators() {
+        // 遍历所有状态并同步
+        for (let i = 1; i <= 400; i++) {
+            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
+            const killTime = localStorage.getItem(`pigTimer_line_${i}_killTime`);
+            
+            if (state && window.app.collaborationManager) {
+                const killTimeNum = killTime ? parseInt(killTime) : null;
+                window.app.collaborationManager.syncLineStateChange(i, state, killTimeNum);
+            }
         }
     }
 }
