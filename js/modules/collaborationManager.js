@@ -62,12 +62,6 @@ export class CollaborationManager {
             userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
             localStorage.setItem('collaboration_userId', userId);
         }
-        
-        // 在测试模式下，每个标签页使用不同的ID
-        if (this.isTestMode()) {
-            return this.getTestUserId();
-        }
-        
         return userId;
     }
 
@@ -78,15 +72,6 @@ export class CollaborationManager {
             userName = prompt('请输入您的用户名（用于多人协作）:') || `用户${Math.floor(Math.random() * 1000)}`;
             localStorage.setItem('collaboration_userName', userName);
         }
-        
-        // 在测试模式下，为不同标签页添加后缀
-        if (this.isTestMode()) {
-            const testSuffix = sessionStorage.getItem('collaboration_testSuffix') || 
-                              `_Tab${Math.floor(Math.random() * 100)}`;
-            sessionStorage.setItem('collaboration_testSuffix', testSuffix);
-            return userName + testSuffix;
-        }
-        
         return userName;
     }
 
@@ -127,63 +112,46 @@ export class CollaborationManager {
     // 连接到在线信令服务（可选）
     connectToOnlineSignaling() {
         try {
-            // 使用一个简单的WebSocket回声服务进行测试
-            // 注意：这个只是演示，实际需要专门的信令服务器
-            const signalingWs = new WebSocket('wss://echo.websocket.org/');
+            // 使用免费的WebSocket服务，如 wss://socketio-chat-h9jt.herokuapp.com/socket.io/
+            // 或者使用 Socket.IO 的免费实例
+            const signalingWs = new WebSocket('wss://ws.postman-echo.com/raw');
             
             signalingWs.onopen = () => {
                 console.log('在线信令服务已连接');
                 this.onlineSignaling = signalingWs;
-                
-                // 发送初始化消息
-                signalingWs.send(JSON.stringify({
-                    type: 'init',
-                    userId: this.userId,
-                    userName: this.userName
-                }));
             };
             
             signalingWs.onmessage = (event) => {
                 try {
                     const data = JSON.parse(event.data);
-                    console.log('收到在线信令消息:', data);
-                    
                     if (data.type === 'signaling') {
                         this.handleSignalingMessage(data.payload);
                     }
                 } catch (e) {
-                    console.log('忽略非JSON消息:', event.data);
+                    // 忽略非协作消息
                 }
             };
             
-            signalingWs.onerror = (error) => {
-                console.log('在线信令服务连接失败:', error);
-            };
-            
-            signalingWs.onclose = () => {
-                console.log('在线信令服务连接已关闭');
-                this.onlineSignaling = null;
+            signalingWs.onerror = () => {
+                console.log('在线信令服务连接失败，使用本地模式');
             };
             
         } catch (error) {
-            console.log('在线信令服务不可用:', error);
+            console.log('在线信令服务不可用，使用本地模式');
         }
     }
 
     // 发送信令消息
-    sendSignalingMessage(message = {}) {
+    sendSignalingMessage(message) {
         const signalingMessage = {
             ...message,
             sender: this.userId,
             timestamp: Date.now()
         };
         
-        console.log('发送信令消息:', signalingMessage.type, signalingMessage);
-        
         // 本地信令
         if (this.signalingChannel) {
             this.signalingChannel.postMessage(signalingMessage);
-            console.log('已通过本地信令发送');
         }
         
         // 在线信令
@@ -192,9 +160,6 @@ export class CollaborationManager {
                 type: 'signaling',
                 payload: signalingMessage
             }));
-            console.log('已通过在线信令发送');
-        } else {
-            console.log('在线信令不可用:', this.onlineSignaling ? this.onlineSignaling.readyState : '未连接');
         }
     }
 
@@ -241,8 +206,6 @@ export class CollaborationManager {
         this.roomId = 'room_' + Date.now().toString(36) + '_' + Math.random().toString(36).substr(2, 6);
         this.isHost = true;
         
-        console.log(`创建房间: ${this.roomId}, 房主: ${this.userId} (${this.userName})`);
-        
         // 初始化房间数据
         this.roomData = {
             users: new Map(),
@@ -258,8 +221,6 @@ export class CollaborationManager {
             isHost: true
         });
         
-        console.log('房间数据初始化完成:', this.roomData);
-        
         // 广播房间信息
         this.sendSignalingMessage({
             type: 'room-announcement',
@@ -272,7 +233,7 @@ export class CollaborationManager {
         this.uiManager.showSuccess(`房间创建成功！房间号: ${this.roomId}`);
         this.showRoomInfo();
         
-        console.log('房间已创建:', this.roomId, '当前是房主:', this.isHost);
+        console.log('房间已创建:', this.roomId);
     }
 
     // 加入房间
@@ -317,30 +278,14 @@ export class CollaborationManager {
     // 处理加入请求（房主处理）
     handleJoinRequest(message) {
         console.log('处理加入请求:', message);
-        console.log('当前用户状态:', {
-            userId: this.userId,
-            isHost: this.isHost,
-            roomId: this.roomId,
-            roomData: this.roomData
-        });
         
         if (!this.isHost) {
             console.log('不是房主，忽略加入请求');
             return;
         }
         
-        if (!this.roomId) {
-            console.log('当前用户没有房间，忽略加入请求');
-            return;
-        }
-        
         if (message.roomId !== this.roomId) {
             console.log(`房间号不匹配: 收到 ${message.roomId}, 当前 ${this.roomId}`);
-            return;
-        }
-        
-        if (message.userId === this.userId) {
-            console.log('忽略自己的加入请求');
             return;
         }
         
@@ -1035,8 +980,6 @@ export class CollaborationManager {
                     <div class="connection-status">
                         <p>连接模式: <span style="color: #27ae60; font-weight: bold;">点对点 (P2P)</span></p>
                         <p>信令状态: <span id="signaling-status">${this.isSignalingConnected ? '✅ 已连接' : '❌ 未连接'}</span></p>
-                        <p>当前用户: <span style="font-weight: bold; color: ${this.userColor};">${this.userName}</span> (${this.userId.substr(0, 16)}...)</p>
-                        ${this.isTestMode() ? '<p style="color: #f39c12;"><small>🧪 测试模式：支持同设备多用户测试</small></p>' : ''}
                         <p><small>💡 房主充当服务器，无需独立服务器</small></p>
                     </div>
                     
@@ -1189,27 +1132,6 @@ export class CollaborationManager {
         });
         
         this.updateUsersList();
-    }
-
-    // 测试模式：检查是否为测试环境
-    isTestMode() {
-        return window.location.hostname === 'localhost' || 
-               window.location.hostname === '127.0.0.1' || 
-               window.location.search.includes('test=true');
-    }
-
-    // 获取测试用户ID（用于本地多用户测试）
-    getTestUserId() {
-        if (this.isTestMode()) {
-            // 在测试模式下，允许创建多个用户实例
-            let testUserId = sessionStorage.getItem('collaboration_testUserId');
-            if (!testUserId) {
-                testUserId = 'test_user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
-                sessionStorage.setItem('collaboration_testUserId', testUserId);
-            }
-            return testUserId;
-        }
-        return this.userId;
     }
 
     // 断开连接（清理方法）
