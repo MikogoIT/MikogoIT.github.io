@@ -24,6 +24,14 @@ export class StatsManager {
         this.todayCountSpan = document.getElementById('today-count');
         
         // 检查元素是否正确绑定
+        console.log('统计元素绑定结果:', {
+            killedCount: !!this.killedCountSpan,
+            killedUnknown: !!this.killedUnknownCountSpan, 
+            refreshed: !!this.refreshedCountSpan,
+            available: !!this.availableCountSpan,
+            today: !!this.todayCountSpan
+        });
+        
         if (!this.todayCountSpan) {
             console.error('统计元素绑定失败：today-count 元素未找到');
         }
@@ -47,10 +55,36 @@ export class StatsManager {
         
         console.log(`统计更新: 击杀=${killed}, 未知=${killedUnknown}, 刷新=${refreshed}, 可用=${available}`);
         
-        this.killedCountSpan.textContent = killed;
-        this.killedUnknownCountSpan.textContent = killedUnknown;
-        this.refreshedCountSpan.textContent = refreshed;
-        this.availableCountSpan.textContent = available;
+        // 检查元素是否仍然存在
+        if (!this.killedCountSpan) {
+            console.error('killedCountSpan元素丢失，重新绑定');
+            this.bindElements();
+        }
+        
+        if (this.killedCountSpan) {
+            this.killedCountSpan.textContent = killed;
+            console.log(`更新击杀数: ${killed}`);
+        } else {
+            console.error('无法更新击杀数，元素不存在');
+        }
+        
+        if (this.killedUnknownCountSpan) {
+            this.killedUnknownCountSpan.textContent = killedUnknown;
+        } else {
+            console.error('无法更新未知击杀数，元素不存在');
+        }
+        
+        if (this.refreshedCountSpan) {
+            this.refreshedCountSpan.textContent = refreshed;
+        } else {
+            console.error('无法更新刷新数，元素不存在');
+        }
+        
+        if (this.availableCountSpan) {
+            this.availableCountSpan.textContent = available;
+        } else {
+            console.error('无法更新可用数，元素不存在');
+        }
         
         // 更新今日击杀数量
         this.updateTodayCount();

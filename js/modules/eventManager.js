@@ -12,70 +12,104 @@ export class EventManager {
 
     // 处理单元格单击
     handleCellClick(event) {
-        const cell = event.currentTarget;
-        const lineNumber = cell.dataset.line;
+        console.log('handleCellClick被调用');
         
-        // 如果已经是击杀状态，则忽略点击（双击用于取消）
-        if (cell.classList.contains('killed') || cell.classList.contains('killed-unknown')) return;
-        
-        // 获取点击位置用于动画
-        const coords = this.uiManager.getCellCoordinates(cell);
-        
-        // 移除刷新状态（如果存在）
-        if (cell.classList.contains('refreshed')) {
-            cell.classList.remove('refreshed');
+        try {
+            const cell = event.currentTarget;
+            const lineNumber = cell.dataset.line;
+            
+            console.log(`点击线路: ${lineNumber}, 当前状态:`, cell.classList.toString());
+            
+            // 如果已经是击杀状态，则忽略点击（双击用于取消）
+            if (cell.classList.contains('killed') || cell.classList.contains('killed-unknown')) {
+                console.log('单元格已经是击杀状态，忽略点击');
+                return;
+            }
+            
+            // 获取点击位置用于动画
+            const coords = this.uiManager.getCellCoordinates(cell);
+            console.log('获取单元格坐标:', coords);
+            
+            // 移除刷新状态（如果存在）
+            if (cell.classList.contains('refreshed')) {
+                cell.classList.remove('refreshed');
+            }
+            
+            // 添加击杀状态
+            cell.classList.add('killed');
+            console.log('添加击杀状态类');
+            
+            this.uiManager.updateCellTooltip(cell, '双击取消击杀状态');
+            console.log('更新单元格提示');
+            
+            this.storageManager.setLineState(lineNumber, 'killed');
+            console.log('保存线路状态到存储');
+            
+            // 记录击杀时间
+            const killTime = new Date().getTime();
+            this.storageManager.setKillTime(lineNumber, killTime);
+            console.log('保存击杀时间到存储');
+            
+            // 记录击杀事件并检查里程碑
+            const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
+            console.log('记录击杀事件到统计，里程碑:', isMilestone);
+            
+            // 添加到击杀事件列表
+            this.statsManager.addKillEvent(lineNumber, killTime);
+            console.log('添加击杀事件到列表');
+            
+            // 同步到其他用户（暂时禁用以排查问题）
+            if (this.collaborationManager && false) {
+                console.log('协作同步被暂时禁用');
+                this.collaborationManager.syncLineStateChange(lineNumber, 'killed', killTime);
+            }
+            
+            // 触发自定义事件（用于协作同步）
+            document.dispatchEvent(new CustomEvent('lineStateChanged', {
+                detail: { lineNumber, state: 'killed', killTime }
+            }));
+            console.log('触发自定义事件');
+            
+            // 更新图表
+            if (this.chartManager) {
+                this.chartManager.updateChart();
+                console.log('更新图表');
+            }
+            
+            // 创建掉落动画效果
+            this.animationManager.createPigDropAnimation(coords.x, coords.y);
+            console.log('创建掉落动画');
+            
+            // 检查是否达到里程碑
+            if (isMilestone) {
+                setTimeout(() => {
+                    this.animationManager.createCelebrationAnimation();
+                }, 500);
+                console.log('设置里程碑庆祝动画');
+            }
+            
+            // 开始倒计时
+            this.timerManager.startTimer(lineNumber, killTime, null, cell, this.onTimerComplete.bind(this));
+            console.log('启动倒计时');
+            
+            // 更新状态显示
+            this.uiManager.showKillStatus(lineNumber);
+            console.log('更新状态显示');
+            
+            // 更新统计
+            this.statsManager.updateStats();
+            
+            console.log(`击杀事件处理完成，线路${lineNumber}，统计已更新`);
+            
+        } catch (error) {
+            console.error('handleCellClick处理过程中发生错误:', error);
+            // 即使出错也尝试更新统计
+            try {
+                this.statsManager.updateStats();
+            } catch (statsError) {
+                console.error('统计更新也失败:', statsError);
+            }
         }
-        
-        // 添加击杀状态
-        cell.classList.add('killed');
-        this.uiManager.updateCellTooltip(cell, '双击取消击杀状态');
-        this.storageManager.setLineState(lineNumber, 'killed');
-        
-        // 记录击杀时间
-        const killTime = new Date().getTime();
-        this.storageManager.setKillTime(lineNumber, killTime);
-        
-        // 记录击杀事件并检查里程碑
-        const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
-        
-        // 添加到击杀事件列表
-        this.statsManager.addKillEvent(lineNumber, killTime);
-        
-        // 同步到其他用户
-        if (this.collaborationManager) {
-            this.collaborationManager.syncLineStateChange(lineNumber, 'killed', killTime);
-        }
-        
-        // 触发自定义事件（用于协作同步）
-        document.dispatchEvent(new CustomEvent('lineStateChanged', {
-            detail: { lineNumber, state: 'killed', killTime }
-        }));
-        
-        // 更新图表
-        if (this.chartManager) {
-            this.chartManager.updateChart();
-        }
-        
-        // 创建掉落动画效果
-        this.animationManager.createPigDropAnimation(coords.x, coords.y);
-        
-        // 检查是否达到里程碑
-        if (isMilestone) {
-            setTimeout(() => {
-                this.animationManager.createCelebrationAnimation();
-            }, 500);
-        }
-        
-        // 开始倒计时
-        this.timerManager.startTimer(lineNumber, killTime, null, cell, this.onTimerComplete.bind(this));
-        
-        // 更新状态显示
-        this.uiManager.showKillStatus(lineNumber);
-        
-        // 更新统计
-        this.statsManager.updateStats();
-        
-        console.log(`击杀事件处理完成，线路${lineNumber}，统计已更新`);
     }
 
     // 处理单元格右键点击（标记为击杀但不知时间）
