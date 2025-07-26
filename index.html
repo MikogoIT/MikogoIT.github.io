@@ -5,6 +5,51 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>金猪刷新监控系统</title>
     
+    <!-- Firebase SDK (v9+ - 现代模块化语法) -->
+    <script type="module">
+        // 全局Firebase配置和初始化
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getDatabase, ref, set, get, onValue, push, remove, update, serverTimestamp, onDisconnect } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        
+        // Firebase配置
+        const firebaseConfig = {
+            apiKey: "AIzaSyBgbodFry-hFl_tiWK9CAYzZ_4FFizc3kE",
+            authDomain: "pig-timer-collaboration.firebaseapp.com",
+            databaseURL: "https://pig-timer-collaboration-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "pig-timer-collaboration",
+            storageBucket: "pig-timer-collaboration.firebasestorage.app",
+            messagingSenderId: "629352460916",
+            appId: "1:629352460916:web:248d4051b64d8cb4e51721",
+            measurementId: "G-5RMRLLTTRP"
+        };
+        
+        // 初始化Firebase
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const database = getDatabase(app);
+        
+        // 将Firebase实例暴露给全局作用域，供FirebaseCollaborationManager使用
+        window.firebaseApp = app;
+        window.firebaseAuth = auth;
+        window.firebaseDatabase = database;
+        window.firebaseUtils = {
+            signInAnonymously,
+            onAuthStateChanged,
+            ref,
+            set,
+            get,
+            onValue,
+            push,
+            remove,
+            update,
+            serverTimestamp,
+            onDisconnect
+        };
+        
+        console.log('✅ Firebase v9+ 初始化完成');
+    </script>
+    
     <!-- 外部样式文件 -->
     <link rel="stylesheet" href="css/styles.css">
     <link rel="stylesheet" href="css/mobile.css">
@@ -101,7 +146,7 @@
                     🔬 开启测试模式（10秒倒计时）
                 </button>
                 
-                <button class="action-btn collaboration" onclick="showCollaboration()">
+                <button class="action-btn collaboration" onclick="window.goldPigApp ? window.goldPigApp.showCollaborationChoice() : showCollaboration()">
                     🤝 多人协作
                 </button>
                 

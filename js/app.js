@@ -9,6 +9,7 @@ import { StorageManager } from './modules/storageManager.js';
 import { AnimationManager } from './modules/animationManager.js';
 import { UIManager } from './modules/uiManager.js';
 import { CollaborationManager } from './modules/collaborationManager.js';
+import { FirebaseCollaborationManager } from './modules/firebaseCollaborationManager.js';
 
 class GoldPigMonitorApp {
     constructor() {
@@ -23,15 +24,15 @@ class GoldPigMonitorApp {
         
         // 初始化协作管理器
         try {
-            console.log('开始初始化协作管理器...');
+            console.log('开始初始化本地协作管理器...');
             this.collaborationManager = new CollaborationManager(
                 this.storageManager,
                 this.uiManager,
                 this.statsManager
             );
-            console.log('协作管理器初始化成功');
+            console.log('本地协作管理器初始化成功');
         } catch (error) {
-            console.error('协作管理器初始化失败:', error);
+            console.error('本地协作管理器初始化失败:', error);
             // 创建一个完整的后备协作管理器
             this.collaborationManager = {
                 showCollaborationDialog: () => {
@@ -45,6 +46,20 @@ class GoldPigMonitorApp {
                 isHost: false,
                 connectedPeers: new Map()
             };
+        }
+
+        // 初始化Firebase协作管理器
+        try {
+            console.log('开始初始化Firebase协作管理器...');
+            this.firebaseCollaborationManager = new FirebaseCollaborationManager(
+                this.storageManager,
+                this.uiManager,
+                this.statsManager
+            );
+            console.log('Firebase协作管理器初始化成功');
+        } catch (error) {
+            console.error('Firebase协作管理器初始化失败:', error);
+            this.firebaseCollaborationManager = null;
         }
         
         this.eventManager = new EventManager(
@@ -533,6 +548,72 @@ class GoldPigMonitorApp {
         }
         
         console.log('状态恢复完成');
+    }
+
+    // 显示协作选择对话框
+    showCollaborationChoice() {
+        const dialog = document.createElement('div');
+        dialog.className = 'dialog-overlay';
+        dialog.innerHTML = `
+            <div class="dialog-content" style="max-width: 500px;">
+                <div class="dialog-header">
+                    <h3>🤝 选择协作方式</h3>
+                    <button class="dialog-close" onclick="this.closest('.dialog-overlay').remove()">×</button>
+                </div>
+                
+                <div class="dialog-body">
+                    <div class="collaboration-options">
+                        <div class="collaboration-option">
+                            <h4>🔥 Firebase云协作（推荐）</h4>
+                            <p>通过Firebase云服务实现真正的跨设备、跨浏览器多人协作</p>
+                            <ul>
+                                <li>✅ 支持任意数量用户</li>
+                                <li>✅ 跨设备、跨网络协作</li>
+                                <li>✅ 实时同步，断线重连</li>
+                                <li>✅ 房间管理，用户身份</li>
+                            </ul>
+                            <button class="action-btn primary" onclick="window.goldPigApp.showFirebaseCollaboration(); this.closest('.dialog-overlay').remove();">
+                                使用Firebase协作
+                            </button>
+                        </div>
+                        
+                        <div class="collaboration-option">
+                            <h4>📡 P2P本地协作</h4>
+                            <p>基于浏览器技术的本地协作（限制较多）</p>
+                            <ul>
+                                <li>⚠️ 仅限同一浏览器同一设备</li>
+                                <li>⚠️ 用户数量有限</li>
+                                <li>⚠️ 需要手动连接</li>
+                                <li>✅ 无需外部服务</li>
+                            </ul>
+                            <button class="action-btn secondary" onclick="window.goldPigApp.showLocalCollaboration(); this.closest('.dialog-overlay').remove();">
+                                使用本地协作
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(dialog);
+    }
+
+    // 显示Firebase协作对话框
+    showFirebaseCollaboration() {
+        if (this.firebaseCollaborationManager) {
+            this.firebaseCollaborationManager.showCollaborationDialog();
+        } else {
+            alert('Firebase协作功能初始化失败，请检查网络连接并刷新页面重试');
+        }
+    }
+
+    // 显示本地P2P协作对话框
+    showLocalCollaboration() {
+        if (this.collaborationManager && this.collaborationManager.showCollaborationDialog) {
+            this.collaborationManager.showCollaborationDialog();
+        } else {
+            alert('本地协作功能不可用，请刷新页面重试');
+        }
     }
 }
 
