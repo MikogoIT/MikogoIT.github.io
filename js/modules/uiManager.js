@@ -553,6 +553,38 @@ export class UIManager {
                 modal.remove();
             }
         });
+        
+        // 添加手动恢复状态按钮（用于调试导入问题）
+        const debugRestoreBtn = document.createElement('button');
+        debugRestoreBtn.textContent = '🔄 手动恢复状态';
+        debugRestoreBtn.style.cssText = `
+            margin: 5px;
+            padding: 8px 15px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        debugRestoreBtn.title = '如果导入后格子状态没有恢复，点击此按钮手动恢复';
+        debugRestoreBtn.addEventListener('click', () => {
+            console.log('手动触发状态恢复...');
+            if (window.app && window.app.statsManager) {
+                window.app.statsManager.triggerFullStateRestore();
+                this.showTemporaryMessage('正在恢复状态，请稍候...', 'info');
+                
+                setTimeout(() => {
+                    this.showTemporaryMessage('状态恢复完成，请检查格子状态', 'success');
+                }, 2000);
+            }
+        });
+        
+        // 将调试按钮添加到控制面板
+        const controlPanel = document.querySelector('.controls') || document.querySelector('.buttons-container');
+        if (controlPanel) {
+            controlPanel.appendChild(debugRestoreBtn);
+        }
     }
     
     // 清除所有数据

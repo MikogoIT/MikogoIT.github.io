@@ -723,8 +723,15 @@ export class StatsManager {
             // 更新统计
             this.updateStats();
             
-            // 恢复表格状态和倒计时
-            this.restoreTableStateAfterImport();
+            // 使用完整状态恢复方法
+            setTimeout(() => {
+                this.triggerFullStateRestore();
+                
+                // 验证恢复情况
+                setTimeout(() => {
+                    this.verifyStateRestoration();
+                }, 800);
+            }, 200);
             
             console.log('数据导入完成');
             return true;
@@ -740,73 +747,124 @@ export class StatsManager {
     restoreTableStateAfterImport() {
         console.log('开始恢复表格状态...');
         
-        const lineCells = document.querySelectorAll('td[data-line]');
-        let restoredCount = 0;
+        // 多次尝试确保表格完全加载
+        const maxRetries = 5;
+        let retryCount = 0;
         
-        lineCells.forEach(cell => {
-            const lineNumber = cell.dataset.line;
-            if (!lineNumber) return;
+        const attemptRestore = () => {
+            const lineCells = document.querySelectorAll('td[data-line]');
+            console.log(`第${retryCount + 1}次尝试: 找到 ${lineCells.length} 个线路单元格`);
             
-            // 清除所有状态类
-            cell.classList.remove('killed', 'killed-unknown', 'refreshed');
-            
-            // 获取存储的状态
-            const state = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
-            const killTime = localStorage.getItem(`pigTimer_line_${lineNumber}_killTime`);
-            
-            if (state) {
-                console.log(`恢复线路${lineNumber}状态: ${state}`);
-                
-                // 恢复状态类
-                cell.classList.add(state);
-                
-                // 更新提示文本
-                const tooltip = cell.querySelector('.tooltip');
-                if (tooltip) {
-                    if (state === 'killed' || state === 'killed-unknown') {
-                        tooltip.textContent = '双击取消击杀状态';
-                    } else if (state === 'refreshed') {
-                        tooltip.textContent = '金猪已刷新！点击标记击杀';
-                    } else {
-                        tooltip.textContent = '点击标记金猪被击杀';
-                    }
-                }
-                
-                // 如果是击杀状态且有击杀时间，恢复倒计时
-                if (state === 'killed' && killTime) {
-                    const killTimeNum = parseInt(killTime);
-                    console.log(`恢复线路${lineNumber}倒计时，击杀时间: ${new Date(killTimeNum)}`);
-                    
-                    // 确保定时器元素存在
-                    let timerElement = cell.querySelector('.timer-display');
-                    if (!timerElement) {
-                        timerElement = document.createElement('div');
-                        timerElement.id = `timer-${lineNumber}`;
-                        timerElement.className = 'timer-display';
-                        cell.appendChild(timerElement);
-                    }
-                    
-                    // 启动倒计时（如果应用和定时器管理器可用）
-                    if (window.app && window.app.timerManager) {
-                        window.app.timerManager.startTimer(lineNumber, killTimeNum, null, cell, 
-                            (completedLine) => {
-                                if (window.app && window.app.eventManager) {
-                                    window.app.eventManager.onTimerComplete(completedLine);
-                                }
-                            });
-                    }
-                }
-                
-                restoredCount++;
+            if (lineCells.length === 0 && retryCount < maxRetries) {
+                retryCount++;
+                console.log(`没有找到线路单元格，${500 * retryCount}ms后重试...`);
+                setTimeout(attemptRestore, 500 * retryCount);
+                return;
             }
-        });
+            
+            if (lineCells.length === 0) {
+                console.error('多次尝试后仍未找到线路单元格，恢复失败');
+                return;
+            }
+            
+            let restoredCount = 0;
+            let killedTimersCount = 0;
+            
+            console.log('开始逐个恢复线路状态...');
+            
+            lineCells.forEach(cell => {
+                const lineNumber = cell.dataset.line;
+                if (!lineNumber) return;
+                
+                // 清除所有状态类
+                cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+                
+                // 获取存储的状态
+                const state = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
+                const killTime = localStorage.getItem(`pigTimer_line_${lineNumber}_killTime`);
+                
+                if (state) {
+                    console.log(`恢复线路${lineNumber}: 状态=${state}, 击杀时间=${killTime ? new Date(parseInt(killTime)).toLocaleString() : '无'}`);
+                    
+                    // 恢复状态类
+                    cell.classList.add(state);
+                    restoredCount++;
+                    
+                    // 更新提示文本
+                    const tooltip = cell.querySelector('.tooltip');
+                    if (tooltip) {
+                        if (state === 'killed' || state === 'killed-unknown') {
+                            tooltip.textContent = '双击取消击杀状态';
+                        } else if (state === 'refreshed') {
+                            tooltip.textContent = '金猪已刷新！点击标记击杀';
+                        } else {
+                            tooltip.textContent = '点击标记金猪被击杀';
+                        }
+                    }
+                    
+                    // 如果是击杀状态且有击杀时间，恢复倒计时
+                    if (state === 'killed' && killTime) {
+                        const killTimeNum = parseInt(killTime);
+                        
+                        // 确保定时器元素存在
+                        let timerElement = cell.querySelector('.timer-display');
+                        if (!timerElement) {
+                            console.log(`创建线路${lineNumber}的定时器元素`);
+                            timerElement = document.createElement('div');
+                            timerElement.id = `timer-${lineNumber}`;
+                            timerElement.className = 'timer-display';
+                            cell.appendChild(timerElement);
+                        }
+                        
+                        // 启动倒计时（如果应用和定时器管理器可用）
+                        if (window.app && window.app.timerManager) {
+                            console.log(`启动线路${lineNumber}的定时器，击杀时间: ${new Date(killTimeNum).toLocaleString()}`);
+                            window.app.timerManager.startTimer(lineNumber, killTimeNum, null, cell, 
+                                (completedLine) => {
+                                    if (window.app && window.app.eventManager) {
+                                        window.app.eventManager.onTimerComplete(completedLine);
+                                    }
+                                });
+                            killedTimersCount++;
+                        } else {
+                            console.warn('定时器管理器不可用，无法启动倒计时');
+                        }
+                    }
+                }
+            });
+            
+            console.log(`✅ 表格状态恢复完成: 共恢复 ${restoredCount} 个线路状态，其中 ${killedTimersCount} 个启动了倒计时`);
+            
+            // 强制重新检查一下状态应用情况
+            setTimeout(() => {
+                console.log('验证状态恢复结果:');
+                const finalCheck = document.querySelectorAll('td[data-line]');
+                let successCount = 0;
+                finalCheck.forEach(cell => {
+                    const lineNumber = cell.dataset.line;
+                    const expectedState = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
+                    if (expectedState) {
+                        const hasCorrectClass = cell.classList.contains(expectedState);
+                        if (hasCorrectClass) {
+                            successCount++;
+                        } else {
+                            console.warn(`❌ 线路${lineNumber}状态验证失败: 期望=${expectedState}, 实际类=${cell.classList.toString()}`);
+                        }
+                    }
+                });
+                console.log(`状态验证结果: ${successCount}/${restoredCount} 个状态正确应用`);
+            }, 1000);
+        };
         
-        console.log(`表格状态恢复完成，共恢复 ${restoredCount} 个线路状态`);
+        // 开始第一次尝试
+        attemptRestore();
         
         // 如果在协作房间中，同步状态给其他用户
         if (window.app && window.app.collaborationManager && window.app.collaborationManager.roomId) {
             console.log('检测到协作模式，同步导入的状态给其他用户');
-            this.syncImportedStateToCollaborators();
+            setTimeout(() => {
+                this.syncImportedStateToCollaborators();
+            }, 1500);
         }
     }
     
@@ -821,6 +879,167 @@ export class StatsManager {
                 const killTimeNum = killTime ? parseInt(killTime) : null;
                 window.app.collaborationManager.syncLineStateChange(i, state, killTimeNum);
             }
+        }
+    }
+
+    // 验证状态恢复情况
+    verifyStateRestoration() {
+        console.log('验证状态恢复情况...');
+        
+        let expectedStates = 0;
+        let actualStates = 0;
+        let missingStates = [];
+        
+        // 统计localStorage中的状态
+        for (let i = 1; i <= 400; i++) {
+            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
+            if (state) {
+                expectedStates++;
+                
+                // 检查DOM中是否正确应用
+                const cell = document.querySelector(`td[data-line="${i}"]`);
+                if (cell && cell.classList.contains(state)) {
+                    actualStates++;
+                } else {
+                    missingStates.push({ line: i, expectedState: state, cell });
+                }
+            }
+        }
+        
+        console.log(`状态恢复验证: 期望${expectedStates}个状态，实际恢复${actualStates}个状态`);
+        
+        if (missingStates.length > 0) {
+            console.warn(`发现${missingStates.length}个状态未正确恢复:`, missingStates.map(s => `线路${s.line}(${s.expectedState})`));
+            
+            // 尝试手动修复未恢复的状态
+            missingStates.forEach(({ line, expectedState, cell }) => {
+                if (cell) {
+                    console.log(`手动修复线路${line}状态: ${expectedState}`);
+                    cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+                    cell.classList.add(expectedState);
+                    
+                    // 如果是击杀状态，尝试恢复倒计时
+                    if (expectedState === 'killed' && window.app && window.app.timerManager) {
+                        const killTime = localStorage.getItem(`pigTimer_line_${line}_killTime`);
+                        if (killTime) {
+                            const killTimeNum = parseInt(killTime);
+                            window.app.timerManager.startTimer(line, killTimeNum, null, cell, 
+                                (completedLine) => {
+                                    if (window.app && window.app.eventManager) {
+                                        window.app.eventManager.onTimerComplete(completedLine);
+                                    }
+                                });
+                        }
+                    }
+                } else {
+                    console.error(`线路${line}的DOM元素未找到`);
+                }
+            });
+            
+            // 再次验证
+            setTimeout(() => {
+                let finalActualStates = 0;
+                for (let i = 1; i <= 400; i++) {
+                    const state = localStorage.getItem(`pigTimer_line_${i}_state`);
+                    if (state) {
+                        const cell = document.querySelector(`td[data-line="${i}"]`);
+                        if (cell && cell.classList.contains(state)) {
+                            finalActualStates++;
+                        }
+                    }
+                }
+                console.log(`最终验证结果: ${finalActualStates}/${expectedStates} 个状态正确恢复`);
+                
+                if (finalActualStates === expectedStates) {
+                    console.log('✅ 所有状态最终恢复成功！');
+                } else {
+                    console.error(`❌ 仍有${expectedStates - finalActualStates}个状态恢复失败`);
+                }
+            }, 1000);
+        } else {
+            console.log('✅ 所有状态恢复成功！');
+        }
+        
+        // 如果在协作房间中，同步状态给其他用户
+        if (window.app && window.app.collaborationManager && window.app.collaborationManager.roomId) {
+            console.log('检测到协作模式，同步导入的状态给其他用户');
+            setTimeout(() => {
+                this.syncImportedStateToCollaborators();
+            }, 1000);
+        }
+    }
+    
+    // 强制恢复所有状态
+    forceRestoreAllStates() {
+        console.log('强制恢复所有状态...');
+        
+        const lineCells = document.querySelectorAll('td[data-line]');
+        let forceRestoredCount = 0;
+        
+        lineCells.forEach(cell => {
+            const lineNumber = cell.dataset.line;
+            if (!lineNumber) return;
+            
+            const state = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
+            if (state) {
+                // 强制清除并重新应用状态
+                cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+                cell.classList.add(state);
+                
+                console.log(`强制恢复线路${lineNumber}: ${state}`);
+                forceRestoredCount++;
+                
+                // 确保定时器元素存在
+                let timerElement = cell.querySelector('.timer-display');
+                if (!timerElement) {
+                    timerElement = document.createElement('div');
+                    timerElement.id = `timer-${lineNumber}`;
+                    timerElement.className = 'timer-display';
+                    cell.appendChild(timerElement);
+                }
+                
+                // 如果是击杀状态，重新启动倒计时
+                if (state === 'killed') {
+                    const killTime = localStorage.getItem(`pigTimer_line_${lineNumber}_killTime`);
+                    if (killTime && window.app && window.app.timerManager) {
+                        const killTimeNum = parseInt(killTime);
+                        console.log(`强制重启线路${lineNumber}倒计时`);
+                        window.app.timerManager.startTimer(lineNumber, killTimeNum, null, cell, 
+                            (completedLine) => {
+                                if (window.app && window.app.eventManager) {
+                                    window.app.eventManager.onTimerComplete(completedLine);
+                                }
+                            });
+                    }
+                }
+            }
+        });
+        
+        console.log(`强制恢复完成，共处理${forceRestoredCount}个状态`);
+        
+        // 最后更新一次统计
+        this.updateStats();
+    }
+
+    // 添加导入后的状态恢复帮助方法
+    triggerFullStateRestore() {
+        console.log('触发完整状态恢复...');
+        
+        // 优先使用主应用的恢复方法
+        if (window.app && typeof window.app.restoreTableState === 'function') {
+            console.log('使用主应用的restoreTableState方法');
+            window.app.restoreTableState();
+            
+            // 同时更新统计
+            setTimeout(() => {
+                this.updateStats();
+                if (window.app.chartManager) {
+                    window.app.chartManager.updateChart();
+                }
+            }, 100);
+        } else {
+            console.warn('主应用不可用，使用备用恢复方法');
+            this.restoreTableStateAfterImport();
         }
     }
 }

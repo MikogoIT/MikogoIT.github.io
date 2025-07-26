@@ -431,6 +431,24 @@ class GoldPigMonitorApp {
             });
         }
     }
+    
+    // 公共的状态恢复方法（用于导入后调用）
+    restoreAllStates() {
+        console.log('开始全面恢复状态...');
+        
+        // 恢复表格状态
+        this.restoreTableState();
+        
+        // 更新统计
+        this.statsManager.updateStats();
+        
+        // 如果有图表，更新图表
+        if (this.chartManager) {
+            this.chartManager.updateChart();
+        }
+        
+        console.log('状态恢复完成');
+    }
 }
 
 // 创建应用实例并初始化
