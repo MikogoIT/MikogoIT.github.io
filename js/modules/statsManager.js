@@ -750,11 +750,11 @@ export class StatsManager {
             setTimeout(() => {
                 this.triggerFullStateRestore();
                 
-                // 验证恢复情况
+                // 验证恢复情况 - 延长等待时间确保DOM完全更新
                 setTimeout(() => {
                     this.verifyStateRestoration();
-                }, 800);
-            }, 200);
+                }, 1500); // 增加到1.5秒
+            }, 300); // 增加到300ms
             
             console.log('数据导入完成');
             return true;
@@ -961,9 +961,13 @@ export class StatsManager {
     verifyStateRestoration() {
         console.log('验证状态恢复情况...');
         
+        // 强制DOM同步
+        document.body.offsetHeight;
+        
         let expectedStates = 0;
         let actualStates = 0;
         let missingStates = [];
+        let mismatchedStates = [];
         
         // 统计localStorage中的状态
         for (let i = 1; i <= 400; i++) {
@@ -973,12 +977,40 @@ export class StatsManager {
                 
                 // 检查DOM中是否正确应用
                 const cell = document.querySelector(`td[data-line="${i}"]`);
-                if (cell && cell.classList.contains(state)) {
-                    actualStates++;
+                if (cell) {
+                    const hasExpectedState = cell.classList.contains(state);
+                    
+                    if (hasExpectedState) {
+                        actualStates++;
+                    } else {
+                        // 检查是否是因为状态转换导致的不匹配
+                        const actualClasses = Array.from(cell.classList).filter(cls => 
+                            ['killed', 'killed-unknown', 'refreshed'].includes(cls)
+                        );
+                        
+                        if (actualClasses.length > 0) {
+                            mismatchedStates.push({ 
+                                line: i, 
+                                expectedState: state, 
+                                actualState: actualClasses.join(','), 
+                                cell 
+                            });
+                        } else {
+                            missingStates.push({ line: i, expectedState: state, cell });
+                        }
+                    }
                 } else {
-                    missingStates.push({ line: i, expectedState: state, cell });
+                    console.error(`线路${i}的DOM元素未找到`);
+                    missingStates.push({ line: i, expectedState: state, cell: null });
                 }
             }
+        }
+        
+        console.log(`状态恢复验证: 期望${expectedStates}个状态，实际恢复${actualStates}个状态`);
+        
+        if (mismatchedStates.length > 0) {
+            console.warn(`发现${mismatchedStates.length}个状态不匹配:`, 
+                mismatchedStates.map(s => `线路${s.line}(期望:${s.expectedState}, 实际:${s.actualState})`));
         }
         
         console.log(`状态恢复验证: 期望${expectedStates}个状态，实际恢复${actualStates}个状态`);
