@@ -40,6 +40,9 @@ export class FirebaseCollaborationManager {
         // 事件监听器
         this.listeners = new Map();
         
+        // 心跳机制
+        this.heartbeatInterval = null;
+        
         // 初始化Firebase
         this.initFirebase();
     }
@@ -144,19 +147,62 @@ export class FirebaseCollaborationManager {
     setupConnectionMonitoring() {
         const connectedRef = this.firebaseUtils.ref(this.database, '.info/connected');
         this.firebaseUtils.onValue(connectedRef, (snapshot) => {
+            const wasConnected = this.isConnected;
             this.isConnected = snapshot.val() === true;
-            console.log('Firebase连接状态:', this.isConnected ? '已连接' : '已断开');
+            
+            console.log('Firebase连接状态:', this.isConnected ? '✅ 已连接' : '❌ 已断开');
             
             // 更新房间状态组件中的连接状态
-            if (typeof window.updateConnectionStatus === 'function') {
-                window.updateConnectionStatus(this.isConnected);
-            }
+            this.updateRoomConnectionStatus(this.isConnected);
             
             if (this.isConnected && this.roomId) {
-                // 重新连接后更新用户在线状态
+                // 重新连接后的处理
+                if (!wasConnected) {
+                    console.log('🔄 网络重连，正在恢复用户状态...');
+                    this.handleReconnection();
+                }
+                // 更新用户在线状态
                 this.updateUserPresence();
             }
         });
+    }
+
+    // 处理重连逻辑
+    async handleReconnection() {
+        try {
+            // 重新设置用户在线状态
+            await this.updateUserPresence();
+            
+            // 重新获取房间数据，确保同步
+            if (this.usersRef) {
+                console.log('🔄 重连后刷新用户数据...');
+                const usersSnapshot = await this.firebaseUtils.get(this.usersRef);
+                const users = usersSnapshot.val();
+                if (users) {
+                    this.handleUsersChange(users);
+                }
+            }
+            
+            // 显示重连成功消息
+            this.showTemporaryMessage('网络已重连，数据已同步', 'success');
+            
+        } catch (error) {
+            console.error('❌ 重连处理失败:', error);
+        }
+    }
+
+    // 更新房间连接状态显示
+    updateRoomConnectionStatus(isConnected) {
+        const connectionStatus = document.querySelector('.room-info .connection-status');
+        if (connectionStatus) {
+            connectionStatus.textContent = isConnected ? '已连接' : '连接中断';
+            connectionStatus.className = `connection-status ${isConnected ? 'connected' : 'disconnected'}`;
+        }
+        
+        // 如果有全局状态更新函数，也调用它
+        if (typeof window.updateConnectionStatus === 'function') {
+            window.updateConnectionStatus(isConnected);
+        }
     }
     
     // 创建房间
@@ -190,8 +236,8 @@ export class FirebaseCollaborationManager {
                 },
                 users: {
                     [this.userId]: {
-                        name: this.userName,
-                        color: this.userColor,
+                        userName: this.userName,
+                        userColor: this.userColor,
                         isHost: true,
                         lastSeen: this.firebaseUtils.serverTimestamp(),
                         isOnline: true
@@ -280,8 +326,8 @@ export class FirebaseCollaborationManager {
             // 添加用户到房间
             const userRef = this.firebaseUtils.ref(this.database, `rooms/${roomId}/users/${this.userId}`);
             await this.firebaseUtils.set(userRef, {
-                name: this.userName,
-                color: this.userColor,
+                userName: this.userName,
+                userColor: this.userColor,
                 isHost: false,
                 lastSeen: this.firebaseUtils.serverTimestamp(),
                 isOnline: true
@@ -333,6 +379,9 @@ export class FirebaseCollaborationManager {
         try {
             console.log('离开房间:', this.roomId);
             
+            // 停止心跳机制
+            this.stopHeartbeat();
+            
             // 移除事件监听器
             this.removeRoomListeners();
             
@@ -342,9 +391,20 @@ export class FirebaseCollaborationManager {
                 await this.firebaseUtils.set(activeRef, false);
                 console.log('房主离开，房间已关闭');
             } else {
-                // 移除用户
+                // 标记用户离线并移除
                 const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}`);
-                await this.firebaseUtils.remove(userRef);
+                await this.firebaseUtils.update(userRef, {
+                    isOnline: false,
+                    lastSeen: this.firebaseUtils.serverTimestamp()
+                });
+                // 延迟移除用户数据，给其他用户看到离线状态的时间
+                setTimeout(async () => {
+                    try {
+                        await this.firebaseUtils.remove(userRef);
+                    } catch (error) {
+                        console.warn('移除用户数据失败:', error);
+                    }
+                }, 2000);
             }
             
             // 重置状态
@@ -426,14 +486,18 @@ export class FirebaseCollaborationManager {
     
     // 更新用户在线状态
     updateUserPresence() {
-        if (!this.roomId || !this.userId) return;
+        if (!this.roomId || !this.userId) {
+            console.log('❌ 无法更新用户状态：缺少房间ID或用户ID');
+            return;
+        }
         
         const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}`);
         
-        // 设置在线状态
+        // 设置在线状态和心跳时间
         const updateData = {
             isOnline: true,
-            lastSeen: this.firebaseUtils.serverTimestamp()
+            lastSeen: this.firebaseUtils.serverTimestamp(),
+            lastHeartbeat: this.firebaseUtils.serverTimestamp()
         };
         this.firebaseUtils.update(userRef, updateData);
         
@@ -444,6 +508,37 @@ export class FirebaseCollaborationManager {
             lastSeen: this.firebaseUtils.serverTimestamp()
         };
         disconnectRef.update(offlineData);
+        
+        // 启动心跳机制
+        this.startHeartbeat();
+    }
+
+    // 启动心跳机制
+    startHeartbeat() {
+        // 清除已有的心跳定时器
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+        }
+        
+        // 每30秒发送一次心跳
+        this.heartbeatInterval = setInterval(() => {
+            if (this.isConnected && this.roomId && this.userId) {
+                const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}/lastHeartbeat`);
+                this.firebaseUtils.set(userRef, this.firebaseUtils.serverTimestamp());
+                console.log('💓 发送心跳');
+            }
+        }, 30000);
+        
+        console.log('💓 心跳机制已启动');
+    }
+
+    // 停止心跳机制
+    stopHeartbeat() {
+        if (this.heartbeatInterval) {
+            clearInterval(this.heartbeatInterval);
+            this.heartbeatInterval = null;
+            console.log('💓 心跳机制已停止');
+        }
     }
     
     // 同步当前游戏状态到Firebase
@@ -592,18 +687,18 @@ export class FirebaseCollaborationManager {
     
     // 处理用户变化
     handleUsersChange(users) {
-        if (!users) return;
+        console.log('🔥 handleUsersChange 被调用，用户数据:', users);
         
-        const userCount = Object.keys(users).length;
-        console.log('用户列表更新:', userCount, '个用户');
-        
-        // 更新房间状态组件中的用户数量
-        if (typeof window.updateRoomUserCount === 'function') {
-            window.updateRoomUserCount(userCount);
+        if (!users) {
+            console.log('🔥 没有用户数据，退出处理');
+            return;
         }
         
-        // 更新用户列表显示（如果有UI组件的话）
-        // this.updateUserListUI(users);
+        const userCount = Object.keys(users).length;
+        console.log('🔥 用户列表更新:', userCount, '个用户', users);
+        
+        // 更新房间信息组件中的用户列表和数量
+        this.updateRoomInfoUsersList(users);
         
         // 检查房主是否在线
         const hostUser = Object.values(users).find(user => user.isHost);
@@ -932,12 +1027,12 @@ export class FirebaseCollaborationManager {
         roomInfo.innerHTML = `
             <div class="room-header">
                 <h3>🏠 Firebase协作房间</h3>
+                <span class="connection-status ${this.isConnected ? 'connected' : 'disconnected'}">${this.isConnected ? '已连接' : '连接中断'}</span>
                 <button id="leave-room-btn" class="leave-room-btn">离开房间</button>
             </div>
             <div class="room-details">
                 <p><strong>房间号:</strong> <span id="room-id-display">${this.roomId}</span> 
                    <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button></p>
-                <p><strong>状态:</strong> <span id="connection-status">${this.isConnected ? '🟢 在线' : '🔴 离线'}</span></p>
                 <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
                 <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
                 <div id="users-list" class="users-list"></div>
@@ -955,8 +1050,8 @@ export class FirebaseCollaborationManager {
             padding: 15px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.2);
             z-index: 10000;
-            min-width: 280px;
-            max-width: 350px;
+            min-width: 300px;
+            max-width: 380px;
         `;
         
         document.body.appendChild(roomInfo);
@@ -972,6 +1067,11 @@ export class FirebaseCollaborationManager {
         
         // 更新用户列表
         this.updateRoomInfoUsersList();
+        
+        // 调试：检查房间用户数据
+        setTimeout(() => {
+            this.debugRoomUsers();
+        }, 1000);
     }
 
     // 复制房间号
@@ -1039,7 +1139,7 @@ export class FirebaseCollaborationManager {
     }
 
     // 更新房间信息用户列表
-    updateRoomInfoUsersList() {
+    updateRoomInfoUsersList(users = null) {
         const usersList = document.getElementById('users-list');
         const connectionCount = document.getElementById('connection-count');
         
@@ -1050,18 +1150,114 @@ export class FirebaseCollaborationManager {
         // 清空现有列表
         usersList.innerHTML = '';
         
-        // 添加当前用户
-        const currentUserDiv = document.createElement('div');
-        currentUserDiv.className = 'user-item';
-        currentUserDiv.innerHTML = `
-            <div class="user-color" style="background-color: ${this.userColor || '#3498db'}"></div>
-            <span class="user-name">${this.userName || '我'} ${this.isHost ? '(房主)' : ''}</span>
-            <span class="user-status connected">在线</span>
-        `;
-        usersList.appendChild(currentUserDiv);
+        if (!users) {
+            // 如果没有用户数据，只显示当前用户
+            const currentUserDiv = document.createElement('div');
+            currentUserDiv.className = 'user-item current-user';
+            currentUserDiv.innerHTML = `
+                <div class="user-color" style="background-color: ${this.userColor || '#3498db'}"></div>
+                <span class="user-name">${this.userName || '我'} ${this.isHost ? '(房主)' : ''}</span>
+                <span class="user-status connected">在线</span>
+            `;
+            usersList.appendChild(currentUserDiv);
+            connectionCount.textContent = '1 人在线';
+            return;
+        }
         
-        // 更新连接数（这里可以后续扩展来显示真实的用户数）
-        connectionCount.textContent = '1 人在线';
+        // 分析用户数据
+        const userEntries = Object.entries(users);
+        const currentTime = Date.now();
+        let onlineCount = 0;
+        
+        // 按在线状态和是否为房主排序
+        userEntries.sort(([aId, aData], [bId, bData]) => {
+            // 房主优先
+            if (aData.isHost && !bData.isHost) return -1;
+            if (!aData.isHost && bData.isHost) return 1;
+            
+            // 在线用户优先
+            const aOnline = this.isUserOnline(aData, currentTime);
+            const bOnline = this.isUserOnline(bData, currentTime);
+            if (aOnline && !bOnline) return -1;
+            if (!aOnline && bOnline) return 1;
+            
+            // 当前用户优先
+            if (aId === this.userId) return -1;
+            if (bId === this.userId) return 1;
+            
+            return 0;
+        });
+        
+        userEntries.forEach(([userId, userData]) => {
+            const userDiv = document.createElement('div');
+            const isCurrentUser = userId === this.userId;
+            const isOnline = this.isUserOnline(userData, currentTime);
+            const userName = userData.userName || (isCurrentUser ? '我' : '用户');
+            const userColor = userData.userColor || '#3498db';
+            const hostIndicator = userData.isHost ? ' (房主)' : '';
+            
+            if (isOnline) onlineCount++;
+            
+            userDiv.className = `user-item ${isCurrentUser ? 'current-user' : ''} ${isOnline ? 'online' : 'offline'}`;
+            
+            // 计算最后活跃时间
+            const lastSeenText = this.getLastSeenText(userData.lastSeen, isOnline);
+            
+            userDiv.innerHTML = `
+                <div class="user-color" style="background-color: ${userColor}"></div>
+                <div class="user-info">
+                    <span class="user-name">${userName}${isCurrentUser ? ' (我)' : ''}${hostIndicator}</span>
+                    <span class="user-last-seen">${lastSeenText}</span>
+                </div>
+                <span class="user-status ${isOnline ? 'connected' : 'disconnected'}">${isOnline ? '在线' : '离线'}</span>
+            `;
+            
+            usersList.appendChild(userDiv);
+        });
+        
+        const totalUsers = userEntries.length;
+        connectionCount.textContent = `${onlineCount}/${totalUsers} 人在线`;
+        
+        console.log(`✅ 用户列表已更新: ${onlineCount}/${totalUsers} 在线`);
+    }
+
+    // 判断用户是否在线
+    isUserOnline(userData, currentTime) {
+        if (userData.isOnline === false) return false;
+        
+        // 如果有心跳时间，检查心跳是否超时（2分钟）
+        if (userData.lastHeartbeat) {
+            const heartbeatTime = typeof userData.lastHeartbeat === 'object' 
+                ? new Date().getTime() // 服务器时间戳，使用当前时间近似
+                : userData.lastHeartbeat;
+            return (currentTime - heartbeatTime) < 120000; // 2分钟
+        }
+        
+        // 如果没有心跳但有lastSeen，检查是否超时（5分钟）
+        if (userData.lastSeen) {
+            const lastSeenTime = typeof userData.lastSeen === 'object' 
+                ? new Date().getTime() 
+                : userData.lastSeen;
+            return (currentTime - lastSeenTime) < 300000; // 5分钟
+        }
+        
+        // 默认认为在线
+        return userData.isOnline !== false;
+    }
+
+    // 获取最后活跃时间文本
+    getLastSeenText(lastSeen, isOnline) {
+        if (isOnline) return '刚刚活跃';
+        
+        if (!lastSeen) return '未知';
+        
+        const lastSeenTime = typeof lastSeen === 'object' ? new Date().getTime() : lastSeen;
+        const diff = Date.now() - lastSeenTime;
+        
+        if (diff < 60000) return '1分钟前';
+        if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
+        if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
+        return `${Math.floor(diff / 86400000)}天前`;
     }
 
     // 显示临时消息
@@ -1126,5 +1322,29 @@ export class FirebaseCollaborationManager {
         }
     }
 
-    // ...existing code...
+    // 调试：检查房间用户数据
+    async debugRoomUsers() {
+        if (!this.roomId || !this.usersRef) {
+            console.log('🔍 调试：没有房间ID或用户引用');
+            return;
+        }
+        
+        try {
+            const snapshot = await this.firebaseUtils.get(this.usersRef);
+            const users = snapshot.val();
+            console.log('🔍 调试：Firebase房间用户数据:', users);
+            
+            if (users) {
+                const userCount = Object.keys(users).length;
+                console.log(`🔍 调试：发现 ${userCount} 个用户`);
+                Object.entries(users).forEach(([userId, userData]) => {
+                    console.log(`🔍 调试：用户 ${userId}:`, userData);
+                });
+            } else {
+                console.log('🔍 调试：没有用户数据');
+            }
+        } catch (error) {
+            console.error('🔍 调试：获取用户数据失败:', error);
+        }
+    }
 }

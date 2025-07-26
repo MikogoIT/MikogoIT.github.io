@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase协作功能验证</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        
+        .validation-container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .test-item {
+            background: #f8f9fa;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        
+        .test-item.success {
+            border-left-color: #28a745;
+            background: #d4edda;
+        }
+        
+        .test-item.error {
+            border-left-color: #dc3545;
+            background: #f8d7da;
+        }
+        
+        .test-button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        
+        .test-button:hover {
+            background: #0056b3;
+        }
+        
+        .status-display {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            margin: 10px 0;
+            white-space: pre-wrap;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="validation-container">
+        <h1>🔍 Firebase协作功能验证</h1>
+        <p>验证增强的多人协作功能是否正常工作</p>
+
+        <div class="test-item">
+            <h3>1. Firebase初始化验证</h3>
+            <button class="test-button" onclick="validateFirebaseInit()">检查Firebase初始化</button>
+            <div id="firebase-init-result"></div>
+        </div>
+
+        <div class="test-item">
+            <h3>2. 连接状态监控验证</h3>
+            <button class="test-button" onclick="validateConnectionMonitoring()">检查连接监控</button>
+            <div id="connection-monitoring-result"></div>
+        </div>
+
+        <div class="test-item">
+            <h3>3. 心跳机制验证</h3>
+            <button class="test-button" onclick="validateHeartbeat()">检查心跳机制</button>
+            <div id="heartbeat-result"></div>
+        </div>
+
+        <div class="test-item">
+            <h3>4. 用户状态管理验证</h3>
+            <button class="test-button" onclick="validateUserManagement()">检查用户管理</button>
+            <div id="user-management-result"></div>
+        </div>
+
+        <div class="test-item">
+            <h3>5. 房间信息组件验证</h3>
+            <button class="test-button" onclick="validateRoomInfoComponent()">检查房间组件</button>
+            <div id="room-component-result"></div>
+        </div>
+
+        <div class="test-item">
+            <h3>6. 快速功能测试</h3>
+            <button class="test-button" onclick="quickTest()">快速测试</button>
+            <button class="test-button" onclick="createTestRoom()">创建测试房间</button>
+            <button class="test-button" onclick="simulateUser()">模拟多用户</button>
+        </div>
+
+        <div class="status-display" id="validation-logs">
+等待验证开始...
+        </div>
+    </div>
+
+    <script type="module">
+        import { FirebaseCollaborationManager } from './js/modules/firebaseCollaborationManager.js';
+        import { StorageManager } from './js/modules/storageManager.js';
+        import { UiManager } from './js/modules/uiManager.js';
+        import { StatsManager } from './js/modules/statsManager.js';
+
+        // 初始化管理器
+        const storageManager = new StorageManager();
+        const uiManager = new UiManager();
+        const statsManager = new StatsManager();
+        let firebaseManager;
+
+        // 初始化Firebase管理器
+        try {
+            firebaseManager = new FirebaseCollaborationManager(storageManager, uiManager, statsManager);
+            window.firebaseManager = firebaseManager;
+            log('✅ Firebase管理器初始化成功');
+        } catch (error) {
+            log('❌ Firebase管理器初始化失败: ' + error.message);
+        }
+
+        // 日志函数
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('validation-logs');
+            logElement.textContent += `[${timestamp}] ${message}\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+            console.log(message);
+        }
+
+        // 验证结果显示
+        function showResult(elementId, success, message) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = `<div style="margin-top: 10px; padding: 10px; background: ${success ? '#d4edda' : '#f8d7da'}; border-radius: 4px; color: ${success ? '#155724' : '#721c24'};">${success ? '✅' : '❌'} ${message}</div>`;
+        }
+
+        // 1. Firebase初始化验证
+        window.validateFirebaseInit = function() {
+            log('开始验证Firebase初始化...');
+            
+            if (!firebaseManager) {
+                showResult('firebase-init-result', false, 'Firebase管理器未创建');
+                return;
+            }
+
+            const checks = [
+                { name: 'Firebase应用', value: firebaseManager.app },
+                { name: 'Firebase认证', value: firebaseManager.auth },
+                { name: 'Firebase数据库', value: firebaseManager.database },
+                { name: '初始化状态', value: firebaseManager.isInitialized },
+                { name: '用户ID', value: firebaseManager.userId },
+                { name: '用户名', value: firebaseManager.userName },
+                { name: '用户颜色', value: firebaseManager.userColor }
+            ];
+
+            let allPassed = true;
+            let details = '';
+
+            checks.forEach(check => {
+                const passed = check.value !== null && check.value !== undefined;
+                allPassed = allPassed && passed;
+                details += `${check.name}: ${passed ? '✅' : '❌'} ${check.value || 'null'}\n`;
+                log(`${check.name}: ${passed ? 'OK' : 'FAIL'}`);
+            });
+
+            showResult('firebase-init-result', allPassed, `初始化检查${allPassed ? '通过' : '失败'}\n${details}`);
+        };
+
+        // 2. 连接状态监控验证
+        window.validateConnectionMonitoring = function() {
+            log('开始验证连接状态监控...');
+            
+            const hasConnectionState = typeof firebaseManager.isConnected === 'boolean';
+            const hasMonitoring = typeof firebaseManager.setupConnectionMonitoring === 'function';
+            const hasReconnectionHandler = typeof firebaseManager.handleReconnection === 'function';
+
+            const passed = hasConnectionState && hasMonitoring && hasReconnectionHandler;
+
+            let details = `连接状态: ${firebaseManager.isConnected ? '在线' : '离线'}\n`;
+            details += `监控函数: ${hasMonitoring ? '存在' : '缺失'}\n`;
+            details += `重连处理: ${hasReconnectionHandler ? '存在' : '缺失'}`;
+
+            showResult('connection-monitoring-result', passed, details);
+            log(`连接监控验证: ${passed ? 'PASS' : 'FAIL'}`);
+        };
+
+        // 3. 心跳机制验证
+        window.validateHeartbeat = function() {
+            log('开始验证心跳机制...');
+            
+            const hasStartHeartbeat = typeof firebaseManager.startHeartbeat === 'function';
+            const hasStopHeartbeat = typeof firebaseManager.stopHeartbeat === 'function';
+            const hasUpdatePresence = typeof firebaseManager.updateUserPresence === 'function';
+
+            const passed = hasStartHeartbeat && hasStopHeartbeat && hasUpdatePresence;
+
+            let details = `启动心跳函数: ${hasStartHeartbeat ? '存在' : '缺失'}\n`;
+            details += `停止心跳函数: ${hasStopHeartbeat ? '存在' : '缺失'}\n`;
+            details += `更新状态函数: ${hasUpdatePresence ? '存在' : '缺失'}\n`;
+            details += `心跳状态: ${firebaseManager.heartbeatInterval ? '运行中' : '未启动'}`;
+
+            showResult('heartbeat-result', passed, details);
+            log(`心跳机制验证: ${passed ? 'PASS' : 'FAIL'}`);
+        };
+
+        // 4. 用户状态管理验证
+        window.validateUserManagement = function() {
+            log('开始验证用户状态管理...');
+            
+            const hasUserListUpdate = typeof firebaseManager.updateRoomInfoUsersList === 'function';
+            const hasUserOnlineCheck = typeof firebaseManager.isUserOnline === 'function';
+            const hasUserHandleChange = typeof firebaseManager.handleUsersChange === 'function';
+            const hasLastSeenText = typeof firebaseManager.getLastSeenText === 'function';
+
+            const passed = hasUserListUpdate && hasUserOnlineCheck && hasUserHandleChange && hasLastSeenText;
+
+            let details = `用户列表更新: ${hasUserListUpdate ? '存在' : '缺失'}\n`;
+            details += `在线状态检查: ${hasUserOnlineCheck ? '存在' : '缺失'}\n`;
+            details += `用户变化处理: ${hasUserHandleChange ? '存在' : '缺失'}\n`;
+            details += `最后活跃时间: ${hasLastSeenText ? '存在' : '缺失'}`;
+
+            showResult('user-management-result', passed, details);
+            log(`用户管理验证: ${passed ? 'PASS' : 'FAIL'}`);
+        };
+
+        // 5. 房间信息组件验证
+        window.validateRoomInfoComponent = function() {
+            log('开始验证房间信息组件...');
+            
+            const hasShowRoomInfo = typeof firebaseManager.showRoomInfo === 'function';
+            const hasHideRoomInfo = typeof firebaseManager.hideRoomInfo === 'function';
+            const hasCopyRoomId = typeof firebaseManager.copyRoomId === 'function';
+
+            // 检查CSS样式是否存在
+            const hasRoomInfoStyles = document.querySelector('style') || 
+                                    Array.from(document.styleSheets).some(sheet => {
+                                        try {
+                                            return Array.from(sheet.cssRules).some(rule => 
+                                                rule.selectorText && rule.selectorText.includes('.room-info')
+                                            );
+                                        } catch(e) {
+                                            return false;
+                                        }
+                                    });
+
+            const passed = hasShowRoomInfo && hasHideRoomInfo && hasCopyRoomId;
+
+            let details = `显示房间信息: ${hasShowRoomInfo ? '存在' : '缺失'}\n`;
+            details += `隐藏房间信息: ${hasHideRoomInfo ? '存在' : '缺失'}\n`;
+            details += `复制房间号: ${hasCopyRoomId ? '存在' : '缺失'}\n`;
+            details += `CSS样式: ${hasRoomInfoStyles ? '已加载' : '未找到'}`;
+
+            showResult('room-component-result', passed, details);
+            log(`房间组件验证: ${passed ? 'PASS' : 'FAIL'}`);
+        };
+
+        // 6. 快速功能测试
+        window.quickTest = function() {
+            log('开始快速功能测试...');
+            log('1. 检查Firebase连接...');
+            
+            setTimeout(() => {
+                if (firebaseManager.isConnected) {
+                    log('✅ Firebase连接正常');
+                } else {
+                    log('⚠️ Firebase未连接或连接中');
+                }
+                
+                log('2. 检查用户信息...');
+                if (firebaseManager.userName && firebaseManager.userColor) {
+                    log(`✅ 用户信息: ${firebaseManager.userName} (${firebaseManager.userColor})`);
+                } else {
+                    log('⚠️ 用户信息不完整');
+                }
+                
+                log('3. 测试UI组件...');
+                if (typeof firebaseManager.showTemporaryMessage === 'function') {
+                    firebaseManager.showTemporaryMessage('这是一个测试消息', 'success');
+                    log('✅ 临时消息组件正常');
+                } else {
+                    log('❌ 临时消息组件缺失');
+                }
+                
+                log('快速测试完成');
+            }, 1000);
+        };
+
+        // 创建测试房间
+        window.createTestRoom = async function() {
+            log('创建测试房间...');
+            try {
+                const roomId = await firebaseManager.createRoom();
+                if (roomId) {
+                    log(`✅ 测试房间创建成功: ${roomId}`);
+                    
+                    // 验证房间信息组件是否显示
+                    setTimeout(() => {
+                        const roomInfoElement = document.getElementById('room-info');
+                        if (roomInfoElement) {
+                            log('✅ 房间信息组件已显示');
+                        } else {
+                            log('⚠️ 房间信息组件未显示');
+                        }
+                    }, 1000);
+                } else {
+                    log('❌ 测试房间创建失败');
+                }
+            } catch (error) {
+                log('❌ 创建房间时发生错误: ' + error.message);
+            }
+        };
+
+        // 模拟多用户
+        window.simulateUser = function() {
+            log('模拟多用户数据...');
+            
+            const mockUsers = {
+                'user1': {
+                    userName: '测试用户1',
+                    userColor: '#e74c3c',
+                    isHost: false,
+                    isOnline: true,
+                    lastSeen: Date.now(),
+                    lastHeartbeat: Date.now()
+                },
+                'user2': {
+                    userName: '测试用户2', 
+                    userColor: '#2ecc71',
+                    isHost: false,
+                    isOnline: false,
+                    lastSeen: Date.now() - 300000,
+                    lastHeartbeat: Date.now() - 180000
+                }
+            };
+            
+            // 如果有当前用户，添加到模拟数据中
+            if (firebaseManager.userId) {
+                mockUsers[firebaseManager.userId] = {
+                    userName: firebaseManager.userName,
+                    userColor: firebaseManager.userColor,
+                    isHost: firebaseManager.isHost,
+                    isOnline: true,
+                    lastSeen: Date.now(),
+                    lastHeartbeat: Date.now()
+                };
+            }
+            
+            // 更新用户列表显示
+            firebaseManager.updateRoomInfoUsersList(mockUsers);
+            log('✅ 模拟用户数据已应用到用户列表');
+        };
+
+        // 页面加载完成后启动
+        window.addEventListener('load', () => {
+            log('验证页面加载完成');
+            log('建议按顺序执行验证测试');
+            
+            // 等待Firebase初始化
+            setTimeout(() => {
+                if (firebaseManager && firebaseManager.isInitialized) {
+                    log('✅ Firebase已初始化，可以开始测试');
+                } else {
+                    log('⚠️ Firebase初始化中，请稍后再试');
+                }
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
