@@ -233,6 +233,171 @@
     <!-- 主应用模块脚本 -->
     <script type="module" src="js/app.js"></script>
     
+    <!-- 表格生成备用脚本 -->
+    <script>
+        // 备用表格生成器 - 如果模块加载失败则使用此方法
+        function generateTableFallback() {
+            console.log('使用备用表格生成器');
+            const table = document.getElementById('line-table');
+            if (!table) return;
+            
+            const existingCells = table.querySelectorAll('td[data-line]');
+            console.log(`现有单元格: ${existingCells.length}`);
+            
+            if (existingCells.length >= 400) {
+                console.log('表格已完整');
+                return;
+            }
+            
+            // 为现有单元格绑定基本事件
+            existingCells.forEach(cell => {
+                if (!cell.onclick) {
+                    cell.addEventListener('click', function() {
+                        this.classList.toggle('killed');
+                        console.log('点击单元格:', this.dataset.line);
+                    });
+                    
+                    cell.addEventListener('contextmenu', function(e) {
+                        e.preventDefault();
+                        this.classList.toggle('killed-unknown');
+                        console.log('右击单元格:', this.dataset.line);
+                    });
+                    
+                    cell.addEventListener('dblclick', function() {
+                        this.classList.remove('killed', 'killed-unknown', 'refreshed');
+                        console.log('双击单元格:', this.dataset.line);
+                    });
+                }
+            });
+            
+            // 生成剩余的单元格
+            let lineNumber = existingCells.length + 1;
+            let currentRow = existingCells.length > 0 ? existingCells[existingCells.length - 1].parentElement : null;
+            let cellsInCurrentRow = currentRow ? currentRow.children.length : 0;
+            
+            for (let i = lineNumber; i <= 400; i++) {
+                // 如果需要新行
+                if (!currentRow || cellsInCurrentRow >= 20) {
+                    currentRow = document.createElement('tr');
+                    table.appendChild(currentRow);
+                    cellsInCurrentRow = 0;
+                }
+                
+                const cell = document.createElement('td');
+                cell.textContent = i;
+                cell.dataset.line = i;
+                
+                // 添加定时器显示元素
+                const timerDisplay = document.createElement('div');
+                timerDisplay.id = `timer-${i}`;
+                timerDisplay.className = 'timer-display';
+                cell.appendChild(timerDisplay);
+                
+                // 绑定事件
+                cell.addEventListener('click', function() {
+                    this.classList.toggle('killed');
+                    console.log('点击单元格:', this.dataset.line);
+                });
+                
+                cell.addEventListener('contextmenu', function(e) {
+                    e.preventDefault();
+                    this.classList.toggle('killed-unknown');
+                    console.log('右击单元格:', this.dataset.line);
+                });
+                
+                cell.addEventListener('dblclick', function() {
+                    this.classList.remove('killed', 'killed-unknown', 'refreshed');
+                    console.log('双击单元格:', this.dataset.line);
+                });
+                
+                currentRow.appendChild(cell);
+                cellsInCurrentRow++;
+            }
+            
+            const finalCells = table.querySelectorAll('td[data-line]');
+            console.log(`备用生成器完成，总共 ${finalCells.length} 个单元格`);
+            
+            // 更新调试信息
+            const debugCellCount = document.getElementById('debug-cell-count');
+            if (debugCellCount) {
+                debugCellCount.textContent = finalCells.length;
+            }
+            
+            const debugTableStatus = document.getElementById('debug-table-status');
+            if (debugTableStatus) {
+                debugTableStatus.textContent = finalCells.length === 400 ? '✅ 正常' : `⚠️ 不完整(${finalCells.length})`;
+            }
+        }
+        
+        // 全局重置函数（备用）
+        function resetAll() {
+            console.log('执行全局重置');
+            const cells = document.querySelectorAll('td[data-line]');
+            cells.forEach(cell => {
+                cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+                const timer = cell.querySelector('.timer-display');
+                if (timer) timer.textContent = '';
+            });
+            
+            // 清除本地存储
+            for (let i = 1; i <= 400; i++) {
+                localStorage.removeItem(`pigTimer_line-${i}`);
+                localStorage.removeItem(`pigTimer_killTime-${i}`);
+            }
+            
+            console.log('重置完成');
+        }
+        
+        // 仅重置倒计时状态函数（备用）
+        function resetTimersOnly() {
+            console.log('执行仅重置倒计时');
+            const cells = document.querySelectorAll('td[data-line]');
+            cells.forEach(cell => {
+                cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+                const timer = cell.querySelector('.timer-display');
+                if (timer) timer.textContent = '';
+            });
+            
+            // 清除倒计时存储但保留历史
+            for (let i = 1; i <= 400; i++) {
+                localStorage.removeItem(`pigTimer_line-${i}`);
+                localStorage.removeItem(`pigTimer_killTime-${i}`);
+            }
+            
+            console.log('倒计时重置完成');
+        }
+        
+        // 测试模式切换函数（备用）
+        function toggleTestMode() {
+            console.log('切换测试模式');
+            const currentMode = localStorage.getItem('pigTimer_testMode') === 'true';
+            const newMode = !currentMode;
+            localStorage.setItem('pigTimer_testMode', newMode);
+            
+            const btn = document.getElementById('test-mode-btn');
+            if (btn) {
+                btn.textContent = newMode ? '🔬 关闭测试模式' : '🔬 开启测试模式（10秒倒计时）';
+            }
+            
+            console.log('测试模式:', newMode ? '开启' : '关闭');
+        }
+        
+        // 延迟检查并在需要时使用备用生成器
+        setTimeout(() => {
+            const table = document.getElementById('line-table');
+            const cells = table ? table.querySelectorAll('td[data-line]') : [];
+            
+            console.log(`检查表格状态: ${cells.length} 个单元格`);
+            
+            if (cells.length < 400) {
+                console.log('表格不完整，使用备用生成器');
+                generateTableFallback();
+            } else {
+                console.log('表格已完整');
+            }
+        }, 3000); // 延迟3秒检查，给主应用足够时间初始化
+    </script>
+    
     <!-- 调试脚本 -->
     <script>
         // 延迟检查表格状态
