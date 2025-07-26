@@ -1548,4 +1548,67 @@ export class FirebaseCollaborationManager {
             }
         }
     }
+
+    // 更新房间信息界面中的用户列表
+    updateRoomInfoUsersList(users) {
+        console.log('🔄 更新房间信息用户列表:', users);
+        
+        // 查找房间信息面板
+        const panel = document.getElementById('firebase-collaboration-panel');
+        if (!panel) {
+            console.log('📱 房间信息面板不存在，跳过用户列表更新');
+            return;
+        }
+        
+        // 查找用户列表容器
+        const usersList = panel.querySelector('#users-list');
+        const connectionCount = panel.querySelector('#connection-count');
+        
+        if (!usersList) {
+            console.log('📱 用户列表容器不存在，跳过更新');
+            return;
+        }
+        
+        // 清空现有列表
+        usersList.innerHTML = '';
+        
+        const userCount = users ? Object.keys(users).length : 0;
+        
+        // 更新连接数显示
+        if (connectionCount) {
+            connectionCount.textContent = `${userCount} 人在线`;
+        }
+        
+        if (!users || userCount === 0) {
+            usersList.innerHTML = '<div class="no-users">暂无其他用户</div>';
+            return;
+        }
+        
+        // 添加在线用户
+        Object.entries(users).forEach(([userId, userData]) => {
+            if (!userData || !userData.isOnline) return;
+            
+            const userDiv = document.createElement('div');
+            userDiv.className = `user-item ${userId === this.userId ? 'current-user' : ''}`;
+            
+            const userName = userData.name || `用户${userId.slice(-4)}`;
+            const userColor = userData.color || '#3498db';
+            const isHost = userData.isHost || false;
+            const isSelf = userId === this.userId;
+            
+            userDiv.innerHTML = `
+                <div class="user-color" style="background-color: ${userColor}"></div>
+                <span class="user-name">
+                    ${userName} 
+                    ${isHost ? '(房主)' : ''} 
+                    ${isSelf ? '(我)' : ''}
+                </span>
+                <span class="user-status connected">在线</span>
+            `;
+            
+            usersList.appendChild(userDiv);
+        });
+        
+        console.log(`✅ 用户列表已更新，显示 ${userCount} 个用户`);
+    }
 }
