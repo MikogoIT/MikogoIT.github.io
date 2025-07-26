@@ -67,34 +67,30 @@
                 </div>
                 
                 <div class="status-info">
-                    <div class="panel-title">
-                        🎨
-                        <h2>状态说明</h2>
-                    </div>
                     <div class="status-item">
                         <div class="status-color status-1"></div>
-                        <div>未击杀/可用线路</div>
+                        <span>可用状态 - 金猪可能存在</span>
                     </div>
                     <div class="status-item">
                         <div class="status-color status-2"></div>
-                        <div>金猪已被击杀（倒计时中）</div>
-                    </div>
-                    <div class="status-item">
-                        <div class="status-color status-5"></div>
-                        <div>金猪已被击杀（时间未知）</div>
+                        <span>击杀状态 - 24小时倒计时中</span>
                     </div>
                     <div class="status-item">
                         <div class="status-color status-3"></div>
-                        <div>金猪已刷新（可再次击杀）</div>
+                        <span>刷新状态 - 金猪已刷新</span>
                     </div>
                     <div class="status-item">
                         <div class="status-color status-4"></div>
-                        <div>倒计时显示</div>
+                        <span>倒计时 - 剩余时间显示</span>
+                    </div>
+                    <div class="status-item">
+                        <div class="status-color status-5"></div>
+                        <span>未知时间 - 击杀但不知具体时间</span>
                     </div>
                 </div>
                 
                 <button class="action-btn reset" onclick="resetAll()">
-                    🔄 重置所有状态
+                    🗑️ 完全重置系统
                 </button>
                 
                 <button class="action-btn reset-timers" onclick="resetTimersOnly()">
@@ -102,74 +98,57 @@
                 </button>
                 
                 <button class="action-btn" onclick="toggleTestMode()" id="test-mode-btn">
-                    🔬 开启测试模式（10秒倒计时）
+                    🧪 切换测试模式（10秒倒计时）
                 </button>
                 
                 <div class="notes-container">
-                    <label for="notes-input" class="notes-label">
-                        📝 备注记录
-                    </label>
-                    <textarea 
-                        id="notes-input" 
-                        class="notes-input"
-                        placeholder="在这里记录一些备注信息..."
-                    ></textarea>
+                    <label class="notes-label" for="notes-input">📝 备注记录：</label>
+                    <textarea class="notes-input" id="notes-input" placeholder="在这里记录你的备注信息，比如特殊发现、规律总结等..."></textarea>
                 </div>
             </div>
             
             <div class="flex-container">
                 <div class="chart-container">
                     <div class="chart-header">
-                        <div class="chart-title">金猪击杀统计</div>
+                        <div class="chart-title">📊 击杀统计图表</div>
                         <div class="chart-tabs">
                             <div class="chart-tab active" data-chart="daily">每日击杀</div>
-                            <div class="chart-tab" data-chart="total">总击杀</div>
-                            <div class="chart-tab" data-chart="hourly">击杀时段</div>
+                            <div class="chart-tab" data-chart="total">总击杀数</div>
+                            <div class="chart-tab" data-chart="hourly">24小时分布</div>
                         </div>
                     </div>
                     <div class="chart-box">
-                        <canvas id="stats-chart" width="800" height="300" style="width: 100%; height: 300px; background: rgba(0,0,0,0.1); border-radius: 8px;"></canvas>
+                        <canvas id="stats-chart"></canvas>
                     </div>
                 </div>
                 
                 <div class="stats">
                     <div class="panel-title">
-                        📊
-                        <h2>状态统计</h2>
+                        📈
+                        <h2>统计信息</h2>
                     </div>
                     
                     <div class="stat-cards">
                         <div class="stat-card">
-                            <div class="stat-label">总线路数</div>
-                            <div class="stat-value" id="total-lines">400</div>
-                            <div class="stat-label">当前可用线路</div>
-                        </div>
-                        <div class="stat-card">
-                            <div class="stat-label">已击杀金猪</div>
                             <div class="stat-value" id="killed-count">0</div>
-                            <div class="stat-label">倒计时中</div>
+                            <div class="stat-label">🔴 击杀中</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">击杀未知时间</div>
                             <div class="stat-value" id="killed-unknown-count">0</div>
-                            <div class="stat-label">时间未知</div>
+                            <div class="stat-label">🟠 未知时间</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">已刷新线路</div>
                             <div class="stat-value" id="refreshed-count">0</div>
-                            <div class="stat-label">可再次击杀</div>
+                            <div class="stat-label">🟢 已刷新</div>
                         </div>
                         <div class="stat-card">
-                            <div class="stat-label">可用线路</div>
-                            <div class="stat-value" id="available-count">400</div>
-                            <div class="stat-label">未击杀状态</div>
+                            <div class="stat-value" id="available-count">0</div>
+                            <div class="stat-label">⚪ 可用</div>
                         </div>
-                    </div>
-                    
-                    <div class="stat-card">
-                        <div class="stat-label">今日击杀</div>
-                        <div class="stat-value" id="today-count">0</div>
-                        <div class="stat-label">最后24小时</div>
+                        <div class="stat-card">
+                            <div class="stat-value" id="today-count">0</div>
+                            <div class="stat-label">📅 今日击杀</div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -195,13 +174,12 @@
         </footer>
     </div>
 
-    
     <!-- 手机端操作提示 -->
     <div class="mobile-hint">
-        点击格子标记击杀，三连击标记不知时间
+        📱 点击格子标记击杀，三连击标记不知时间
     </div>
 
-    <!-- 主应用模块脚本 -->
+    <!-- JavaScript 模块 -->
     <script type="module" src="js/app.js"></script>
 </body>
 </html>

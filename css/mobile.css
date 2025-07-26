@@ -1,0 +1,188 @@
+/* 金猪刷新监控系统 - 手机端样式文件 */
+
+/* 手机端专用样式 */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+    
+    h1 {
+        font-size: 2rem;
+    }
+    
+    .subtitle {
+        font-size: 1rem;
+    }
+    
+    /* 桌面端和移动端操作说明切换 */
+    .desktop-instruction {
+        display: none;
+    }
+    
+    .mobile-instruction {
+        display: list-item;
+    }
+    
+    /* 优化表格在手机端的显示 */
+    .table-container {
+        padding: 8px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+    
+    table {
+        min-width: 600px;
+        font-size: 12px;
+        border-spacing: 2px;
+    }
+    
+    th {
+        padding: 6px 2px;
+        font-size: 10px;
+        width: 5%;
+        min-width: 28px;
+    }
+    
+    td {
+        padding: 8px 2px;
+        font-size: 12px;
+        height: 45px;
+        width: 5%;
+        min-width: 28px;
+        box-sizing: border-box;
+    }
+    
+    /* 增大可点击区域 */
+    td:not(.timer-cell) {
+        cursor: pointer;
+        -webkit-tap-highlight-color: rgba(52, 152, 219, 0.3);
+        padding: 10px 2px;
+    }
+    
+    /* 手机端长按提示样式保留用于其他用途 */
+    td:not(.timer-cell):after {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: transparent;
+        transition: background 0.3s ease;
+        border-radius: 8px;
+    }
+    
+    .timer-cell {
+        font-size: 9px;
+        padding: 4px 1px;
+        height: 32px;
+        line-height: 1.1;
+        width: 5%;
+        min-width: 28px;
+    }
+    
+    /* 控制面板适配 */
+    .controls, .stats {
+        padding: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .panel-title {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+    
+    .instructions h3 {
+        font-size: 1.1rem;
+    }
+    
+    .instructions li {
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+    }
+    
+    /* 统计卡片适配 */
+    .stat-card {
+        padding: 15px;
+    }
+    
+    .stat-value {
+        font-size: 2rem;
+    }
+    
+    .stat-label {
+        font-size: 0.9rem;
+    }
+}
+
+/* 超小屏幕（小于480px）进一步优化 */
+@media (max-width: 480px) {
+    .table-container {
+        padding: 5px;
+    }
+    
+    table {
+        min-width: 500px;
+        border-spacing: 1px;
+    }
+    
+    th, td {
+        min-width: 24px;
+    }
+    
+    th {
+        padding: 4px 1px;
+        font-size: 9px;
+    }
+    
+    td {
+        padding: 6px 1px;
+        font-size: 11px;
+        height: 40px;
+    }
+    
+    td:not(.timer-cell) {
+        padding: 8px 1px;
+    }
+    
+    .timer-cell {
+        font-size: 8px;
+        padding: 3px 1px;
+        height: 28px;
+        min-width: 24px;
+    }
+}
+
+/* 手机端触摸反馈 */
+@media (hover: none) and (pointer: coarse) {
+    td:not(.timer-cell) {
+        transition: all 0.2s ease;
+    }
+    
+    td:not(.timer-cell):active {
+        transform: scale(0.95);
+        background: rgba(52, 152, 219, 0.2);
+    }
+}
+
+/* 手机端操作提示样式 */
+.mobile-hint {
+    display: none;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 25px;
+    font-size: 14px;
+    z-index: 10000;
+    animation: fadeInOut 3s ease-in-out;
+}
+
+@media (max-width: 768px) {
+    .mobile-hint {
+        display: block;
+    }
+}

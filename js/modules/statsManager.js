@@ -1,0 +1,180 @@
+// 统计管理器 - 处理统计数据和今日计数
+class StatsManager {
+    constructor() {
+        this.killEvents = JSON.parse(localStorage.getItem('killEvents')) || [];
+        this.initElements();
+    }
+
+    // 初始化统计元素
+    initElements() {
+        this.killedCountSpan = document.getElementById('killed-count');
+        this.killedUnknownCountSpan = document.getElementById('killed-unknown-count');
+        this.refreshedCountSpan = document.getElementById('refreshed-count');
+        this.availableCountSpan = document.getElementById('available-count');
+        this.todayCountSpan = document.getElementById('today-count');
+    }
+
+    // 更新统计信息
+    updateStats() {
+        let killed = 0;
+        let killedUnknown = 0;
+        let refreshed = 0;
+        let available = 0;
+        
+        // 获取所有线路格子
+        const lineCells = document.querySelectorAll('td[data-line]');
+        lineCells.forEach(cell => {
+            if (cell.classList.contains('killed')) killed++;
+            else if (cell.classList.contains('killed-unknown')) killedUnknown++;
+            else if (cell.classList.contains('refreshed')) refreshed++;
+            else available++;
+        });
+        
+        this.killedCountSpan.textContent = killed;
+        this.killedUnknownCountSpan.textContent = killedUnknown;
+        this.refreshedCountSpan.textContent = refreshed;
+        this.availableCountSpan.textContent = available;
+        
+        // 更新今日击杀数量
+        this.updateTodayCount();
+    }
+
+    // 更新今日击杀数量
+    updateTodayCount() {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+        
+        const todayKills = this.killEvents.filter(event => {
+            return event.timestamp >= todayStart && event.timestamp < todayEnd;
+        }).length;
+        
+        this.todayCountSpan.textContent = todayKills;
+    }
+
+    // 记录击杀事件
+    recordKillEvent(lineNumber, timestamp) {
+        const event = { line: lineNumber, timestamp: timestamp };
+        this.killEvents.push(event);
+        localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+        
+        // 检查是否达到里程碑（每10次击杀触发庆祝动画）
+        const totalKills = this.killEvents.length;
+        return totalKills > 0 && totalKills % 10 === 0;
+    }
+
+    // 移除击杀事件
+    removeKillEvent(lineNumber, killTime) {
+        if (killTime) {
+            this.killEvents = this.killEvents.filter(event => 
+                !(event.line == lineNumber && event.timestamp == killTime)
+            );
+            localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+        }
+    }
+
+    // 重置所有击杀事件
+    resetAllKillEvents() {
+        this.killEvents = [];
+        localStorage.removeItem('killEvents');
+    }
+
+    // 获取最近几天的击杀数据
+    getDailyKillData(days = 7) {
+        const dates = [];
+        const now = new Date();
+        
+        for (let i = days - 1; i >= 0; i--) {
+            const date = new Date();
+            date.setDate(now.getDate() - i);
+            dates.push({
+                label: `${date.getMonth() + 1}/${date.getDate()}`,
+                fullDate: date.toLocaleDateString()
+            });
+        }
+        
+        // 统计每日击杀数量
+        const dailyKills = dates.map(dateInfo => {
+            return this.killEvents.filter(event => {
+                const eventDate = new Date(event.timestamp).toLocaleDateString();
+                return eventDate === dateInfo.fullDate;
+            }).length;
+        });
+        
+        return {
+            labels: dates.map(d => d.label),
+            data: dailyKills
+        };
+    }
+
+    // 获取小时击杀数据
+    getHourlyKillData(hours = 24) {
+        const hourLabels = [];
+        const hourlyKills = new Array(hours).fill(0);
+        
+        for (let i = 0; i < hours; i++) {
+            hourLabels.push(`${i.toString().padStart(2, '0')}:00`);
+        }
+        
+        // 统计每小时的击杀数量
+        this.killEvents.forEach(event => {
+            const eventDate = new Date(event.timestamp);
+            const hour = eventDate.getHours();
+            if (hour < hours) {
+                hourlyKills[hour]++;
+            }
+        });
+        
+        return {
+            labels: hourLabels,
+            data: hourlyKills
+        };
+    }
+
+    // 获取所有击杀事件（用于备份或导出）
+    getKillEvents() {
+        return [...this.killEvents]; // 返回副本
+    }
+
+    // 导入击杀事件（用于恢复备份）
+    importKillEvents(events) {
+        if (Array.isArray(events)) {
+            this.killEvents = events;
+            localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+            this.updateStats();
+        }
+    }
+
+    // 获取统计摘要
+    getStatsSummary() {
+        const totalKills = this.killEvents.length;
+        const todayKills = this.getTodayKillCount();
+        
+        // 计算平均每日击杀
+        const firstKillDate = this.killEvents.length > 0 ? 
+            new Date(Math.min(...this.killEvents.map(e => e.timestamp))) : new Date();
+        const daysSinceFirst = Math.ceil((Date.now() - firstKillDate.getTime()) / (1000 * 60 * 60 * 24));
+        const avgDaily = daysSinceFirst > 0 ? (totalKills / daysSinceFirst).toFixed(1) : 0;
+        
+        return {
+            total: totalKills,
+            today: todayKills,
+            avgDaily: avgDaily,
+            daysSinceFirst: daysSinceFirst
+        };
+    }
+
+    // 获取今日击杀数量
+    getTodayKillCount() {
+        const now = new Date();
+        const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+        const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+        
+        return this.killEvents.filter(event => {
+            return event.timestamp >= todayStart && event.timestamp < todayEnd;
+        }).length;
+    }
+}
+
+// 导出统计管理器
+export { StatsManager };
