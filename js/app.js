@@ -534,43 +534,6 @@ class GoldPigMonitorApp {
         
         console.log('状态恢复完成');
     }
-
-    // 调试：检查事件绑定状态
-    debugEventBindings() {
-        console.log('=== 调试事件绑定状态 ===');
-        
-        const testCells = [1, 50, 100, 200, 400]; // 测试几个关键线路
-        
-        testCells.forEach(lineNumber => {
-            const cell = document.querySelector(`td[data-line="${lineNumber}"]`);
-            if (cell) {
-                console.log(`线路${lineNumber}:`);
-                console.log('  - DOM元素存在:', !!cell);
-                console.log('  - 有click监听器:', cell.onclick !== null || cell.click);
-                console.log('  - 有定时器元素:', !!cell.querySelector('.timer-display'));
-                console.log('  - 有tooltip:', !!cell.querySelector('.tooltip'));
-                console.log('  - 当前状态类:', Array.from(cell.classList));
-                
-                // 尝试手动触发点击事件
-                console.log('  - 尝试模拟点击...');
-                try {
-                    const clickEvent = new MouseEvent('click', {
-                        bubbles: true,
-                        cancelable: true,
-                        view: window
-                    });
-                    cell.dispatchEvent(clickEvent);
-                    console.log('  - 点击事件触发成功');
-                } catch (error) {
-                    console.log('  - 点击事件触发失败:', error.message);
-                }
-            } else {
-                console.log(`线路${lineNumber}: DOM元素不存在`);
-            }
-        });
-        
-        console.log('=== 调试完成 ===');
-    }
 }
 
 // 创建应用实例并初始化
