@@ -1,16 +1,48 @@
-// 离开房间错误诊断脚本
-// 运行此脚本来诊断离开房间时可能遇到的问题
+// Firebase协作功能 - 离开房间诊断与修复脚本
+// 检查在没有房间时点击协作按钮的行为
 
-console.log('🔍 开始诊断离开房间问题...');
-
-// 1. 检查 FirebaseCollaborationManager 实例
-function checkFirebaseManager() {
-    console.log('1. 检查 FirebaseCollaborationManager 实例...');
+(function() {
+    console.log('� Firebase协作诊断脚本开始运行...');
     
-    // 检查全局 app 对象
-    if (window.app && window.app.firebaseManager) {
-        console.log('✅ 找到 firebaseManager 实例');
-        const fm = window.app.firebaseManager;
+    const diagnostics = {
+        results: [],
+        
+        log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logMessage = `[${timestamp}] ${message}`;
+            console.log(logMessage);
+            this.results.push({ timestamp, message, type });
+        },
+        
+        error(message) {
+            this.log(`❌ ${message}`, 'error');
+        },
+        
+        success(message) {
+            this.log(`✅ ${message}`, 'success');
+        },
+        
+        warning(message) {
+            this.log(`⚠️ ${message}`, 'warning');
+        },
+        
+        // 检查Firebase协作管理器是否可用
+        checkFirebaseManager() {
+            this.log('检查Firebase协作管理器...');
+            
+            // 检查全局应用实例
+            if (typeof window.goldPigApp === 'undefined') {
+                this.error('goldPigApp 未定义');
+                return false;
+            }
+            
+            if (!window.goldPigApp.firebaseCollaborationManager) {
+                this.error('firebaseCollaborationManager 未初始化');
+                return false;
+            }
+            
+            const manager = window.goldPigApp.firebaseCollaborationManager;
+            this.success('Firebase协作管理器已找到');
         
         console.log('FirebaseManager 状态:', {
             isInitialized: fm.isInitialized,

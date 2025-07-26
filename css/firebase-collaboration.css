@@ -1,47 +1,94 @@
-/* Firebase 协作房间信息样式 */
-.room-info {
+/* Firebase 协作悬浮面板样式 */
+.firebase-collaboration-panel {
     position: fixed !important;
     top: 20px !important;
     right: 20px !important;
     background: white !important;
-    border: 2px solid #3498db !important;
+    border: 2px solid #2ecc71 !important;
     border-radius: 10px !important;
     padding: 15px !important;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
     z-index: 10000 !important;
-    min-width: 300px !important;
-    max-width: 380px !important;
+    min-width: 320px !important;
+    max-width: 400px !important;
     font-family: Arial, sans-serif !important;
     color: #333 !important;
+    font-size: 14px !important;
 }
 
-.room-info.host-mode {
-    border-color: #e74c3c !important;
-}
-
-.room-header {
+.panel-header {
     display: flex !important;
     justify-content: space-between !important;
-    align-items: flex-start !important;
-    margin-bottom: 10px !important;
-    flex-wrap: wrap !important;
-    gap: 8px !important;
+    align-items: center !important;
+    margin-bottom: 15px !important;
+    padding-bottom: 10px !important;
+    border-bottom: 2px solid #ecf0f1 !important;
 }
 
-.room-header h3 {
+.panel-header h3 {
     margin: 0 !important;
     color: #2c3e50 !important;
     font-size: 16px !important;
-    flex: 1 !important;
-    min-width: 160px !important;
+    font-weight: bold !important;
+}
+
+.close-panel-btn {
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 50% !important;
+    width: 24px !important;
+    height: 24px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    transition: background 0.2s ease !important;
+}
+
+.close-panel-btn:hover {
+    background: #c0392b !important;
+}
+
+.connection-status {
+    background: #f8f9fa !important;
+    padding: 10px !important;
+    border-radius: 6px !important;
+    margin-bottom: 15px !important;
+    border-left: 4px solid #3498db !important;
+}
+
+.connection-status p {
+    margin: 4px 0 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+}
+
+.status-badge {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+    display: inline-block !important;
+}
+
+.status-badge.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.status-badge.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
 }
 
 .room-details {
-    margin-bottom: 10px !important;
+    margin-bottom: 15px !important;
 }
 
 .room-details p {
-    margin: 5px 0 !important;
+    margin: 8px 0 !important;
     color: #34495e !important;
     font-size: 14px !important;
 }
@@ -50,69 +97,130 @@
     color: #2c3e50 !important;
 }
 
-.connection-status {
-    padding: 4px 8px !important;
-    border-radius: 4px !important;
-    font-size: 12px !important;
+.room-actions {
+    margin-bottom: 15px !important;
+}
+
+.room-actions h4 {
+    margin: 15px 0 8px 0 !important;
+    color: #2c3e50 !important;
+    font-size: 14px !important;
     font-weight: bold !important;
-    white-space: nowrap !important;
 }
 
-.connection-status.connected {
-    background: #d4edda !important;
-    color: #155724 !important;
+.action-btn {
+    width: 100% !important;
+    padding: 10px 15px !important;
+    border: none !important;
+    border-radius: 6px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    margin: 5px 0 !important;
+    transition: all 0.2s ease !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 5px !important;
 }
 
-.connection-status.disconnected {
-    background: #f8d7da !important;
-    color: #721c24 !important;
+.action-btn.primary {
+    background: #3498db !important;
+    color: white !important;
 }
 
-.leave-room-btn {
+.action-btn.primary:hover {
+    background: #2980b9 !important;
+    transform: translateY(-1px) !important;
+}
+
+.action-btn.secondary {
+    background: #95a5a6 !important;
+    color: white !important;
+}
+
+.action-btn.secondary:hover {
+    background: #7f8c8d !important;
+}
+
+.action-btn.danger {
     background: #e74c3c !important;
     color: white !important;
-    border: none !important;
-    padding: 8px 12px !important;
-    border-radius: 5px !important;
-    cursor: pointer !important;
-    font-size: 13px !important;
-    font-weight: bold !important;
-    transition: all 0.2s ease !important;
-    z-index: 10001 !important;
-    position: relative !important;
-    pointer-events: auto !important;
-    opacity: 1 !important;
-    white-space: nowrap !important;
-    min-width: 80px !important;
 }
 
-.leave-room-btn:hover {
+.action-btn.danger:hover {
     background: #c0392b !important;
     transform: translateY(-1px) !important;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
 }
 
-.leave-room-btn:active {
-    background: #a93226 !important;
-    transform: translateY(0) !important;
-}
-
-.leave-room-btn:disabled {
+.action-btn:disabled {
     background: #bdc3c7 !important;
+    color: #7f8c8d !important;
     cursor: not-allowed !important;
-    opacity: 0.6 !important;
     transform: none !important;
+}
+
+.join-room-section {
+    background: #f8f9fa !important;
+    padding: 12px !important;
+    border-radius: 6px !important;
+    margin: 10px 0 !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+.room-input {
+    width: 100% !important;
+    padding: 8px 12px !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    font-size: 14px !important;
+    margin: 5px 0 !important;
+    box-sizing: border-box !important;
+    transition: border-color 0.2s ease !important;
+}
+
+.room-input:focus {
+    outline: none !important;
+    border-color: #3498db !important;
+    box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2) !important;
+}
+
+.user-settings {
+    background: #f8f9fa !important;
+    padding: 12px !important;
+    border-radius: 6px !important;
+    margin: 10px 0 !important;
+    border: 1px solid #dee2e6 !important;
+}
+
+.settings-input {
+    width: calc(70% - 5px) !important;
+    padding: 6px 10px !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    font-size: 13px !important;
+    margin: 3px 5px 3px 0 !important;
+    box-sizing: border-box !important;
+}
+
+.color-input {
+    width: calc(30% - 5px) !important;
+    height: 32px !important;
+    border: 2px solid #dee2e6 !important;
+    border-radius: 4px !important;
+    margin: 3px 0 3px 5px !important;
+    cursor: pointer !important;
 }
 
 .copy-btn {
     background: #3498db !important;
     color: white !important;
     border: none !important;
-    padding: 4px 6px !important;
+    padding: 4px 8px !important;
     border-radius: 3px !important;
     cursor: pointer !important;
     font-size: 12px !important;
-    margin-left: 5px !important;
+    margin-left: 8px !important;
     transition: background 0.2s ease !important;
 }
 
@@ -121,7 +229,7 @@
 }
 
 .users-list {
-    max-height: 150px !important;
+    max-height: 120px !important;
     overflow-y: auto !important;
     margin-top: 10px !important;
     border-top: 1px solid #ecf0f1 !important;
@@ -169,6 +277,42 @@
 .user-status.disconnected {
     background: #f8d7da !important;
     color: #721c24 !important;
+}
+
+.firebase-info {
+    background: #e8f5e8 !important;
+    padding: 12px !important;
+    border-radius: 6px !important;
+    border-left: 4px solid #2ecc71 !important;
+    margin-top: 15px !important;
+}
+
+.firebase-info h4 {
+    margin: 0 0 8px 0 !important;
+    color: #27ae60 !important;
+    font-size: 14px !important;
+}
+
+.firebase-info ul {
+    margin: 8px 0 !important;
+    padding-left: 20px !important;
+}
+
+.firebase-info li {
+    margin: 4px 0 !important;
+    color: #2c3e50 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+}
+
+.warning-box {
+    background: #fff3cd !important;
+    border: 1px solid #ffeaa7 !important;
+    border-radius: 4px !important;
+    padding: 10px !important;
+    margin-top: 10px !important;
+    color: #856404 !important;
+    font-size: 13px !important;
 }
 
 /* 临时消息样式 */

@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>悬浮协作面板测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+        }
+        .test-btn:hover {
+            background: #2980b9;
+        }
+        .test-btn.success {
+            background: #27ae60;
+        }
+        .test-btn.success:hover {
+            background: #229954;
+        }
+        .status {
+            background: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 15px 0;
+            font-family: monospace;
+        }
+        .feature-list {
+            background: #e8f5e8;
+            padding: 15px;
+            border-radius: 5px;
+            border-left: 4px solid #27ae60;
+        }
+        .feature-list h3 {
+            margin-top: 0;
+            color: #27ae60;
+        }
+        .feature-list ul {
+            margin: 10px 0;
+        }
+        .feature-list li {
+            margin: 5px 0;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔥 悬浮协作面板测试</h1>
+        
+        <div class="status" id="status">
+            准备测试悬浮协作面板功能...
+        </div>
+        
+        <div style="text-align: center; margin: 20px 0;">
+            <h3>🧪 测试功能</h3>
+            <button class="test-btn" onclick="testShowPanel()">显示协作面板</button>
+            <button class="test-btn" onclick="testCreateRoom()">模拟创建房间</button>
+            <button class="test-btn" onclick="testJoinRoom()">模拟加入房间</button>
+            <button class="test-btn" onclick="testUserSettings()">测试用户设置</button>
+            <button class="test-btn" onclick="hidePanel()">隐藏面板</button>
+        </div>
+        
+        <div class="feature-list">
+            <h3>✨ 新功能特点</h3>
+            <ul>
+                <li>✅ <strong>统一悬浮界面:</strong> 不管是否在房间中都显示悬浮框</li>
+                <li>✅ <strong>动态内容切换:</strong> 根据用户状态显示不同内容</li>
+                <li>✅ <strong>优雅的UI设计:</strong> 现代化的悬浮面板样式</li>
+                <li>✅ <strong>完整功能支持:</strong> 创建、加入、离开房间和用户设置</li>
+                <li>✅ <strong>实时状态更新:</strong> 连接状态和用户列表实时显示</li>
+                <li>✅ <strong>键盘支持:</strong> 房间号输入框支持回车键</li>
+                <li>✅ <strong>错误处理:</strong> 完善的错误提示和状态反馈</li>
+            </ul>
+        </div>
+        
+        <div style="margin-top: 30px;">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li><strong>首次使用:</strong> 点击"显示协作面板"查看创建/加入界面</li>
+                <li><strong>创建房间:</strong> 点击"🏠 创建房间"按钮</li>
+                <li><strong>加入房间:</strong> 输入房间号后点击"🚪 加入房间"</li>
+                <li><strong>用户设置:</strong> 可以自定义用户名和颜色</li>
+                <li><strong>房间管理:</strong> 在房间中时显示房间信息和离开按钮</li>
+            </ol>
+        </div>
+        
+        <div style="background: #fff3cd; padding: 15px; border-radius: 5px; margin-top: 20px;">
+            <h4>⚠️ 注意事项</h4>
+            <ul>
+                <li>确保主页面已正确加载Firebase协作管理器</li>
+                <li>面板会根据用户是否在房间中自动切换内容</li>
+                <li>所有操作都会有状态反馈和错误提示</li>
+                <li>面板可以通过右上角的 ✕ 按钮关闭</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function updateStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            status.style.color = type === 'success' ? '#27ae60' : type === 'error' ? '#e74c3c' : '#2c3e50';
+            console.log(message);
+        }
+        
+        function testShowPanel() {
+            updateStatus('测试显示协作面板...', 'info');
+            
+            try {
+                const app = window.opener?.app || window.parent.app;
+                if (app && app.firebaseManager) {
+                    app.firebaseManager.showCollaborationDialog();
+                    updateStatus('✅ 协作面板已显示', 'success');
+                } else {
+                    updateStatus('❌ 无法访问FirebaseManager', 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 显示失败: ' + error.message, 'error');
+            }
+        }
+        
+        function testCreateRoom() {
+            updateStatus('测试创建房间流程...', 'info');
+            
+            try {
+                const app = window.opener?.app || window.parent.app;
+                if (app && app.firebaseManager) {
+                    // 先显示面板
+                    app.firebaseManager.showCollaborationDialog();
+                    
+                    // 等待面板显示后模拟点击创建按钮
+                    setTimeout(() => {
+                        const createBtn = (window.opener || window.parent).document.getElementById('firebase-create-room-btn');
+                        if (createBtn) {
+                            updateStatus('✅ 找到创建房间按钮，可以手动点击测试', 'success');
+                        } else {
+                            updateStatus('⚠️ 未找到创建房间按钮，可能需要刷新', 'error');
+                        }
+                    }, 500);
+                } else {
+                    updateStatus('❌ 无法访问FirebaseManager', 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        function testJoinRoom() {
+            updateStatus('测试加入房间流程...', 'info');
+            
+            try {
+                const app = window.opener?.app || window.parent.app;
+                if (app && app.firebaseManager) {
+                    // 先显示面板
+                    app.firebaseManager.showCollaborationDialog();
+                    
+                    // 等待面板显示后填入测试房间号
+                    setTimeout(() => {
+                        const roomInput = (window.opener || window.parent).document.getElementById('firebase-room-id-input');
+                        if (roomInput) {
+                            roomInput.value = 'test_room_123';
+                            updateStatus('✅ 已填入测试房间号，可以点击加入按钮测试', 'success');
+                        } else {
+                            updateStatus('⚠️ 未找到房间号输入框', 'error');
+                        }
+                    }, 500);
+                } else {
+                    updateStatus('❌ 无法访问FirebaseManager', 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        function testUserSettings() {
+            updateStatus('测试用户设置...', 'info');
+            
+            try {
+                const app = window.opener?.app || window.parent.app;
+                if (app && app.firebaseManager) {
+                    // 先显示面板
+                    app.firebaseManager.showCollaborationDialog();
+                    
+                    // 等待面板显示后填入测试设置
+                    setTimeout(() => {
+                        const nameInput = (window.opener || window.parent).document.getElementById('firebase-username-input');
+                        const colorInput = (window.opener || window.parent).document.getElementById('firebase-color-input');
+                        
+                        if (nameInput && colorInput) {
+                            nameInput.value = '测试用户_' + Math.random().toString(36).substr(2, 5);
+                            colorInput.value = '#' + Math.floor(Math.random()*16777215).toString(16);
+                            updateStatus('✅ 已填入测试设置，可以点击保存按钮测试', 'success');
+                        } else {
+                            updateStatus('⚠️ 未找到设置输入框', 'error');
+                        }
+                    }, 500);
+                } else {
+                    updateStatus('❌ 无法访问FirebaseManager', 'error');
+                }
+            } catch (error) {
+                updateStatus('❌ 测试失败: ' + error.message, 'error');
+            }
+        }
+        
+        function hidePanel() {
+            updateStatus('隐藏协作面板...', 'info');
+            
+            try {
+                const app = window.opener?.app || window.parent.app;
+                if (app && app.firebaseManager && app.firebaseManager.hideFloatingCollaborationPanel) {
+                    app.firebaseManager.hideFloatingCollaborationPanel();
+                    updateStatus('✅ 协作面板已隐藏', 'success');
+                } else {
+                    // 尝试直接删除面板元素
+                    const panel = (window.opener || window.parent).document.getElementById('firebase-collaboration-panel');
+                    if (panel) {
+                        panel.remove();
+                        updateStatus('✅ 协作面板已强制隐藏', 'success');
+                    } else {
+                        updateStatus('⚠️ 未找到协作面板', 'error');
+                    }
+                }
+            } catch (error) {
+                updateStatus('❌ 隐藏失败: ' + error.message, 'error');
+            }
+        }
+        
+        // 页面加载时检查状态
+        window.addEventListener('load', () => {
+            try {
+                const app = window.opener?.app || window.parent.app;
+                if (app && app.firebaseManager) {
+                    const fm = app.firebaseManager;
+                    updateStatus(`Firebase Manager 状态: ${fm.isInitialized ? '已初始化' : '未初始化'}, ${fm.roomId ? '在房间中(' + fm.roomId + ')' : '未加入房间'}`, 'success');
+                } else {
+                    updateStatus('无法访问主页面，请确保从主页面打开此测试工具', 'error');
+                }
+            } catch (error) {
+                updateStatus('页面加载检查失败: ' + error.message, 'error');
+            }
+        });
+    </script>
+</body>
+</html>

@@ -3,14 +3,14 @@
 
 console.log('🔧 快速修复离开房间问题...');
 
-// 1. 强制显示房间信息框（如果用户在房间中）
-function showRoomInfoFixed() {
-    if (window.app && window.app.firebaseManager && window.app.firebaseManager.roomId) {
-        console.log('📱 强制显示房间信息框...');
-        window.app.firebaseManager.showRoomInfo();
-        console.log('✅ 房间信息框已显示');
+// 1. 强制显示悬浮协作面板（如果用户在房间中）
+function showFloatingPanelFixed() {
+    if (window.app && window.app.firebaseManager) {
+        console.log('📱 强制显示悬浮协作面板...');
+        window.app.firebaseManager.showFloatingCollaborationPanel();
+        console.log('✅ 悬浮协作面板已显示');
     } else {
-        console.log('❌ 用户不在房间中或无法访问FirebaseManager');
+        console.log('❌ 无法访问FirebaseManager');
     }
 }
 
@@ -42,6 +42,11 @@ function fixLeaveButton() {
                     if (window.app && window.app.firebaseManager) {
                         await window.app.firebaseManager.leaveRoom();
                         console.log('✅ 离开房间成功');
+                        
+                        // 隐藏面板
+                        const panel = document.getElementById('firebase-collaboration-panel');
+                        if (panel) panel.remove();
+                        
                     } else {
                         throw new Error('无法访问FirebaseManager');
                     }
@@ -49,7 +54,7 @@ function fixLeaveButton() {
                     console.error('❌ 离开房间失败:', error);
                     alert('离开房间失败: ' + error.message);
                     newBtn.disabled = false;
-                    newBtn.textContent = '离开房间';
+                    newBtn.textContent = '🚪 离开房间';
                 }
             }
         });
@@ -59,14 +64,14 @@ function fixLeaveButton() {
             background: #e74c3c !important;
             color: white !important;
             border: none !important;
-            padding: 8px 12px !important;
-            border-radius: 5px !important;
+            padding: 10px 15px !important;
+            border-radius: 6px !important;
             cursor: pointer !important;
-            font-size: 13px !important;
+            font-size: 14px !important;
             font-weight: bold !important;
             opacity: 1 !important;
             pointer-events: auto !important;
-            z-index: 10001 !important;
+            width: 100% !important;
         `;
         
         console.log('✅ 离开按钮已修复');

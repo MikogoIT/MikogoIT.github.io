@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Firebase协作 - 悬浮面板测试</title>
+    <link rel="stylesheet" href="css/firebase-collaboration.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+        }
+        
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 10px;
+            padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+        
+        .test-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: background 0.2s ease;
+        }
+        
+        .test-btn:hover {
+            background: #2980b9;
+        }
+        
+        .test-btn.success {
+            background: #27ae60;
+        }
+        
+        .test-btn.warning {
+            background: #f39c12;
+        }
+        
+        .test-btn.danger {
+            background: #e74c3c;
+        }
+        
+        .status-info {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .status-info h4 {
+            margin: 0 0 10px 0;
+            color: #495057;
+        }
+        
+        .log-area {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            padding: 15px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔥 Firebase协作悬浮面板测试</h1>
+        <p>测试在不同状态下点击协作按钮的行为（特别是没有在房间时的创建/加入界面）</p>
+        
+        <div class="test-buttons">
+            <button class="test-btn success" onclick="testShowCollaborationDialog()">
+                🏠 显示协作悬浮面板
+            </button>
+            <button class="test-btn" onclick="simulateInRoom()">
+                👥 模拟在房间中
+            </button>
+            <button class="test-btn warning" onclick="simulateOutOfRoom()">
+                🚪 模拟离开房间
+            </button>
+            <button class="test-btn danger" onclick="closePanel()">
+                ❌ 关闭面板
+            </button>
+            <button class="test-btn" onclick="clearLog()">
+                🗑️ 清空日志
+            </button>
+        </div>
+        
+        <div class="status-info">
+            <h4>📊 当前状态</h4>
+            <p><strong>房间状态:</strong> <span id="room-status">❌ 不在房间中</span></p>
+            <p><strong>用户ID:</strong> <span id="user-id">未设置</span></p>
+            <p><strong>连接状态:</strong> <span id="connection-status">🟢 已连接</span></p>
+        </div>
+        
+        <div class="log-area" id="log-area">
+            <strong>📝 测试日志:</strong><br>
+            页面已加载，准备进行测试...<br>
+        </div>
+    </div>
+
+    <!-- Firebase SDK -->
+    <script type="module">
+        import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js';
+        import { getDatabase } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js';
+        import { getAuth, signInAnonymously } from 'https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js';
+        
+        // 模拟Firebase协作管理器
+        class MockFirebaseCollaborationManager {
+            constructor() {
+                this.roomId = null;
+                this.isHost = false;
+                this.userName = 'TestUser';
+                this.userColor = '#3498db';
+                this.isInitialized = true;
+                this.isConnected = true;
+                this.userId = 'test-user-' + Math.random().toString(36).substr(2, 9);
+                
+                this.log('MockFirebaseCollaborationManager 初始化完成');
+            }
+            
+            log(message) {
+                const logArea = document.getElementById('log-area');
+                const timestamp = new Date().toLocaleTimeString();
+                logArea.innerHTML += `[${timestamp}] ${message}<br>`;
+                logArea.scrollTop = logArea.scrollHeight;
+                console.log(message);
+            }
+            
+            updateStatus() {
+                document.getElementById('room-status').textContent = this.roomId ? `🏠 在房间: ${this.roomId}` : '❌ 不在房间中';
+                document.getElementById('user-id').textContent = this.userId;
+                document.getElementById('connection-status').textContent = this.isConnected ? '🟢 已连接' : '🔴 已断开';
+            }
+            
+            showCollaborationDialog() {
+                this.log('🎯 调用 showCollaborationDialog()');
+                
+                // 移除已存在的协作框
+                const existingDialog = document.getElementById('firebase-collaboration-panel');
+                if (existingDialog) {
+                    existingDialog.remove();
+                    this.log('🗑️ 移除了已存在的协作面板');
+                }
+
+                // 创建悬浮协作面板
+                this.showFloatingCollaborationPanel();
+            }
+            
+            showFloatingCollaborationPanel() {
+                this.log('🏠 显示Firebase协作悬浮面板');
+                
+                const panel = document.createElement('div');
+                panel.id = 'firebase-collaboration-panel';
+                panel.className = 'firebase-collaboration-panel';
+                
+                if (this.roomId) {
+                    // 用户在房间中 - 显示房间信息
+                    this.log('📱 用户在房间中，显示房间信息界面');
+                    panel.innerHTML = this.getRoomInfoContent();
+                } else {
+                    // 用户不在房间中 - 显示创建/加入界面
+                    this.log('🆕 用户不在房间中，显示创建/加入界面');
+                    panel.innerHTML = this.getCreateJoinContent();
+                }
+                
+                // 添加悬浮框样式
+                panel.style.cssText = `
+                    position: fixed !important;
+                    top: 20px !important;
+                    right: 20px !important;
+                    background: white !important;
+                    border: 2px solid ${this.roomId ? (this.isHost ? '#e74c3c' : '#3498db') : '#2ecc71'} !important;
+                    border-radius: 10px !important;
+                    padding: 15px !important;
+                    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+                    z-index: 10000 !important;
+                    min-width: 320px !important;
+                    max-width: 400px !important;
+                    font-family: Arial, sans-serif !important;
+                    color: #333 !important;
+                `;
+                
+                document.body.appendChild(panel);
+                this.log('✅ Firebase协作悬浮面板已添加到DOM');
+                
+                // 绑定事件
+                setTimeout(() => {
+                    this.bindFloatingPanelEvents(panel);
+                }, 100);
+            }
+            
+            getRoomInfoContent() {
+                return `
+                    <div class="panel-header">
+                        <h3>🏠 Firebase协作房间</h3>
+                        <button id="close-panel-btn" class="close-panel-btn" title="关闭">✕</button>
+                    </div>
+                    <div class="connection-status">
+                        <span class="status-badge ${this.isConnected ? 'connected' : 'disconnected'}">
+                            ${this.isConnected ? '✅ 已连接' : '❌ 连接中断'}
+                        </span>
+                    </div>
+                    <div class="room-details">
+                        <p><strong>房间号:</strong> 
+                           <span id="room-id-display">${this.roomId}</span> 
+                           <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button>
+                        </p>
+                        <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
+                        <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
+                        <div id="users-list" class="users-list"></div>
+                    </div>
+                    <div class="room-actions">
+                        <button id="leave-room-btn" class="action-btn danger">🚪 离开房间</button>
+                    </div>
+                `;
+            }
+            
+            getCreateJoinContent() {
+                return `
+                    <div class="panel-header">
+                        <h3>🔥 Firebase多人协作</h3>
+                        <button id="close-panel-btn" class="close-panel-btn" title="关闭">✕</button>
+                    </div>
+                    <div class="connection-status">
+                        <p><strong>连接模式:</strong> Firebase实时数据库</p>
+                        <p><strong>初始化:</strong> <span id="firebase-init-status">${this.isInitialized ? '✅ 已初始化' : '❌ 未初始化'}</span></p>
+                        <p><strong>连接状态:</strong> <span id="firebase-connection-status">${this.isConnected ? '✅ 已连接' : '❌ 已断开'}</span></p>
+                    </div>
+                    <div class="room-actions">
+                        <h4>🏠 房间操作</h4>
+                        <button id="firebase-create-room-btn" class="action-btn primary" ${!this.isInitialized ? 'disabled' : ''}>
+                            🏠 创建房间
+                        </button>
+                        
+                        <div class="join-room-section">
+                            <h4>🚪 加入房间</h4>
+                            <input type="text" id="firebase-room-id-input" placeholder="输入房间号" class="room-input" />
+                            <button id="firebase-join-room-btn" class="action-btn primary" ${!this.isInitialized ? 'disabled' : ''}>
+                                🚪 加入房间
+                            </button>
+                        </div>
+                        
+                        <div class="user-settings">
+                            <h4>⚙️ 用户设置</h4>
+                            <input type="text" id="firebase-username-input" placeholder="用户名" value="${this.userName || ''}" class="settings-input" />
+                            <input type="color" id="firebase-color-input" value="${this.userColor || '#3498db'}" class="color-input" />
+                            <button id="firebase-save-settings-btn" class="action-btn secondary">💾 保存设置</button>
+                        </div>
+                    </div>
+                    
+                    <div class="firebase-info">
+                        <h4>ℹ️ 功能说明</h4>
+                        <ul>
+                            <li>🌐 <strong>跨设备支持:</strong> 不同设备间实时协作</li>
+                            <li>⚡ <strong>实时同步:</strong> 操作实时同步到所有用户</li>
+                            <li>🔄 <strong>断线重连:</strong> 自动处理网络问题</li>
+                            <li>💾 <strong>数据持久化:</strong> 状态保存在云端</li>
+                        </ul>
+                        ${!this.isInitialized ? `
+                            <div class="warning-box">
+                                <strong>⚠️ 需要配置:</strong> 请先配置Firebase项目
+                            </div>
+                        ` : ''}
+                    </div>
+                `;
+            }
+            
+            bindFloatingPanelEvents(panel) {
+                this.log('🔧 绑定悬浮面板事件');
+                
+                // 关闭按钮
+                const closeBtn = panel.querySelector('#close-panel-btn');
+                if (closeBtn) {
+                    closeBtn.addEventListener('click', () => {
+                        panel.remove();
+                        this.log('✅ 悬浮面板已关闭');
+                    });
+                }
+
+                if (this.roomId) {
+                    // 房间中的事件绑定
+                    this.bindRoomPanelEvents(panel);
+                } else {
+                    // 创建/加入房间的事件绑定
+                    this.bindCreateJoinPanelEvents(panel);
+                }
+            }
+            
+            bindRoomPanelEvents(panel) {
+                this.log('🏠 绑定房间面板事件');
+                
+                // 离开房间按钮
+                const leaveBtn = panel.querySelector('#leave-room-btn');
+                if (leaveBtn) {
+                    leaveBtn.addEventListener('click', () => {
+                        this.log('🚪 点击离开房间按钮');
+                        this.leaveRoom();
+                    });
+                }
+                
+                // 复制房间号按钮
+                const copyBtn = panel.querySelector('#copy-room-id');
+                if (copyBtn) {
+                    copyBtn.addEventListener('click', () => {
+                        navigator.clipboard.writeText(this.roomId).then(() => {
+                            this.log('📋 房间号已复制到剪贴板');
+                        });
+                    });
+                }
+            }
+            
+            bindCreateJoinPanelEvents(panel) {
+                this.log('🆕 绑定创建/加入面板事件');
+                
+                // 创建房间按钮
+                const createBtn = panel.querySelector('#firebase-create-room-btn');
+                if (createBtn) {
+                    createBtn.addEventListener('click', () => {
+                        this.log('🏠 点击创建房间按钮');
+                        this.createRoom();
+                    });
+                }
+                
+                // 加入房间按钮
+                const joinBtn = panel.querySelector('#firebase-join-room-btn');
+                if (joinBtn) {
+                    joinBtn.addEventListener('click', () => {
+                        const roomInput = panel.querySelector('#firebase-room-id-input');
+                        const roomId = roomInput ? roomInput.value.trim() : '';
+                        this.log(`🚪 点击加入房间按钮，房间号: ${roomId}`);
+                        if (roomId) {
+                            this.joinRoom(roomId);
+                        }
+                    });
+                }
+                
+                // 保存设置按钮
+                const saveBtn = panel.querySelector('#firebase-save-settings-btn');
+                if (saveBtn) {
+                    saveBtn.addEventListener('click', () => {
+                        const nameInput = panel.querySelector('#firebase-username-input');
+                        const colorInput = panel.querySelector('#firebase-color-input');
+                        
+                        if (nameInput) this.userName = nameInput.value;
+                        if (colorInput) this.userColor = colorInput.value;
+                        
+                        this.log(`💾 保存用户设置: ${this.userName}, ${this.userColor}`);
+                    });
+                }
+            }
+            
+            createRoom() {
+                this.roomId = 'test-room-' + Math.random().toString(36).substr(2, 6);
+                this.isHost = true;
+                this.log(`🏠 创建房间成功: ${this.roomId}`);
+                this.updateStatus();
+                
+                // 刷新面板内容
+                const panel = document.getElementById('firebase-collaboration-panel');
+                if (panel) {
+                    panel.remove();
+                    this.showFloatingCollaborationPanel();
+                }
+            }
+            
+            joinRoom(roomId) {
+                this.roomId = roomId;
+                this.isHost = false;
+                this.log(`🚪 加入房间成功: ${roomId}`);
+                this.updateStatus();
+                
+                // 刷新面板内容
+                const panel = document.getElementById('firebase-collaboration-panel');
+                if (panel) {
+                    panel.remove();
+                    this.showFloatingCollaborationPanel();
+                }
+            }
+            
+            leaveRoom() {
+                const oldRoomId = this.roomId;
+                this.roomId = null;
+                this.isHost = false;
+                this.log(`🚪 离开房间成功: ${oldRoomId}`);
+                this.updateStatus();
+                
+                // 隐藏面板
+                const panel = document.getElementById('firebase-collaboration-panel');
+                if (panel) {
+                    panel.remove();
+                }
+            }
+        }
+        
+        // 全局变量
+        window.mockFirebaseManager = new MockFirebaseCollaborationManager();
+        
+        // 测试函数
+        window.testShowCollaborationDialog = function() {
+            window.mockFirebaseManager.showCollaborationDialog();
+        };
+        
+        window.simulateInRoom = function() {
+            window.mockFirebaseManager.roomId = 'test-room-123';
+            window.mockFirebaseManager.isHost = Math.random() > 0.5;
+            window.mockFirebaseManager.log('🏠 模拟进入房间状态');
+            window.mockFirebaseManager.updateStatus();
+        };
+        
+        window.simulateOutOfRoom = function() {
+            window.mockFirebaseManager.roomId = null;
+            window.mockFirebaseManager.isHost = false;
+            window.mockFirebaseManager.log('🚪 模拟离开房间状态');
+            window.mockFirebaseManager.updateStatus();
+        };
+        
+        window.closePanel = function() {
+            const panel = document.getElementById('firebase-collaboration-panel');
+            if (panel) {
+                panel.remove();
+                window.mockFirebaseManager.log('❌ 手动关闭了面板');
+            } else {
+                window.mockFirebaseManager.log('❌ 没有找到要关闭的面板');
+            }
+        };
+        
+        window.clearLog = function() {
+            document.getElementById('log-area').innerHTML = '<strong>📝 测试日志:</strong><br>日志已清空...<br>';
+        };
+        
+        // 初始化状态
+        window.mockFirebaseManager.updateStatus();
+    </script>
+</body>
+</html>

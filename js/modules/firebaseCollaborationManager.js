@@ -108,8 +108,8 @@ export class FirebaseCollaborationManager {
                             // 更新用户在线状态
                             this.updateUserPresence();
                             
-                            // 显示房间信息
-                            this.showRoomInfo();
+                            // 显示悬浮协作面板
+                            this.showFloatingCollaborationPanel();
                             
                             // 同步当前游戏状态
                             await this.syncCurrentGameState();
@@ -366,8 +366,8 @@ export class FirebaseCollaborationManager {
             // 同步当前游戏状态到Firebase
             await this.syncCurrentGameState();
             
-            // 显示房间信息组件
-            this.showRoomInfo();
+            // 显示悬浮协作面板
+            this.showFloatingCollaborationPanel();
             
             // 保存房间状态到本地
             this.saveRoomStateToLocal();
@@ -450,8 +450,8 @@ export class FirebaseCollaborationManager {
             // 同步房间状态到本地
             await this.syncRoomStateToLocal(roomData.gameState);
             
-            // 显示房间信息组件
-            this.showRoomInfo();
+            // 显示悬浮协作面板
+            this.showFloatingCollaborationPanel();
             
             // 保存房间状态到本地
             this.saveRoomStateToLocal();
@@ -564,9 +564,9 @@ export class FirebaseCollaborationManager {
             this.usersRef = null;
             this.gameStateRef = null;
             
-            // 隐藏房间信息
-            console.log('🏠 隐藏房间信息组件');
-            this.hideRoomInfo();
+            // 隐藏悬浮协作面板
+            console.log('🏠 隐藏悬浮协作面板');
+            this.hideFloatingCollaborationPanel();
             
             // 清理保存的房间状态
             console.log('🧹 清理保存的房间状态');
@@ -1096,153 +1096,186 @@ export class FirebaseCollaborationManager {
     
     // 显示Firebase协作对话框
     showCollaborationDialog() {
-        // 如果用户已经在房间中，显示房间信息框而不是对话框
+        // 移除已存在的协作框
+        const existingDialog = document.getElementById('firebase-collaboration-panel');
+        if (existingDialog) {
+            existingDialog.remove();
+        }
+
+        // 创建悬浮协作面板
+        this.showFloatingCollaborationPanel();
+    }
+
+    // 显示悬浮协作面板（统一的悬浮框）
+    showFloatingCollaborationPanel() {
+        console.log('🏠 显示Firebase协作悬浮面板');
+        
+        const panel = document.createElement('div');
+        panel.id = 'firebase-collaboration-panel';
+        panel.className = 'firebase-collaboration-panel';
+        
         if (this.roomId) {
-            console.log('✅ 用户已在房间中，显示房间信息框');
-            this.showRoomInfo();
-            return;
+            // 用户在房间中 - 显示房间信息
+            panel.innerHTML = this.getRoomInfoContent();
+        } else {
+            // 用户不在房间中 - 显示创建/加入界面
+            panel.innerHTML = this.getCreateJoinContent();
         }
         
-        console.log('🏠 显示Firebase协作对话框');
-        const modal = document.createElement('div');
-        modal.className = 'collaboration-modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3>🔥 Firebase多人协作</h3>
-                    <button class="modal-close">✕</button>
-                </div>
-                <div class="modal-body">
-                    <div class="connection-status">
-                        <p>连接模式: <span style="color: #e74c3c; font-weight: bold;">Firebase实时数据库</span></p>
-                        <p>初始化状态: <span id="firebase-init-status">${this.isInitialized ? '✅ 已初始化' : '❌ 未初始化'}</span></p>
-                        <p>连接状态: <span id="firebase-connection-status">${this.isConnected ? '✅ 已连接' : '❌ 已断开'}</span></p>
-                        ${this.roomId ? `<p>当前房间: <strong>${this.roomId}</strong> ${this.isHost ? '(房主)' : '(成员)'}</p>` : ''}
-                    </div>
-                    
-                    <div class="room-actions">
-                        <h4>房间操作</h4>
-                        ${!this.roomId ? `
-                            <button id="firebase-create-room-btn" class="action-btn" ${!this.isInitialized ? 'disabled' : ''}>
-                                🏠 创建房间
-                            </button>
-                            
-                            <div class="join-room-section">
-                                <input type="text" id="firebase-room-id-input" placeholder="输入房间号" />
-                                <button id="firebase-join-room-btn" class="action-btn" ${!this.isInitialized ? 'disabled' : ''}>
-                                    🚪 加入房间
-                                </button>
-                            </div>
-                        ` : `
-                            <button id="firebase-leave-room-btn" class="action-btn">
-                                🚪 离开房间
-                            </button>
-                            <div class="room-info">
-                                <p><strong>房间号:</strong> ${this.roomId}</p>
-                                <p><strong>角色:</strong> ${this.isHost ? '房主' : '成员'}</p>
-                            </div>
-                        `}
-                        
-                        <div class="firebase-info">
-                            <h4>🔥 Firebase协作说明</h4>
-                            <ul>
-                                <li><strong>跨设备支持:</strong> 支持不同设备和浏览器间的实时协作</li>
-                                <li><strong>实时同步:</strong> 所有操作实时同步到所有用户</li>
-                                <li><strong>断线重连:</strong> 自动处理网络断开和重连</li>
-                                <li><strong>数据持久化:</strong> 状态数据保存在云端</li>
-                            </ul>
-                            ${!this.isInitialized ? `
-                                <div style="background: #fff3cd; border: 1px solid #ffeaa7; border-radius: 4px; padding: 10px; margin-top: 10px;">
-                                    <strong>⚠️ 需要配置:</strong> 请先配置Firebase项目，详见FIREBASE_SETUP.md
-                                </div>
-                            ` : ''}
-                        </div>
-                    </div>
-                    
-                    <div class="user-settings">
-                        <h4>个人设置</h4>
-                        <label>用户名: <input type="text" id="firebase-username-input" value="${this.userName || ''}" /></label>
-                        <label>颜色: <input type="color" id="firebase-color-input" value="${this.userColor || '#e74c3c'}" /></label>
-                        <button id="firebase-save-settings-btn" class="action-btn">保存设置</button>
-                    </div>
-                </div>
-            </div>
+        // 添加悬浮框样式
+        panel.style.cssText = `
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            background: white !important;
+            border: 2px solid ${this.roomId ? (this.isHost ? '#e74c3c' : '#3498db') : '#2ecc71'} !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+            z-index: 10000 !important;
+            min-width: 320px !important;
+            max-width: 400px !important;
+            font-family: Arial, sans-serif !important;
+            color: #333 !important;
         `;
         
-        document.body.appendChild(modal);
-        this.bindFirebaseCollaborationEvents(modal);
+        document.body.appendChild(panel);
+        console.log('✅ Firebase协作悬浮面板已添加到DOM');
         
-        // 显示动画
-        setTimeout(() => modal.classList.add('show'), 10);
+        // 绑定事件
+        setTimeout(() => {
+            this.bindFloatingPanelEvents(panel);
+        }, 100);
     }
-    
-    // 绑定Firebase协作对话框事件
-    bindFirebaseCollaborationEvents(modal) {
-        // 关闭按钮
-        modal.querySelector('.modal-close').addEventListener('click', () => {
-            modal.remove();
-        });
-        
-        // 创建房间
-        const createBtn = modal.querySelector('#firebase-create-room-btn');
-        if (createBtn) {
-            createBtn.addEventListener('click', async () => {
-                const roomId = await this.createRoom();
-                if (roomId) {
-                    modal.remove();
-                    alert(`房间创建成功！\n房间号: ${roomId}\n请将房间号分享给其他用户`);
-                }
-            });
-        }
-        
-        // 加入房间
-        const joinBtn = modal.querySelector('#firebase-join-room-btn');
-        if (joinBtn) {
-            joinBtn.addEventListener('click', async () => {
-                const roomIdInput = modal.querySelector('#firebase-room-id-input');
-                const roomId = roomIdInput.value.trim();
-                if (!roomId) {
-                    alert('请输入房间号');
-                    return;
-                }
+
+    // 获取房间信息内容
+    getRoomInfoContent() {
+        return `
+            <div class="panel-header">
+                <h3>🏠 Firebase协作房间</h3>
+                <button id="close-panel-btn" class="close-panel-btn" title="关闭">✕</button>
+            </div>
+            <div class="connection-status">
+                <span class="status-badge ${this.isConnected ? 'connected' : 'disconnected'}">
+                    ${this.isConnected ? '✅ 已连接' : '❌ 连接中断'}
+                </span>
+            </div>
+            <div class="room-details">
+                <p><strong>房间号:</strong> 
+                   <span id="room-id-display">${this.roomId}</span> 
+                   <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button>
+                </p>
+                <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
+                <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
+                <div id="users-list" class="users-list"></div>
+            </div>
+            <div class="room-actions">
+                <button id="leave-room-btn" class="action-btn danger">🚪 离开房间</button>
+            </div>
+        `;
+    }
+
+    // 获取创建/加入房间内容
+    getCreateJoinContent() {
+        return `
+            <div class="panel-header">
+                <h3>🔥 Firebase多人协作</h3>
+                <button id="close-panel-btn" class="close-panel-btn" title="关闭">✕</button>
+            </div>
+            <div class="connection-status">
+                <p><strong>连接模式:</strong> Firebase实时数据库</p>
+                <p><strong>初始化:</strong> <span id="firebase-init-status">${this.isInitialized ? '✅ 已初始化' : '❌ 未初始化'}</span></p>
+                <p><strong>连接状态:</strong> <span id="firebase-connection-status">${this.isConnected ? '✅ 已连接' : '❌ 已断开'}</span></p>
+            </div>
+            <div class="room-actions">
+                <h4>🏠 房间操作</h4>
+                <button id="firebase-create-room-btn" class="action-btn primary" ${!this.isInitialized ? 'disabled' : ''}>
+                    🏠 创建房间
+                </button>
                 
-                const success = await this.joinRoom(roomId);
-                if (success) {
-                    modal.remove();
-                    alert(`成功加入房间: ${roomId}`);
-                }
+                <div class="join-room-section">
+                    <h4>🚪 加入房间</h4>
+                    <input type="text" id="firebase-room-id-input" placeholder="输入房间号" class="room-input" />
+                    <button id="firebase-join-room-btn" class="action-btn primary" ${!this.isInitialized ? 'disabled' : ''}>
+                        🚪 加入房间
+                    </button>
+                </div>
+                
+                <div class="user-settings">
+                    <h4>⚙️ 用户设置</h4>
+                    <input type="text" id="firebase-username-input" placeholder="用户名" value="${this.userName || ''}" class="settings-input" />
+                    <input type="color" id="firebase-color-input" value="${this.userColor || '#3498db'}" class="color-input" />
+                    <button id="firebase-save-settings-btn" class="action-btn secondary">💾 保存设置</button>
+                </div>
+            </div>
+            
+            <div class="firebase-info">
+                <h4>ℹ️ 功能说明</h4>
+                <ul>
+                    <li>🌐 <strong>跨设备支持:</strong> 不同设备间实时协作</li>
+                    <li>⚡ <strong>实时同步:</strong> 操作实时同步到所有用户</li>
+                    <li>🔄 <strong>断线重连:</strong> 自动处理网络问题</li>
+                    <li>💾 <strong>数据持久化:</strong> 状态保存在云端</li>
+                </ul>
+                ${!this.isInitialized ? `
+                    <div class="warning-box">
+                        <strong>⚠️ 需要配置:</strong> 请先配置Firebase项目
+                    </div>
+                ` : ''}
+            </div>
+        `;
+    }
+
+    // 绑定悬浮面板事件
+    bindFloatingPanelEvents(panel) {
+        console.log('🔧 绑定悬浮面板事件');
+        
+        // 关闭按钮
+        const closeBtn = panel.querySelector('#close-panel-btn');
+        if (closeBtn) {
+            closeBtn.addEventListener('click', () => {
+                panel.remove();
+                console.log('✅ 悬浮面板已关闭');
             });
         }
-        
-        // 离开房间
-        const leaveBtn = modal.querySelector('#firebase-leave-room-btn');
+
+        if (this.roomId) {
+            // 房间中的事件绑定
+            this.bindRoomPanelEvents(panel);
+        } else {
+            // 创建/加入房间的事件绑定
+            this.bindCreateJoinPanelEvents(panel);
+        }
+    }
+
+    // 绑定房间面板事件
+    bindRoomPanelEvents(panel) {
+        // 离开房间按钮
+        const leaveBtn = panel.querySelector('#leave-room-btn');
         if (leaveBtn) {
-            leaveBtn.addEventListener('click', async (e) => {
-                console.log('🚪 模态对话框离开房间按钮被点击');
+            const handleLeaveRoom = async (e) => {
+                console.log('🚪 悬浮面板离开房间按钮被点击');
                 e.preventDefault();
                 e.stopPropagation();
                 
                 try {
-                    // 添加确认对话框
                     const confirmed = confirm('确定要离开房间吗？');
                     
                     if (confirmed) {
                         console.log('✅ 用户确认离开房间');
                         
-                        // 禁用按钮防止重复点击
                         leaveBtn.disabled = true;
                         leaveBtn.textContent = '离开中...';
                         
                         try {
                             await this.leaveRoom();
                             console.log('✅ 成功离开房间');
-                            modal.remove();
+                            panel.remove();
                             this.showTemporaryMessage('已离开房间', 'success');
                         } catch (error) {
                             console.error('❌ 离开房间时发生错误:', error);
                             this.showTemporaryMessage('离开房间失败，请重试', 'error');
                             
-                            // 恢复按钮状态
                             leaveBtn.disabled = false;
                             leaveBtn.textContent = '🚪 离开房间';
                         }
@@ -1253,311 +1286,131 @@ export class FirebaseCollaborationManager {
                     console.error('❌ 离开房间处理函数出错:', error);
                     this.showTemporaryMessage('操作失败，请重试', 'error');
                 }
+            };
+            
+            leaveBtn.addEventListener('click', handleLeaveRoom.bind(this));
+        }
+
+        // 复制房间号按钮
+        const copyBtn = panel.querySelector('#copy-room-id');
+        if (copyBtn) {
+            copyBtn.addEventListener('click', async (e) => {
+                console.log('📋 复制按钮被点击');
+                e.preventDefault();
+                e.stopPropagation();
+                await this.copyRoomId();
             });
         }
         
-        // 保存设置
-        const saveBtn = modal.querySelector('#firebase-save-settings-btn');
-        if (saveBtn) {
+        // 更新用户列表
+        this.updatePanelUsersList();
+    }
+
+    // 绑定创建/加入面板事件
+    bindCreateJoinPanelEvents(panel) {
+        // 创建房间按钮
+        const createBtn = panel.querySelector('#firebase-create-room-btn');
+        if (createBtn) {
+            createBtn.addEventListener('click', async () => {
+                console.log('🏠 创建房间按钮被点击');
+                createBtn.disabled = true;
+                createBtn.textContent = '创建中...';
+                
+                try {
+                    const roomId = await this.createRoom();
+                    if (roomId) {
+                        console.log('✅ 房间创建成功:', roomId);
+                        panel.remove();
+                        this.showTemporaryMessage(`房间创建成功！房间号: ${roomId}`, 'success');
+                        // 重新显示房间信息面板
+                        setTimeout(() => {
+                            this.showFloatingCollaborationPanel();
+                        }, 1000);
+                    }
+                } catch (error) {
+                    console.error('❌ 创建房间失败:', error);
+                    this.showTemporaryMessage('创建房间失败: ' + error.message, 'error');
+                } finally {
+                    createBtn.disabled = false;
+                    createBtn.textContent = '🏠 创建房间';
+                }
+            });
+        }
+        
+        // 加入房间按钮
+        const joinBtn = panel.querySelector('#firebase-join-room-btn');
+        const roomInput = panel.querySelector('#firebase-room-id-input');
+        if (joinBtn && roomInput) {
+            const handleJoinRoom = async () => {
+                const roomId = roomInput.value.trim();
+                if (!roomId) {
+                    this.showTemporaryMessage('请输入房间号', 'warning');
+                    return;
+                }
+                
+                console.log('🚪 加入房间按钮被点击, 房间号:', roomId);
+                joinBtn.disabled = true;
+                joinBtn.textContent = '加入中...';
+                
+                try {
+                    const success = await this.joinRoom(roomId);
+                    if (success) {
+                        console.log('✅ 成功加入房间:', roomId);
+                        panel.remove();
+                        this.showTemporaryMessage(`成功加入房间: ${roomId}`, 'success');
+                        // 重新显示房间信息面板
+                        setTimeout(() => {
+                            this.showFloatingCollaborationPanel();
+                        }, 1000);
+                    }
+                } catch (error) {
+                    console.error('❌ 加入房间失败:', error);
+                    this.showTemporaryMessage('加入房间失败: ' + error.message, 'error');
+                } finally {
+                    joinBtn.disabled = false;
+                    joinBtn.textContent = '🚪 加入房间';
+                }
+            };
+            
+            joinBtn.addEventListener('click', handleJoinRoom);
+            
+            // 回车键加入房间
+            roomInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') {
+                    handleJoinRoom();
+                }
+            });
+        }
+        
+        // 保存设置按钮
+        const saveBtn = panel.querySelector('#firebase-save-settings-btn');
+        const nameInput = panel.querySelector('#firebase-username-input');
+        const colorInput = panel.querySelector('#firebase-color-input');
+        if (saveBtn && nameInput && colorInput) {
             saveBtn.addEventListener('click', () => {
-                const nameInput = modal.querySelector('#firebase-username-input');
-                const colorInput = modal.querySelector('#firebase-color-input');
+                console.log('💾 保存设置按钮被点击');
                 
-                this.userName = nameInput.value.trim() || this.userName;
-                this.userColor = colorInput.value || this.userColor;
+                const newName = nameInput.value.trim();
+                const newColor = colorInput.value;
                 
-                localStorage.setItem('firebase_collaboration_userName', this.userName);
-                localStorage.setItem('firebase_collaboration_userColor', this.userColor);
+                if (newName) {
+                    this.userName = newName;
+                    localStorage.setItem('firebase_collaboration_userName', this.userName);
+                }
                 
-                alert('设置已保存');
+                if (newColor) {
+                    this.userColor = newColor;
+                    localStorage.setItem('firebase_collaboration_userColor', this.userColor);
+                }
+                
+                this.showTemporaryMessage('设置已保存', 'success');
+                console.log('✅ 用户设置已保存:', { userName: this.userName, userColor: this.userColor });
             });
         }
     }
     
-    // 显示房间信息
-    showRoomInfo() {
-        // 移除已存在的房间信息
-        const existingRoomInfo = document.getElementById('room-info');
-        if (existingRoomInfo) {
-            existingRoomInfo.remove();
-        }
-
-        const roomInfo = document.createElement('div');
-        roomInfo.id = 'room-info';
-        roomInfo.className = `room-info ${this.isHost ? 'host-mode' : ''}`;
-        roomInfo.innerHTML = `
-            <div class="room-header">
-                <h3>🏠 Firebase协作房间</h3>
-                <span class="connection-status ${this.isConnected ? 'connected' : 'disconnected'}">${this.isConnected ? '已连接' : '连接中断'}</span>
-                <button id="leave-room-btn" class="leave-room-btn" type="button">离开房间</button>
-            </div>
-            <div class="room-details">
-                <p><strong>房间号:</strong> <span id="room-id-display">${this.roomId}</span> 
-                   <button id="copy-room-id" class="copy-btn" title="复制房间号">📋</button></p>
-                <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
-                <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
-                <div id="users-list" class="users-list"></div>
-            </div>
-        `;
-        
-        // 添加内联样式确保显示正确
-        roomInfo.style.cssText = `
-            position: fixed !important;
-            top: 20px !important;
-            right: 20px !important;
-            background: white !important;
-            border: 2px solid ${this.isHost ? '#e74c3c' : '#3498db'} !important;
-            border-radius: 10px !important;
-            padding: 15px !important;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
-            z-index: 10000 !important;
-            min-width: 300px !important;
-            max-width: 380px !important;
-            font-family: Arial, sans-serif !important;
-            color: #333 !important;
-        `;
-        
-        document.body.appendChild(roomInfo);
-        
-        console.log('🏠 房间信息组件已添加到DOM');
-        
-        // 在全局设置离开房间函数
-        window.globalLeaveRoom = () => {
-            console.log('🌐 全局离开房间函数被调用');
-            this.leaveRoom().catch(error => {
-                console.error('❌ 全局离开房间失败:', error);
-                this.showTemporaryMessage('离开房间失败，请查看控制台获取详细信息', 'error');
-            });
-        };
-        
-        // 添加调试用的安全离开函数
-        window.debugLeaveRoom = () => {
-            console.log('🔧 调试离开房间函数被调用');
-            console.log('🔍 Firebase Manager 状态:', {
-                isInitialized: this.isInitialized,
-                isConnected: this.isConnected,
-                roomId: this.roomId,
-                userId: this.userId,
-                isHost: this.isHost,
-                hasDatabase: !!this.database,
-                hasFirebaseUtils: !!this.firebaseUtils
-            });
-            
-            // 强制离开（忽略错误）
-            this.forceLeaveRoom();
-        };
-        
-        // 强制离开房间方法（用于调试）
-        this.forceLeaveRoom = () => {
-            console.log('⚡ 强制离开房间（调试模式）');
-            
-            try {
-                this.stopHeartbeat();
-                this.removeRoomListeners();
-                this.roomId = null;
-                this.isHost = false;
-                this.roomRef = null;
-                this.usersRef = null;
-                this.gameStateRef = null;
-                this.hideRoomInfo();
-                this.clearSavedRoomState();
-                
-                console.log('✅ 强制离开完成');
-                this.showTemporaryMessage('强制离开完成', 'success');
-            } catch (error) {
-                console.error('❌ 强制离开也失败了:', error);
-                this.showTemporaryMessage('强制离开失败', 'error');
-            }
-        };
-        
-        // 等待一个微任务周期，确保DOM已经渲染
-        setTimeout(() => {
-            // 绑定事件
-            const leaveBtn = document.getElementById('leave-room-btn');
-            const copyBtn = document.getElementById('copy-room-id');
-            
-            console.log('🔍 查找按钮元素:', {
-                leaveBtn: !!leaveBtn,
-                copyBtn: !!copyBtn,
-                leaveBtnElement: leaveBtn,
-                copyBtnElement: copyBtn
-            });
-            
-            if (leaveBtn) {
-                console.log('🔧 开始绑定离开房间按钮事件');
-                console.log('🔍 按钮详细信息:', {
-                    tagName: leaveBtn.tagName,
-                    id: leaveBtn.id,
-                    className: leaveBtn.className,
-                    style: leaveBtn.style.cssText,
-                    disabled: leaveBtn.disabled,
-                    offsetParent: leaveBtn.offsetParent,
-                    parentElement: leaveBtn.parentElement
-                });
-                
-                // 创建安全的离开房间处理函数
-                const handleLeaveRoom = async (e) => {
-                    console.log('🚪 离开房间按钮被点击');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    try {
-                        // 添加确认对话框
-                        const confirmed = confirm('确定要离开房间吗？');
-                        
-                        if (confirmed) {
-                            console.log('✅ 用户确认离开房间');
-                            
-                            // 禁用按钮防止重复点击
-                            leaveBtn.disabled = true;
-                            leaveBtn.style.opacity = '0.6';
-                            leaveBtn.textContent = '离开中...';
-                            
-                            try {
-                                await this.leaveRoom();
-                                console.log('✅ 成功离开房间');
-                            } catch (error) {
-                                console.error('❌ 离开房间时发生错误:', error);
-                                this.showTemporaryMessage('离开房间失败，请重试', 'error');
-                                
-                                // 恢复按钮状态
-                                leaveBtn.disabled = false;
-                                leaveBtn.style.opacity = '1';
-                                leaveBtn.textContent = '离开房间';
-                            }
-                        } else {
-                            console.log('❌ 用户取消离开房间');
-                        }
-                    } catch (error) {
-                        console.error('❌ 离开房间处理函数出错:', error);
-                        this.showTemporaryMessage('操作失败，请重试', 'error');
-                    }
-                };
-                
-                // 移除现有的事件监听器（如果有的话）
-                const newLeaveBtn = leaveBtn.cloneNode(true);
-                leaveBtn.parentNode.replaceChild(newLeaveBtn, leaveBtn);
-                
-                // 绑定事件监听器
-                newLeaveBtn.addEventListener('click', handleLeaveRoom.bind(this));
-                
-                // 设置按钮样式确保可点击
-                newLeaveBtn.style.cursor = 'pointer';
-                newLeaveBtn.style.pointerEvents = 'auto';
-                newLeaveBtn.style.opacity = '1';
-                newLeaveBtn.style.zIndex = '10001';
-                
-                // 添加调试事件监听器
-                newLeaveBtn.addEventListener('mousedown', () => {
-                    console.log('🖱️ 离开按钮mousedown事件');
-                });
-                
-                newLeaveBtn.addEventListener('mouseup', () => {
-                    console.log('🖱️ 离开按钮mouseup事件');
-                });
-                
-                newLeaveBtn.addEventListener('mouseover', () => {
-                    console.log('🖱️ 离开按钮mouseover事件');
-                });
-                
-                console.log('✅ 离开房间按钮事件已绑定');
-            } else {
-                console.error('❌ 找不到离开房间按钮');
-            }
-            
-            if (copyBtn) {
-                copyBtn.addEventListener('click', async (e) => {
-                    console.log('📋 复制按钮被点击');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    await this.copyRoomId();
-                });
-                
-                // 测试按钮是否可点击
-                copyBtn.style.cursor = 'pointer';
-                copyBtn.style.pointerEvents = 'auto';
-                
-                console.log('✅ 复制按钮事件已绑定');
-            } else {
-                console.error('❌ 找不到复制按钮');
-            }
-        }, 100);
-        
-        // 更新用户列表
-        this.updateRoomInfoUsersList();
-        
-        // 调试：检查房间用户数据
-        setTimeout(() => {
-            this.debugRoomUsers();
-        }, 1000);
-    }
-
-    // 复制房间号
-    async copyRoomId() {
-        const copyBtn = document.getElementById('copy-room-id');
-        
-        if (!this.roomId) {
-            this.showTemporaryMessage('没有房间号可复制', 'error');
-            return;
-        }
-        
-        try {
-            // 优先使用现代Clipboard API
-            if (navigator.clipboard && window.isSecureContext) {
-                await navigator.clipboard.writeText(this.roomId);
-            } else {
-                // 降级使用传统方法
-                const textArea = document.createElement('textarea');
-                textArea.value = this.roomId;
-                textArea.style.position = 'fixed';
-                textArea.style.opacity = '0';
-                document.body.appendChild(textArea);
-                textArea.select();
-                textArea.setSelectionRange(0, 99999); // 移动端兼容
-                const success = document.execCommand('copy');
-                document.body.removeChild(textArea);
-                
-                if (!success) {
-                    throw new Error('execCommand failed');
-                }
-            }
-            
-            // 显示复制成功动画
-            if (copyBtn) {
-                const originalText = copyBtn.textContent;
-                copyBtn.textContent = '✅';
-                copyBtn.style.background = '#28a745';
-                
-                setTimeout(() => {
-                    copyBtn.textContent = originalText;
-                    copyBtn.style.background = '';
-                }, 1000);
-            }
-            
-            this.showTemporaryMessage(`房间号已复制到剪贴板: ${this.roomId}`, 'success');
-            
-        } catch (err) {
-            console.error('复制失败:', err);
-            
-            // 显示房间号给用户手动复制
-            const roomIdSpan = document.getElementById('room-id-display');
-            if (roomIdSpan) {
-                // 创建临时选择
-                const range = document.createRange();
-                range.selectNode(roomIdSpan);
-                const selection = window.getSelection();
-                selection.removeAllRanges();
-                selection.addRange(range);
-                
-                this.showTemporaryMessage('自动复制失败，房间号已选中，请使用 Ctrl+C 手动复制', 'warning');
-            } else {
-                this.showTemporaryMessage(`复制失败，房间号: ${this.roomId}`, 'error');
-            }
-        }
-    }
-
-    // 更新房间信息用户列表
-    updateRoomInfoUsersList(users = null) {
+    // 更新面板用户列表
+    updatePanelUsersList() {
         const usersList = document.getElementById('users-list');
         const connectionCount = document.getElementById('connection-count');
         
@@ -1568,187 +1421,29 @@ export class FirebaseCollaborationManager {
         // 清空现有列表
         usersList.innerHTML = '';
         
-        if (!users) {
-            // 如果没有用户数据，只显示当前用户
-            const currentUserDiv = document.createElement('div');
-            currentUserDiv.className = 'user-item current-user';
-            currentUserDiv.innerHTML = `
-                <div class="user-color" style="background-color: ${this.userColor || '#3498db'}"></div>
-                <span class="user-name">${this.userName || '我'} ${this.isHost ? '(房主)' : ''}</span>
-                <span class="user-status connected">在线</span>
-            `;
-            usersList.appendChild(currentUserDiv);
-            connectionCount.textContent = '1 人在线';
+        if (!this.roomId) {
             return;
         }
         
-        // 分析用户数据
-        const userEntries = Object.entries(users);
-        const currentTime = Date.now();
-        let onlineCount = 0;
-        
-        // 按在线状态和是否为房主排序
-        userEntries.sort(([aId, aData], [bId, bData]) => {
-            // 房主优先
-            if (aData.isHost && !bData.isHost) return -1;
-            if (!aData.isHost && bData.isHost) return 1;
-            
-            // 在线用户优先
-            const aOnline = this.isUserOnline(aData, currentTime);
-            const bOnline = this.isUserOnline(bData, currentTime);
-            if (aOnline && !bOnline) return -1;
-            if (!aOnline && bOnline) return 1;
-            
-            // 当前用户优先
-            if (aId === this.userId) return -1;
-            if (bId === this.userId) return 1;
-            
-            return 0;
-        });
-        
-        userEntries.forEach(([userId, userData]) => {
-            const userDiv = document.createElement('div');
-            const isCurrentUser = userId === this.userId;
-            const isOnline = this.isUserOnline(userData, currentTime);
-            const userName = userData.userName || (isCurrentUser ? '我' : '用户');
-            const userColor = userData.userColor || '#3498db';
-            const hostIndicator = userData.isHost ? ' (房主)' : '';
-            
-            if (isOnline) onlineCount++;
-            
-            userDiv.className = `user-item ${isCurrentUser ? 'current-user' : ''} ${isOnline ? 'online' : 'offline'}`;
-            
-            // 计算最后活跃时间
-            const lastSeenText = this.getLastSeenText(userData.lastSeen, isOnline);
-            
-            userDiv.innerHTML = `
-                <div class="user-color" style="background-color: ${userColor}"></div>
-                <div class="user-info">
-                    <span class="user-name">${userName}${isCurrentUser ? ' (我)' : ''}${hostIndicator}</span>
-                    <span class="user-last-seen">${lastSeenText}</span>
-                </div>
-                <span class="user-status ${isOnline ? 'connected' : 'disconnected'}">${isOnline ? '在线' : '离线'}</span>
-            `;
-            
-            usersList.appendChild(userDiv);
-        });
-        
-        const totalUsers = userEntries.length;
-        connectionCount.textContent = `${onlineCount}/${totalUsers} 人在线`;
-        
-        console.log(`✅ 用户列表已更新: ${onlineCount}/${totalUsers} 在线`);
-    }
-
-    // 判断用户是否在线
-    isUserOnline(userData, currentTime) {
-        if (userData.isOnline === false) return false;
-        
-        // 如果有心跳时间，检查心跳是否超时（2分钟）
-        if (userData.lastHeartbeat) {
-            const heartbeatTime = typeof userData.lastHeartbeat === 'object' 
-                ? new Date().getTime() // 服务器时间戳，使用当前时间近似
-                : userData.lastHeartbeat;
-            return (currentTime - heartbeatTime) < 120000; // 2分钟
-        }
-        
-        // 如果没有心跳但有lastSeen，检查是否超时（5分钟）
-        if (userData.lastSeen) {
-            const lastSeenTime = typeof userData.lastSeen === 'object' 
-                ? new Date().getTime() 
-                : userData.lastSeen;
-            return (currentTime - lastSeenTime) < 300000; // 5分钟
-        }
-        
-        // 默认认为在线
-        return userData.isOnline !== false;
-    }
-
-    // 获取最后活跃时间文本
-    getLastSeenText(lastSeen, isOnline) {
-        if (isOnline) return '刚刚活跃';
-        
-        if (!lastSeen) return '未知';
-        
-        const lastSeenTime = typeof lastSeen === 'object' ? new Date().getTime() : lastSeen;
-        const diff = Date.now() - lastSeenTime;
-        
-        if (diff < 60000) return '1分钟前';
-        if (diff < 3600000) return `${Math.floor(diff / 60000)}分钟前`;
-        if (diff < 86400000) return `${Math.floor(diff / 3600000)}小时前`;
-        return `${Math.floor(diff / 86400000)}天前`;
-    }
-
-    // 显示临时消息
-    showTemporaryMessage(message, type = 'info') {
-        // 创建消息元素
-        const messageDiv = document.createElement('div');
-        messageDiv.className = `temporary-message ${type}`;
-        messageDiv.textContent = message;
-        
-        // 设置样式
-        messageDiv.style.cssText = `
-            position: fixed;
-            top: 80px;
-            right: 20px;
-            background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
-            color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
-            border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
-            border-radius: 8px;
-            padding: 12px 16px;
-            font-size: 14px;
-            font-weight: 500;
-            z-index: 10001;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
-            animation: slideInRight 0.3s ease-out;
-            max-width: 300px;
-            word-wrap: break-word;
+        // 这里复用原有的用户列表更新逻辑
+        // 如果没有用户数据，只显示当前用户
+        const currentUserDiv = document.createElement('div');
+        currentUserDiv.className = 'user-item current-user';
+        currentUserDiv.innerHTML = `
+            <div class="user-color" style="background-color: ${this.userColor || '#3498db'}"></div>
+            <span class="user-name">${this.userName || '我'} ${this.isHost ? '(房主)' : ''}</span>
+            <span class="user-status connected">在线</span>
         `;
-        
-        // 添加到页面
-        document.body.appendChild(messageDiv);
-        
-        // 3秒后自动移除
-        setTimeout(() => {
-            messageDiv.style.animation = 'slideOutRight 0.3s ease-in forwards';
-            setTimeout(() => {
-                if (messageDiv.parentNode) {
-                    messageDiv.parentNode.removeChild(messageDiv);
-                }
-            }, 300);
-        }, 3000);
+        usersList.appendChild(currentUserDiv);
+        connectionCount.textContent = '1 人在线';
     }
 
-    // 隐藏房间信息
-    hideRoomInfo() {
-        const roomInfo = document.getElementById('room-info');
-        if (roomInfo) {
-            roomInfo.remove();
-        }
-    }
-
-    // 调试：检查房间用户数据
-    async debugRoomUsers() {
-        if (!this.roomId || !this.usersRef) {
-            console.log('🔍 调试：没有房间ID或用户引用');
-            return;
-        }
-        
-        try {
-            const snapshot = await this.firebaseUtils.get(this.usersRef);
-            const users = snapshot.val();
-            console.log('🔍 调试：Firebase房间用户数据:', users);
-            
-            if (users) {
-                const userCount = Object.keys(users).length;
-                console.log(`🔍 调试：发现 ${userCount} 个用户`);
-                Object.entries(users).forEach(([userId, userData]) => {
-                    console.log(`🔍 调试：用户 ${userId}:`, userData);
-                });
-            } else {
-                console.log('🔍 调试：没有用户数据');
-            }
-        } catch (error) {
-            console.error('🔍 调试：获取用户数据失败:', error);
+    // 隐藏悬浮协作面板
+    hideFloatingCollaborationPanel() {
+        const panel = document.getElementById('firebase-collaboration-panel');
+        if (panel) {
+            panel.remove();
+            console.log('✅ 悬浮协作面板已隐藏');
         }
     }
 }
