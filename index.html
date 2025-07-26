@@ -105,14 +105,6 @@
                     🤝 多人协作
                 </button>
                 
-                <div class="collaboration-status" id="collaboration-status" style="display:none;">
-                    <div class="status-indicator">
-                        <span class="status-dot" id="collab-status-dot"></span>
-                        <span class="status-text" id="collab-status-text">协作状态</span>
-                    </div>
-                    <div class="status-mode" id="collab-mode-text">本地模式</div>
-                </div>
-                
                 <button class="action-btn" onclick="window.goldPigApp.uiManager.showDataManagementDialog()">
                     📁 数据管理
                 </button>
@@ -1307,8 +1299,5 @@
             }
         }, 3000); // 3秒后检查
     </script>
-
-    <!-- Socket.IO 脚本 -->
-    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
 </body>
 </html>
