@@ -913,7 +913,310 @@
                     }
                 }, 1000);
             }
+            
+            // 检查图表功能
+            setTimeout(() => {
+                checkChartFunctionality();
+            }, 2000);
         }, 3000); // 延迟3秒检查，给主应用足够时间初始化
+        
+        // 检查图表功能
+        function checkChartFunctionality() {
+            console.log('检查图表功能...');
+            
+            // 检查图表元素是否存在
+            const canvas = document.getElementById('stats-chart');
+            const chartTabs = document.querySelectorAll('.chart-tab');
+            
+            console.log('Canvas元素:', canvas);
+            console.log('图表标签页:', chartTabs.length);
+            
+            if (!canvas) {
+                console.error('Canvas元素不存在');
+                return;
+            }
+            
+            if (chartTabs.length === 0) {
+                console.error('图表标签页不存在');
+                return;
+            }
+            
+            // 检查是否有事件绑定
+            let hasEvents = false;
+            chartTabs.forEach(tab => {
+                if (tab.onclick || tab.addEventListener) {
+                    hasEvents = true;
+                }
+            });
+            
+            // 如果没有事件绑定，添加备用事件
+            if (!hasEvents || (!window.goldPigApp || !window.goldPigApp.initialized)) {
+                console.log('添加备用图表事件绑定');
+                addFallbackChartEvents();
+            }
+            
+            // 测试图表绘制
+            if (typeof window.testChart === 'function') {
+                console.log('测试主应用图表功能');
+                window.testChart();
+            } else {
+                console.log('使用备用图表测试');
+                testChartFallback();
+            }
+        }
+        
+        // 备用图表事件绑定
+        function addFallbackChartEvents() {
+            const chartTabs = document.querySelectorAll('.chart-tab');
+            
+            chartTabs.forEach(tab => {
+                tab.addEventListener('click', function() {
+                    console.log('备用图表标签页点击:', this.dataset.chart);
+                    
+                    // 更新活动状态
+                    chartTabs.forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // 尝试使用主应用的图表切换
+                    if (typeof window.switchChart === 'function') {
+                        window.switchChart(this.dataset.chart);
+                    } else {
+                        // 备用图表显示
+                        renderChartFallback(this.dataset.chart);
+                    }
+                });
+            });
+            
+            console.log('备用图表事件绑定完成');
+        }
+        
+        // 备用图表渲染
+        function renderChartFallback(chartType) {
+            console.log('备用图表渲染:', chartType);
+            
+            const canvas = document.getElementById('stats-chart');
+            if (!canvas) {
+                console.error('Canvas元素不存在');
+                return;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('无法获取Canvas上下文');
+                return;
+            }
+            
+            try {
+                // 设置Canvas尺寸
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                
+                // 清除画布
+                ctx.clearRect(0, 0, rect.width, rect.height);
+                
+                // 绘制简单的占位图表
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
+                ctx.fillRect(0, 0, rect.width, rect.height);
+                
+                ctx.fillStyle = '#f1c40f';
+                ctx.font = 'bold 20px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${getChartTitle(chartType)}`, rect.width / 2, rect.height / 2 - 20);
+                
+                ctx.fillStyle = '#ecf0f1';
+                ctx.font = '14px Arial';
+                ctx.fillText('图表功能正在加载中...', rect.width / 2, rect.height / 2 + 20);
+                
+                // 尝试获取实际数据
+                if (window.goldPigApp && window.goldPigApp.statsManager) {
+                    try {
+                        drawSimpleChart(ctx, rect, chartType, window.goldPigApp.statsManager);
+                    } catch (dataError) {
+                        console.warn('获取图表数据失败:', dataError);
+                    }
+                }
+                
+                console.log('备用图表渲染完成');
+            } catch (error) {
+                console.error('备用图表渲染失败:', error);
+            }
+        }
+        
+        // 获取图表标题
+        function getChartTitle(chartType) {
+            switch (chartType) {
+                case 'daily': return '每日击杀趋势';
+                case 'total': return '总击杀统计';
+                case 'hourly': return '击杀时段分析';
+                default: return '击杀统计';
+            }
+        }
+        
+        // 绘制简单图表
+        function drawSimpleChart(ctx, rect, chartType, statsManager) {
+            if (chartType === 'daily') {
+                const data = statsManager.getDailyKillData(7);
+                drawSimpleLineChart(ctx, rect, data);
+            } else if (chartType === 'hourly') {
+                const data = statsManager.getHourlyKillData(24);
+                drawSimpleBarChart(ctx, rect, data);
+            } else {
+                const data = statsManager.getDailyKillData(7);
+                drawSimpleBarChart(ctx, rect, data);
+            }
+        }
+        
+        // 绘制简单折线图
+        function drawSimpleLineChart(ctx, rect, chartData) {
+            const padding = 40;
+            const chartWidth = rect.width - padding * 2;
+            const chartHeight = rect.height - padding * 2;
+            const maxValue = Math.max(...chartData.data, 1);
+            
+            // 清除画布
+            ctx.clearRect(0, 0, rect.width, rect.height);
+            
+            // 绘制背景
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, rect.height - padding);
+            ctx.lineTo(rect.width - padding, rect.height - padding);
+            ctx.stroke();
+            
+            // 绘制数据点和折线
+            if (chartData.data.length > 1) {
+                const stepX = chartWidth / (chartData.data.length - 1);
+                
+                ctx.strokeStyle = '#3498db';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                
+                chartData.data.forEach((value, index) => {
+                    const x = padding + stepX * index;
+                    const y = rect.height - padding - (value / maxValue) * chartHeight;
+                    
+                    if (index === 0) {
+                        ctx.moveTo(x, y);
+                    } else {
+                        ctx.lineTo(x, y);
+                    }
+                    
+                    // 绘制数据点
+                    ctx.fillStyle = '#3498db';
+                    ctx.beginPath();
+                    ctx.arc(x, y, 3, 0, 2 * Math.PI);
+                    ctx.fill();
+                });
+                
+                ctx.stroke();
+            }
+            
+            // 绘制标题
+            ctx.fillStyle = '#f1c40f';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('每日击杀趋势', rect.width / 2, 25);
+        }
+        
+        // 绘制简单柱状图
+        function drawSimpleBarChart(ctx, rect, chartData) {
+            const padding = 40;
+            const chartWidth = rect.width - padding * 2;
+            const chartHeight = rect.height - padding * 2;
+            const maxValue = Math.max(...chartData.data, 1);
+            const barWidth = chartWidth / chartData.data.length * 0.8;
+            
+            // 清除画布
+            ctx.clearRect(0, 0, rect.width, rect.height);
+            
+            // 绘制背景
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.1)';
+            ctx.fillRect(0, 0, rect.width, rect.height);
+            
+            // 绘制坐标轴
+            ctx.strokeStyle = '#bdc3c7';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(padding, padding);
+            ctx.lineTo(padding, rect.height - padding);
+            ctx.lineTo(rect.width - padding, rect.height - padding);
+            ctx.stroke();
+            
+            // 绘制柱状图
+            chartData.data.forEach((value, index) => {
+                const x = padding + (chartWidth / chartData.data.length) * index + (chartWidth / chartData.data.length - barWidth) / 2;
+                const barHeight = (value / maxValue) * chartHeight;
+                const y = rect.height - padding - barHeight;
+                
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(x, y, barWidth, barHeight);
+                
+                // 绘制数值
+                if (value > 0) {
+                    ctx.fillStyle = '#ecf0f1';
+                    ctx.font = '12px Arial';
+                    ctx.textAlign = 'center';
+                    ctx.fillText(value.toString(), x + barWidth / 2, y - 5);
+                }
+            });
+            
+            // 绘制标题
+            ctx.fillStyle = '#f1c40f';
+            ctx.font = 'bold 16px Arial';
+            ctx.textAlign = 'center';
+            ctx.fillText('击杀统计', rect.width / 2, 25);
+        }
+        
+        // 备用图表测试
+        function testChartFallback() {
+            console.log('开始备用图表测试');
+            
+            const canvas = document.getElementById('stats-chart');
+            if (!canvas) {
+                console.error('Canvas元素不存在');
+                return false;
+            }
+            
+            const ctx = canvas.getContext('2d');
+            if (!ctx) {
+                console.error('无法获取Canvas上下文');
+                return false;
+            }
+            
+            try {
+                const rect = canvas.getBoundingClientRect();
+                const dpr = window.devicePixelRatio || 1;
+                
+                canvas.width = rect.width * dpr;
+                canvas.height = rect.height * dpr;
+                ctx.scale(dpr, dpr);
+                
+                // 绘制测试图案
+                ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
+                ctx.fillRect(0, 0, rect.width, rect.height);
+                
+                ctx.fillStyle = '#f1c40f';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('图表功能正常', rect.width / 2, rect.height / 2);
+                
+                console.log('备用图表测试完成');
+                return true;
+            } catch (error) {
+                console.error('备用图表测试失败:', error);
+                return false;
+            }
+        }
         
         // 立即更新一次统计（确保今日击杀数量正确显示）
         setTimeout(() => {

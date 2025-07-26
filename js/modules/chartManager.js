@@ -1,25 +1,60 @@
 // 图表管理器 - 处理图表绘制和Canvas操作
 export class ChartManager {
     constructor(statsManager) {
+        console.log('ChartManager 构造函数开始');
         this.statsManager = statsManager;
         this.canvas = document.getElementById('stats-chart');
         this.ctx = this.canvas ? this.canvas.getContext('2d') : null;
         this.currentChartType = 'daily';
-        this.initChart();
+        
+        console.log('Canvas 元素:', this.canvas);
+        console.log('Canvas 上下文:', this.ctx);
+        console.log('StatsManager:', this.statsManager);
+        
+        // 延迟初始化图表，确保DOM完全加载
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', () => {
+                console.log('DOM加载完成，初始化图表');
+                this.initChart();
+            });
+        } else {
+            // DOM已经加载完成
+            setTimeout(() => {
+                console.log('延迟初始化图表');
+                this.initChart();
+            }, 100);
+        }
     }
 
     // 初始化图表
     initChart() {
         try {
+            console.log('开始初始化图表...');
+            
             // 确保 Canvas 元素存在
             if (!this.canvas) {
                 console.error('找不到图表容器 stats-chart');
-                return;
+                // 尝试重新获取canvas元素
+                this.canvas = document.getElementById('stats-chart');
+                if (!this.canvas) {
+                    console.error('重新获取canvas失败');
+                    return;
+                }
+                this.ctx = this.canvas.getContext('2d');
             }
             
+            console.log('Canvas元素找到:', this.canvas);
+            console.log('Canvas尺寸:', this.canvas.clientWidth, 'x', this.canvas.clientHeight);
+            
             // 添加标签页切换事件
-            document.querySelectorAll('.chart-tab').forEach(tab => {
+            const chartTabs = document.querySelectorAll('.chart-tab');
+            console.log('找到图表标签页:', chartTabs.length, '个');
+            
+            chartTabs.forEach((tab, index) => {
+                console.log(`绑定标签页 ${index + 1} 事件:`, tab.dataset.chart);
                 tab.addEventListener('click', (e) => {
+                    console.log('图表标签页点击:', e.currentTarget.dataset.chart);
+                    
                     // 更新活动标签
                     document.querySelectorAll('.chart-tab').forEach(t => t.classList.remove('active'));
                     e.currentTarget.classList.add('active');
@@ -29,6 +64,7 @@ export class ChartManager {
                     this.currentChartType = chartType;
                     
                     try {
+                        console.log('开始渲染图表:', chartType);
                         // 延迟一点确保Canvas大小正确
                         setTimeout(() => {
                             this.renderChart(chartType);
@@ -39,10 +75,24 @@ export class ChartManager {
                 });
             });
             
+            console.log('图表标签页事件绑定完成');
+            
+            // 确保statsManager的方法存在
+            if (typeof this.statsManager.getDailyKillData !== 'function') {
+                console.error('statsManager.getDailyKillData 方法不存在');
+                return;
+            }
+            
+            console.log('开始渲染默认图表...');
             // 默认显示每日击杀图表，延迟一点确保Canvas大小正确
             setTimeout(() => {
-                this.renderChart('daily');
-            }, 100);
+                try {
+                    this.renderChart('daily');
+                    console.log('默认图表渲染完成');
+                } catch (renderError) {
+                    console.error('默认图表渲染失败:', renderError);
+                }
+            }, 200);
             
         } catch (error) {
             console.error('初始化图表错误:', error);
@@ -51,33 +101,62 @@ export class ChartManager {
 
     // 渲染图表
     renderChart(chartType) {
-        if (!this.canvas || !this.ctx) return;
+        console.log('renderChart 被调用，图表类型:', chartType);
         
-        switch (chartType) {
-            case 'daily':
-                this.renderDailyChart();
-                break;
-            case 'total':
-                this.renderTotalChart();
-                break;
-            case 'hourly':
-                this.renderHourlyChart();
-                break;
-            default:
-                this.renderDailyChart();
+        if (!this.canvas || !this.ctx) {
+            console.error('Canvas 或上下文不存在');
+            console.log('Canvas:', this.canvas);
+            console.log('Context:', this.ctx);
+            return;
+        }
+        
+        console.log('开始渲染图表:', chartType);
+        
+        try {
+            switch (chartType) {
+                case 'daily':
+                    console.log('渲染每日图表');
+                    this.renderDailyChart();
+                    break;
+                case 'total':
+                    console.log('渲染总击杀图表');
+                    this.renderTotalChart();
+                    break;
+                case 'hourly':
+                    console.log('渲染小时图表');
+                    this.renderHourlyChart();
+                    break;
+                default:
+                    console.log('默认渲染每日图表');
+                    this.renderDailyChart();
+            }
+            console.log('图表渲染完成:', chartType);
+        } catch (error) {
+            console.error('渲染图表时发生错误:', error);
         }
     }
 
     // 更新当前图表
     updateChart() {
         try {
+            console.log('updateChart 被调用');
+            
+            if (!this.canvas || !this.ctx) {
+                console.error('Canvas 或上下文不存在，无法更新图表');
+                return;
+            }
+            
             const activeTab = document.querySelector('.chart-tab.active');
+            console.log('当前活动标签页:', activeTab);
+            
             if (!activeTab) {
+                console.log('没有活动标签页，使用默认图表类型:', this.currentChartType);
                 this.renderChart(this.currentChartType);
                 return;
             }
             
             const chartType = activeTab.dataset.chart;
+            console.log('更新图表类型:', chartType);
             this.renderChart(chartType);
         } catch (error) {
             console.error('更新图表错误:', error);
@@ -87,17 +166,25 @@ export class ChartManager {
     // 渲染每日图表
     renderDailyChart() {
         try {
+            console.log('开始渲染每日图表');
+            
             // 设置Canvas尺寸
             this.setupCanvas();
+            console.log('Canvas尺寸设置完成');
             
             // 清除画布
             this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            console.log('画布清除完成');
             
             // 获取数据
+            console.log('获取每日击杀数据...');
             const chartData = this.statsManager.getDailyKillData(7);
+            console.log('每日击杀数据:', chartData);
             
             // 绘制折线图
+            console.log('开始绘制折线图');
             this.drawLineChart(chartData.labels, chartData.data, '每日金猪击杀趋势', '#3498db');
+            console.log('每日图表绘制完成');
             
         } catch (error) {
             console.error('渲染每日图表出错:', error);
@@ -148,17 +235,45 @@ export class ChartManager {
 
     // 设置Canvas尺寸和分辨率
     setupCanvas() {
-        const rect = this.canvas.getBoundingClientRect();
-        const dpr = window.devicePixelRatio || 1;
-        
-        this.canvas.width = rect.width * dpr;
-        this.canvas.height = rect.height * dpr;
-        
-        this.ctx.scale(dpr, dpr);
-        
-        // 设置Canvas样式尺寸
-        this.canvas.style.width = rect.width + 'px';
-        this.canvas.style.height = rect.height + 'px';
+        try {
+            console.log('开始设置Canvas尺寸');
+            
+            if (!this.canvas) {
+                console.error('Canvas元素不存在');
+                return;
+            }
+            
+            const rect = this.canvas.getBoundingClientRect();
+            console.log('Canvas getBoundingClientRect:', rect);
+            
+            // 如果Canvas没有尺寸，设置默认尺寸
+            if (rect.width === 0 || rect.height === 0) {
+                console.warn('Canvas尺寸为0，设置默认尺寸');
+                this.canvas.style.width = '800px';
+                this.canvas.style.height = '300px';
+                // 重新获取尺寸
+                const newRect = this.canvas.getBoundingClientRect();
+                console.log('设置默认尺寸后:', newRect);
+            }
+            
+            const dpr = window.devicePixelRatio || 1;
+            console.log('设备像素比:', dpr);
+            
+            this.canvas.width = rect.width * dpr;
+            this.canvas.height = rect.height * dpr;
+            
+            console.log('Canvas实际尺寸:', this.canvas.width, 'x', this.canvas.height);
+            
+            this.ctx.scale(dpr, dpr);
+            
+            // 设置Canvas样式尺寸
+            this.canvas.style.width = rect.width + 'px';
+            this.canvas.style.height = rect.height + 'px';
+            
+            console.log('Canvas尺寸设置完成');
+        } catch (error) {
+            console.error('设置Canvas尺寸出错:', error);
+        }
     }
 
     // 绘制折线图
@@ -376,6 +491,49 @@ export class ChartManager {
         if (this.canvas) {
             this.setupCanvas();
             this.updateChart();
+        }
+    }
+
+    // 测试图表绘制
+    testChart() {
+        console.log('开始测试图表绘制');
+        
+        if (!this.canvas || !this.ctx) {
+            console.error('Canvas 或上下文不存在');
+            return false;
+        }
+        
+        try {
+            // 设置Canvas尺寸
+            this.setupCanvas();
+            
+            // 清除画布
+            this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            
+            // 绘制简单的测试图案
+            const rect = this.canvas.getBoundingClientRect();
+            const width = rect.width;
+            const height = rect.height;
+            
+            // 绘制背景
+            this.ctx.fillStyle = 'rgba(52, 152, 219, 0.2)';
+            this.ctx.fillRect(0, 0, width, height);
+            
+            // 绘制测试文字
+            this.ctx.fillStyle = '#f1c40f';
+            this.ctx.font = 'bold 24px Arial';
+            this.ctx.textAlign = 'center';
+            this.ctx.fillText('图表测试', width / 2, height / 2);
+            
+            this.ctx.fillStyle = '#ecf0f1';
+            this.ctx.font = '16px Arial';
+            this.ctx.fillText('如果您看到此消息，说明Canvas正常工作', width / 2, height / 2 + 40);
+            
+            console.log('测试图表绘制完成');
+            return true;
+        } catch (error) {
+            console.error('测试图表绘制失败:', error);
+            return false;
         }
     }
 }

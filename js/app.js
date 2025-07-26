@@ -74,6 +74,14 @@ class GoldPigMonitorApp {
             try {
                 console.log('初始化图表...');
                 this.chartManager.initChart();
+                
+                // 测试图表绘制
+                setTimeout(() => {
+                    console.log('开始测试图表...');
+                    const testResult = this.chartManager.testChart();
+                    console.log('图表测试结果:', testResult);
+                }, 300);
+                
             } catch (chartError) {
                 console.warn('图表初始化失败:', chartError);
             }
@@ -221,6 +229,40 @@ class GoldPigMonitorApp {
                 this.tableManager.resetAllCells();
                 this.uiManager.showResetStatus('timers');
                 this.updateStats();
+            }
+        };
+
+        // 全局图表功能
+        window.switchChart = (chartType) => {
+            console.log('全局切换图表:', chartType);
+            if (this.chartManager) {
+                this.currentChartType = chartType;
+                
+                // 更新标签页状态
+                document.querySelectorAll('.chart-tab').forEach(tab => {
+                    tab.classList.remove('active');
+                    if (tab.dataset.chart === chartType) {
+                        tab.classList.add('active');
+                    }
+                });
+                
+                // 渲染图表
+                this.chartManager.renderChart(chartType);
+            }
+        };
+        
+        window.testChart = () => {
+            console.log('全局测试图表');
+            if (this.chartManager) {
+                return this.chartManager.testChart();
+            }
+            return false;
+        };
+        
+        window.updateChart = () => {
+            console.log('全局更新图表');
+            if (this.chartManager) {
+                this.chartManager.updateChart();
             }
         };
     }
