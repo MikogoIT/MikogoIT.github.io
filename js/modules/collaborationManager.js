@@ -69,7 +69,9 @@ export class CollaborationManager {
     getUserName() {
         let userName = localStorage.getItem('collaboration_userName');
         if (!userName) {
-            userName = prompt('请输入您的用户名（用于多人协作）:') || `用户${Math.floor(Math.random() * 1000)}`;
+            // 不再显示prompt，直接使用默认用户名
+            // 用户可以在协作界面中修改用户名
+            userName = `用户${Math.floor(Math.random() * 1000)}`;
             localStorage.setItem('collaboration_userName', userName);
         }
         return userName;

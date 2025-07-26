@@ -226,7 +226,9 @@ export class FirebaseCollaborationManager {
     getUserName() {
         let userName = localStorage.getItem('firebase_collaboration_userName');
         if (!userName) {
-            userName = prompt('请输入您的用户名（用于多人协作）:') || `用户${Math.floor(Math.random() * 1000)}`;
+            // 不再显示prompt，直接使用默认用户名
+            // 用户可以在悬浮框中的用户设置里修改用户名
+            userName = `用户${Math.floor(Math.random() * 1000)}`;
             localStorage.setItem('firebase_collaboration_userName', userName);
         }
         return userName;
