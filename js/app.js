@@ -72,6 +72,11 @@ class GoldPigMonitorApp {
             this.collaborationManager  // 传递协作管理器
         );
         
+        // 将Firebase协作管理器传递给事件管理器
+        if (this.firebaseCollaborationManager) {
+            this.eventManager.firebaseCollaborationManager = this.firebaseCollaborationManager;
+        }
+        
         // 测试模式标志
         this.testMode = this.storageManager.getTestMode();
         
@@ -410,6 +415,45 @@ class GoldPigMonitorApp {
             }
         };
         
+        // Firebase协作功能
+        window.showFirebaseCollaboration = () => {
+            console.log('显示Firebase协作对话框');
+            if (this.firebaseCollaborationManager) {
+                this.firebaseCollaborationManager.showCollaborationDialog();
+            } else {
+                alert('Firebase协作功能未初始化');
+            }
+        };
+        
+        window.createFirebaseRoom = async () => {
+            console.log('创建Firebase房间');
+            if (this.firebaseCollaborationManager) {
+                const roomId = await this.firebaseCollaborationManager.createRoom();
+                if (roomId) {
+                    console.log('房间创建成功:', roomId);
+                    return roomId;
+                }
+            }
+            return null;
+        };
+        
+        window.joinFirebaseRoom = async (roomId) => {
+            console.log('加入Firebase房间:', roomId);
+            if (this.firebaseCollaborationManager) {
+                const success = await this.firebaseCollaborationManager.joinRoom(roomId);
+                console.log('加入房间结果:', success);
+                return success;
+            }
+            return false;
+        };
+        
+        window.leaveFirebaseRoom = async () => {
+            console.log('离开Firebase房间');
+            if (this.firebaseCollaborationManager) {
+                await this.firebaseCollaborationManager.leaveRoom();
+            }
+        };
+        
         // 测试数据管理功能
         window.testDataExport = () => {
             console.log('测试数据导出功能');
@@ -424,6 +468,55 @@ class GoldPigMonitorApp {
                 return false;
             }
         };
+        
+        // 显示协作选择对话框
+        window.showCollaborationChoice = () => {
+            console.log('显示协作方式选择对话框');
+            
+            const modal = document.createElement('div');
+            modal.className = 'modal-overlay';
+            modal.innerHTML = `
+                <div class="modal">
+                    <div class="modal-header">
+                        <h3>🤝 选择协作方式</h3>
+                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="collaboration-choice">
+                            <div class="choice-card firebase-choice" onclick="showFirebaseCollaboration(); this.closest('.modal-overlay').remove();">
+                                <div class="choice-icon">🔥</div>
+                                <h4>Firebase云协作</h4>
+                                <p>基于Google Firebase的实时同步，支持跨设备、跨浏览器多人协作</p>
+                                <ul>
+                                    <li>✅ 真正的实时同步</li>
+                                    <li>✅ 支持无限用户</li>
+                                    <li>✅ 断线重连</li>
+                                    <li>✅ 永久房间存储</li>
+                                </ul>
+                                <div class="choice-recommended">推荐</div>
+                            </div>
+                            
+                            <div class="choice-card p2p-choice" onclick="window.goldPigApp.collaborationManager.showCollaborationDialog(); this.closest('.modal-overlay').remove();">
+                                <div class="choice-icon">👥</div>
+                                <h4>本地P2P协作</h4>
+                                <p>基于WebRTC的点对点连接，数据不经过服务器</p>
+                                <ul>
+                                    <li>✅ 完全私密</li>
+                                    <li>✅ 低延迟</li>
+                                    <li>⚠️ 需要手动连接</li>
+                                    <li>⚠️ 房主离开后断开</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+        };
+        
+        // 兼容性处理，添加到应用实例
+        this.showCollaborationChoice = window.showCollaborationChoice;
     }
 
     // 初始化备注输入框

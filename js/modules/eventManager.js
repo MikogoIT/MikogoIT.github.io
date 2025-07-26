@@ -58,10 +58,16 @@ export class EventManager {
             this.statsManager.addKillEvent(lineNumber, killTime);
             console.log('添加击杀事件到列表');
             
-            // 同步到其他用户
+            // 同步到其他用户（本地P2P协作）
             if (this.collaborationManager) {
-                console.log('同步状态到协作用户');
+                console.log('同步状态到P2P协作用户');
                 this.collaborationManager.syncLineStateChange(lineNumber, 'killed', killTime);
+            }
+            
+            // 同步到Firebase协作
+            if (this.firebaseCollaborationManager && this.firebaseCollaborationManager.roomId) {
+                console.log('同步状态到Firebase协作');
+                this.firebaseCollaborationManager.syncLineStateChange(lineNumber, 'killed', killTime);
             }
             
             // 触发自定义事件（用于协作同步）
@@ -160,9 +166,14 @@ export class EventManager {
         // 添加到击杀事件列表（时间未知）
         this.statsManager.addKillEvent(lineNumber, null);
         
-        // 同步到其他用户
+        // 同步到其他用户（本地P2P协作）
         if (this.collaborationManager) {
             this.collaborationManager.syncLineStateChange(lineNumber, 'killed-unknown', null);
+        }
+        
+        // 同步到Firebase协作
+        if (this.firebaseCollaborationManager && this.firebaseCollaborationManager.roomId) {
+            this.firebaseCollaborationManager.syncLineStateChange(lineNumber, 'killed-unknown', null);
         }
         
         // 触发自定义事件
@@ -216,9 +227,14 @@ export class EventManager {
         // 从击杀事件中移除
         this.statsManager.removeKillEvent(lineNumber, killTime);
         
-        // 同步到其他用户
+        // 同步到其他用户（本地P2P协作）
         if (this.collaborationManager) {
             this.collaborationManager.syncLineStateChange(lineNumber, 'cancelled', null);
+        }
+        
+        // 同步到Firebase协作
+        if (this.firebaseCollaborationManager && this.firebaseCollaborationManager.roomId) {
+            this.firebaseCollaborationManager.syncLineStateChange(lineNumber, 'cancelled', null);
         }
         
         // 触发自定义事件

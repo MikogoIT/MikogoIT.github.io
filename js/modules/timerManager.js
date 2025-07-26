@@ -82,6 +82,26 @@ export class TimerManager {
                     this.storageManager.setLineState(lineNumber, 'refreshed');
                     this.storageManager.removeKillTime(lineNumber);
 
+                    // 同步状态变化到Firebase协作
+                    if (window.app && window.app.eventManager) {
+                        const eventManager = window.app.eventManager;
+                        
+                        // 同步到本地P2P协作
+                        if (eventManager.collaborationManager) {
+                            eventManager.collaborationManager.syncLineStateChange(lineNumber, 'refreshed', null);
+                        }
+                        
+                        // 同步到Firebase协作
+                        if (eventManager.firebaseCollaborationManager && eventManager.firebaseCollaborationManager.roomId) {
+                            eventManager.firebaseCollaborationManager.syncLineStateChange(lineNumber, 'refreshed', null);
+                        }
+                    }
+                    
+                    // 触发自定义事件
+                    document.dispatchEvent(new CustomEvent('lineStateChanged', {
+                        detail: { lineNumber, state: 'refreshed', killTime: null }
+                    }));
+
                     // 🎉 金猪刷新动画效果
                     const rect = lineCell.getBoundingClientRect();
                     const refreshX = rect.left + rect.width / 2;

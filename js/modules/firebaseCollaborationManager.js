@@ -45,6 +45,106 @@ export class FirebaseCollaborationManager {
         
         // 初始化Firebase
         this.initFirebase();
+        
+        // 页面加载后尝试恢复房间状态
+        this.attemptRoomRestore();
+    }
+    
+    // 尝试恢复房间状态
+    async attemptRoomRestore() {
+        // 等待Firebase初始化完成
+        setTimeout(async () => {
+            try {
+                const savedRoomId = localStorage.getItem('firebase_collaboration_roomId');
+                const savedIsHost = localStorage.getItem('firebase_collaboration_isHost') === 'true';
+                
+                if (savedRoomId && this.isInitialized) {
+                    console.log('🔄 检测到之前的房间状态，尝试恢复...', savedRoomId);
+                    
+                    // 验证房间是否仍然存在和活跃
+                    const roomRef = this.firebaseUtils.ref(this.database, `rooms/${savedRoomId}`);
+                    const roomSnapshot = await this.firebaseUtils.get(roomRef);
+                    
+                    if (roomSnapshot.exists()) {
+                        const roomData = roomSnapshot.val();
+                        if (roomData.info && roomData.info.isActive) {
+                            console.log('✅ 房间仍然活跃，恢复连接...');
+                            
+                            // 恢复房间状态
+                            this.roomId = savedRoomId;
+                            this.isHost = savedIsHost;
+                            
+                            // 重新设置引用
+                            this.setupRoomReferences();
+                            
+                            // 重新加入房间
+                            if (this.isHost) {
+                                // 房主重新设置在线状态
+                                const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}`);
+                                await this.firebaseUtils.update(userRef, {
+                                    userName: this.userName,
+                                    userColor: this.userColor,
+                                    isHost: true,
+                                    isOnline: true,
+                                    lastSeen: this.firebaseUtils.serverTimestamp(),
+                                    lastHeartbeat: this.firebaseUtils.serverTimestamp()
+                                });
+                            } else {
+                                // 成员重新加入
+                                const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}`);
+                                await this.firebaseUtils.update(userRef, {
+                                    userName: this.userName,
+                                    userColor: this.userColor,
+                                    isHost: false,
+                                    isOnline: true,
+                                    lastSeen: this.firebaseUtils.serverTimestamp(),
+                                    lastHeartbeat: this.firebaseUtils.serverTimestamp()
+                                });
+                            }
+                            
+                            // 重新设置事件监听
+                            this.setupRoomListeners();
+                            
+                            // 更新用户在线状态
+                            this.updateUserPresence();
+                            
+                            // 显示房间信息
+                            this.showRoomInfo();
+                            
+                            // 同步当前游戏状态
+                            await this.syncCurrentGameState();
+                            
+                            console.log('✅ 房间状态恢复成功');
+                            this.showTemporaryMessage('房间状态已恢复', 'success');
+                            
+                        } else {
+                            console.log('❌ 房间已关闭，清理本地存储');
+                            this.clearSavedRoomState();
+                        }
+                    } else {
+                        console.log('❌ 房间不存在，清理本地存储');
+                        this.clearSavedRoomState();
+                    }
+                }
+            } catch (error) {
+                console.error('❌ 恢复房间状态失败:', error);
+                this.clearSavedRoomState();
+            }
+        }, 2000); // 等待2秒确保Firebase完全初始化
+    }
+    
+    // 清理保存的房间状态
+    clearSavedRoomState() {
+        localStorage.removeItem('firebase_collaboration_roomId');
+        localStorage.removeItem('firebase_collaboration_isHost');
+    }
+    
+    // 保存房间状态到本地存储
+    saveRoomStateToLocal() {
+        if (this.roomId) {
+            localStorage.setItem('firebase_collaboration_roomId', this.roomId);
+            localStorage.setItem('firebase_collaboration_isHost', this.isHost.toString());
+        }
     }
     
     // 初始化Firebase
@@ -269,6 +369,9 @@ export class FirebaseCollaborationManager {
             // 显示房间信息组件
             this.showRoomInfo();
             
+            // 保存房间状态到本地
+            this.saveRoomStateToLocal();
+            
             console.log('✅ 房间创建成功:', roomId);
             
             return roomId;
@@ -350,6 +453,9 @@ export class FirebaseCollaborationManager {
             // 显示房间信息组件
             this.showRoomInfo();
             
+            // 保存房间状态到本地
+            this.saveRoomStateToLocal();
+            
             console.log('✅ 成功加入房间:', roomId);
             
             return true;
@@ -416,6 +522,9 @@ export class FirebaseCollaborationManager {
             
             // 隐藏房间信息
             this.hideRoomInfo();
+            
+            // 清理保存的房间状态
+            this.clearSavedRoomState();
             
             console.log('✅ 已离开房间');
             
@@ -654,6 +763,13 @@ export class FirebaseCollaborationManager {
                     userId: this.userId,
                     userName: this.userName
                 };
+            } else if (state === 'killed-unknown') {
+                updates[`lineStates/${lineNumber}`] = {
+                    state: state,
+                    killTime: null,
+                    userId: this.userId,
+                    userName: this.userName
+                };
             } else if (state === 'refreshed') {
                 updates[`lineStates/${lineNumber}`] = {
                     state: state,
@@ -661,8 +777,11 @@ export class FirebaseCollaborationManager {
                     userId: this.userId,
                     userName: this.userName
                 };
+            } else if (state === 'cancelled' || !state) {
+                // 清除状态（取消或清空）
+                updates[`lineStates/${lineNumber}`] = null;
             } else {
-                // 清除状态
+                // 其他未知状态，也清除
                 updates[`lineStates/${lineNumber}`] = null;
             }
             
@@ -717,11 +836,12 @@ export class FirebaseCollaborationManager {
     handleGameStateChange(gameState) {
         if (!gameState) return;
         
-        console.log('游戏状态更新');
+        console.log('🎮 游戏状态更新:', gameState);
         
         // 防止自己的操作触发重复更新
         if (this._isLocalUpdate) {
             this._isLocalUpdate = false;
+            console.log('跳过本地更新触发的状态变化');
             return;
         }
         
@@ -730,8 +850,8 @@ export class FirebaseCollaborationManager {
         
         // 更新统计信息
         if (gameState.statistics && this.statsManager) {
-            // 可以更新统计显示
-            console.log('统计数据:', gameState.statistics);
+            console.log('更新统计数据:', gameState.statistics);
+            // 可以在这里更新协作统计显示
         }
     }
     
@@ -804,6 +924,14 @@ export class FirebaseCollaborationManager {
                 if (this.statsManager) {
                     this.statsManager.updateStats();
                 }
+                
+                // 更新图表
+                if (window.app && window.app.chartManager) {
+                    window.app.chartManager.updateChart();
+                }
+                
+                // 显示远程更新提示
+                this.showTemporaryMessage(`从协作者同步了${updatedCount}个状态变化`, 'info');
             }
             
         } catch (error) {
@@ -814,7 +942,12 @@ export class FirebaseCollaborationManager {
     // 更新单元格显示
     updateCellDisplay(lineNumber, data) {
         const cell = document.querySelector(`td[data-line="${lineNumber}"]`);
-        if (!cell) return;
+        if (!cell) {
+            console.warn(`找不到线路${lineNumber}的单元格`);
+            return;
+        }
+        
+        console.log(`更新单元格显示: 线路${lineNumber}, 状态:${data.state}, 用户:${data.userName}`);
         
         // 清除现有状态类
         cell.classList.remove('killed', 'killed-unknown', 'refreshed');
@@ -828,9 +961,11 @@ export class FirebaseCollaborationManager {
         const tooltip = cell.querySelector('.tooltip');
         if (tooltip) {
             if (data.state === 'killed' || data.state === 'killed-unknown') {
-                tooltip.textContent = `${data.userName}标记击杀 - 双击取消`;
+                tooltip.textContent = `${data.userName || '其他用户'}标记击杀 - 双击取消`;
             } else if (data.state === 'refreshed') {
-                tooltip.textContent = `${data.userName}标记刷新 - 点击击杀`;
+                tooltip.textContent = `${data.userName || '其他用户'}标记刷新 - 点击击杀`;
+            } else {
+                tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
             }
         }
         
@@ -842,12 +977,24 @@ export class FirebaseCollaborationManager {
             
             if (elapsed < timerDuration) {
                 const remaining = timerDuration - elapsed;
+                console.log(`启动远程同步的倒计时: 线路${lineNumber}, 剩余时间:${remaining}ms`);
+                
                 window.app.timerManager.startTimer(lineNumber, data.killTime, remaining, cell, 
                     (completedLine) => {
+                        console.log(`远程同步的倒计时完成: 线路${completedLine}`);
                         if (window.app && window.app.eventManager) {
                             window.app.eventManager.onTimerComplete(completedLine);
                         }
                     });
+            } else {
+                // 时间已过，直接设置为刷新状态
+                console.log(`远程同步的击杀时间已过期，设置为刷新状态: 线路${lineNumber}`);
+                setTimeout(() => {
+                    cell.classList.remove('killed');
+                    cell.classList.add('refreshed');
+                    localStorage.setItem(`pigTimer_line_${lineNumber}_state`, 'refreshed');
+                    localStorage.removeItem(`pigTimer_line_${lineNumber}_killTime`);
+                }, 100);
             }
         }
     }
@@ -855,21 +1002,31 @@ export class FirebaseCollaborationManager {
     // 清除单元格显示
     clearCellDisplay(lineNumber) {
         const cell = document.querySelector(`td[data-line="${lineNumber}"]`);
-        if (!cell) return;
+        if (!cell) {
+            console.warn(`找不到线路${lineNumber}的单元格`);
+            return;
+        }
+        
+        console.log(`清除单元格显示: 线路${lineNumber}`);
         
         // 清除状态类
         cell.classList.remove('killed', 'killed-unknown', 'refreshed');
         
-        // 重置tooltip
+        // 恢复默认tooltip
         const tooltip = cell.querySelector('.tooltip');
         if (tooltip) {
             tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
         }
         
         // 清除倒计时
-        const timerElement = cell.querySelector('.timer-display');
-        if (timerElement) {
-            timerElement.textContent = '';
+        if (window.app && window.app.timerManager) {
+            window.app.timerManager.clearTimer(lineNumber);
+        }
+        
+        // 清除计时器显示
+        const timerCell = document.getElementById(`timer-${lineNumber}`);
+        if (timerCell) {
+            timerCell.textContent = '';
         }
     }
     
@@ -1261,54 +1418,40 @@ export class FirebaseCollaborationManager {
     }
 
     // 显示临时消息
-    showTemporaryMessage(message, type = 'success') {
-        // 移除已存在的消息
-        const existingMessage = document.querySelector('.temporary-message');
-        if (existingMessage) {
-            existingMessage.remove();
-        }
-        
+    showTemporaryMessage(message, type = 'info') {
+        // 创建消息元素
         const messageDiv = document.createElement('div');
         messageDiv.className = `temporary-message ${type}`;
         messageDiv.textContent = message;
+        
+        // 设置样式
         messageDiv.style.cssText = `
             position: fixed;
-            top: 100px;
+            top: 80px;
             right: 20px;
-            padding: 12px 20px;
+            background: ${type === 'success' ? '#d4edda' : type === 'error' ? '#f8d7da' : '#d1ecf1'};
+            color: ${type === 'success' ? '#155724' : type === 'error' ? '#721c24' : '#0c5460'};
+            border: 1px solid ${type === 'success' ? '#c3e6cb' : type === 'error' ? '#f5c6cb' : '#bee5eb'};
             border-radius: 8px;
-            color: white;
+            padding: 12px 16px;
+            font-size: 14px;
             font-weight: 500;
             z-index: 10001;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            animation: slideInRight 0.3s ease-out;
             max-width: 300px;
             word-wrap: break-word;
-            animation: messageSlideIn 0.3s ease;
         `;
         
-        // 设置背景颜色
-        switch (type) {
-            case 'success':
-                messageDiv.style.background = '#28a745';
-                break;
-            case 'warning':
-                messageDiv.style.background = '#ffc107';
-                messageDiv.style.color = '#212529';
-                break;
-            case 'error':
-                messageDiv.style.background = '#dc3545';
-                break;
-            default:
-                messageDiv.style.background = '#17a2b8';
-        }
-        
+        // 添加到页面
         document.body.appendChild(messageDiv);
         
-        // 自动隐藏
+        // 3秒后自动移除
         setTimeout(() => {
-            messageDiv.style.animation = 'messageSlideOut 0.3s ease';
+            messageDiv.style.animation = 'slideOutRight 0.3s ease-in forwards';
             setTimeout(() => {
-                if (document.body.contains(messageDiv)) {
-                    document.body.removeChild(messageDiv);
+                if (messageDiv.parentNode) {
+                    messageDiv.parentNode.removeChild(messageDiv);
                 }
             }, 300);
         }, 3000);
