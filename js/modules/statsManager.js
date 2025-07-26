@@ -258,52 +258,112 @@ export class StatsManager {
     
     // 导出为JSON文件
     exportToJSON() {
-        const data = this.exportAllData();
-        const jsonString = JSON.stringify(data, null, 2);
-        const blob = new Blob([jsonString], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `金猪监控数据_${this.formatDateForFilename(new Date())}.json`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        console.log('数据导出完成');
-        return true;
+        try {
+            console.log('开始导出JSON数据...');
+            
+            // 检查浏览器兼容性
+            if (!window.Blob) {
+                alert('您的浏览器不支持文件下载功能，请使用更新版本的浏览器');
+                return false;
+            }
+            
+            if (!window.URL || !window.URL.createObjectURL) {
+                alert('您的浏览器不支持文件下载功能，请使用更新版本的浏览器');
+                return false;
+            }
+            
+            const data = this.exportAllData();
+            console.log('导出数据:', data);
+            
+            const jsonString = JSON.stringify(data, null, 2);
+            console.log('JSON字符串长度:', jsonString.length);
+            
+            const blob = new Blob([jsonString], { type: 'application/json' });
+            console.log('Blob创建成功:', blob);
+            
+            const url = URL.createObjectURL(blob);
+            console.log('URL创建成功:', url);
+            
+            const link = document.createElement('a');
+            
+            // 检查下载属性支持
+            if (!('download' in link)) {
+                alert('您的浏览器不支持自动下载，请右键点击链接选择"另存为"');
+                // 创建一个新窗口显示数据
+                const newWindow = window.open();
+                newWindow.document.write('<pre>' + jsonString + '</pre>');
+                newWindow.document.title = '金猪监控数据';
+                return true;
+            }
+            
+            link.href = url;
+            link.download = `金猪监控数据_${this.formatDateForFilename(new Date())}.json`;
+            console.log('下载链接:', link.download);
+            
+            // 添加到DOM并触发点击
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            console.log('点击下载链接');
+            
+            // 延迟清理
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                console.log('清理完成');
+            }, 100);
+            
+            console.log('数据导出完成');
+            return true;
+        } catch (error) {
+            console.error('导出JSON时发生错误:', error);
+            alert('导出失败: ' + error.message);
+            return false;
+        }
     }
     
     // 导出为CSV文件（击杀记录）
     exportToCSV() {
-        if (this.killEvents.length === 0) {
-            alert('暂无击杀记录可导出');
+        try {
+            console.log('开始导出CSV数据...');
+            console.log('击杀事件数量:', this.killEvents.length);
+            
+            if (this.killEvents.length === 0) {
+                console.log('没有击杀记录，显示提示');
+                alert('暂无击杀记录可导出');
+                return false;
+            }
+            
+            let csvContent = '线路号,击杀时间,击杀日期\n';
+            
+            this.killEvents.forEach(event => {
+                const date = new Date(event.timestamp);
+                const dateStr = date.toLocaleDateString('zh-CN');
+                const timeStr = date.toLocaleTimeString('zh-CN');
+                csvContent += `${event.line},${timeStr},${dateStr}\n`;
+            });
+            
+            console.log('CSV内容长度:', csvContent.length);
+            
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `金猪击杀记录_${this.formatDateForFilename(new Date())}.csv`;
+            console.log('CSV下载文件名:', link.download);
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+            
+            console.log('CSV导出完成');
+            return true;
+        } catch (error) {
+            console.error('导出CSV时发生错误:', error);
             return false;
         }
-        
-        let csvContent = '线路号,击杀时间,击杀日期\n';
-        
-        this.killEvents.forEach(event => {
-            const date = new Date(event.timestamp);
-            const dateStr = date.toLocaleDateString('zh-CN');
-            const timeStr = date.toLocaleTimeString('zh-CN');
-            csvContent += `${event.line},${timeStr},${dateStr}\n`;
-        });
-        
-        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-        const url = URL.createObjectURL(blob);
-        
-        const link = document.createElement('a');
-        link.href = url;
-        link.download = `金猪击杀记录_${this.formatDateForFilename(new Date())}.csv`;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-        
-        console.log('CSV导出完成');
-        return true;
     }
     
     // 格式化日期用于文件名

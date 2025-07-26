@@ -280,6 +280,21 @@ class GoldPigMonitorApp {
                 this.uiManager.showDataManagementDialog();
             }
         };
+        
+        // 测试数据管理功能
+        window.testDataExport = () => {
+            console.log('测试数据导出功能');
+            console.log('window.app:', window.app);
+            if (window.app && window.app.statsManager) {
+                console.log('statsManager存在，测试导出...');
+                const result = window.app.statsManager.exportToJSON();
+                console.log('导出测试结果:', result);
+                return result;
+            } else {
+                console.error('应用或统计管理器不存在');
+                return false;
+            }
+        };
     }
 
     // 初始化备注输入框
@@ -414,3 +429,4 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // 导出应用实例供调试使用
 window.goldPigApp = app;
+window.app = app;

@@ -418,21 +418,38 @@ export class UIManager {
         
         // 导出JSON
         exportJsonBtn.addEventListener('click', () => {
+            console.log('导出JSON按钮被点击');
+            console.log('window.app:', window.app);
+            console.log('window.app.statsManager:', window.app ? window.app.statsManager : 'app不存在');
+            
             if (window.app && window.app.statsManager) {
+                console.log('开始导出JSON数据...');
                 const success = window.app.statsManager.exportToJSON();
+                console.log('导出结果:', success);
                 if (success) {
                     this.showTemporaryMessage('数据导出成功！', 'success');
                 }
+            } else {
+                console.error('应用实例或统计管理器不可用');
+                this.showTemporaryMessage('导出失败：应用未正确初始化', 'error');
             }
         });
         
         // 导出CSV
         exportCsvBtn.addEventListener('click', () => {
+            console.log('导出CSV按钮被点击');
+            console.log('window.app:', window.app);
+            
             if (window.app && window.app.statsManager) {
+                console.log('开始导出CSV数据...');
                 const success = window.app.statsManager.exportToCSV();
+                console.log('导出结果:', success);
                 if (success) {
                     this.showTemporaryMessage('击杀记录导出成功！', 'success');
                 }
+            } else {
+                console.error('应用实例或统计管理器不可用');
+                this.showTemporaryMessage('导出失败：应用未正确初始化', 'error');
             }
         });
         
