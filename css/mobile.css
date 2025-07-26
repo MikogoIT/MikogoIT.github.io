@@ -47,35 +47,43 @@
     
     table {
         min-width: 100%;
-        font-size: 14px;
-        border-spacing: 3px;
+        font-size: 16px;
+        border-spacing: 2px;
         width: 100%;
+        table-layout: fixed; /* 固定表格布局确保列宽均匀 */
     }
     
     th {
-        padding: 8px 4px;
-        font-size: 12px;
-        min-width: 35px;
-        height: 35px;
+        padding: 8px 2px;
+        font-size: 13px;
+        height: 40px;
+        width: 10%; /* 10列布局，每列10% */
+        box-sizing: border-box;
+        text-align: center;
     }
     
     td {
-        padding: 10px 4px;
-        font-size: 14px;
-        height: 50px;
-        min-width: 35px;
+        padding: 8px 2px;
+        font-size: 16px;
+        height: 55px;
+        width: 10%; /* 10列布局，每列10% */
         box-sizing: border-box;
         text-align: center;
         font-weight: bold;
+        line-height: 1.2;
+        word-break: keep-all; /* 防止数字换行 */
+        white-space: nowrap; /* 防止文字换行 */
+        overflow: visible; /* 允许内容溢出显示 */
     }
     
     /* 增大可点击区域和触摸反馈 */
     td:not(.timer-cell) {
         cursor: pointer;
         -webkit-tap-highlight-color: rgba(52, 152, 219, 0.4);
-        padding: 12px 4px;
+        padding: 10px 2px;
         transition: all 0.2s ease;
-        border-radius: 8px;
+        border-radius: 6px;
+        position: relative;
     }
     
     td:not(.timer-cell):active {
@@ -85,12 +93,14 @@
     }
     
     .timer-cell {
-        font-size: 11px;
-        padding: 6px 2px;
-        height: 40px;
-        line-height: 1.2;
-        min-width: 35px;
+        font-size: 12px;
+        padding: 4px 1px;
+        height: 45px;
+        line-height: 1.1;
+        width: 10%;
         font-weight: normal;
+        word-break: keep-all;
+        white-space: nowrap;
     }
     
     /* 控制面板适配 */
@@ -140,33 +150,34 @@
     }
     
     table {
-        border-spacing: 2px;
-        font-size: 13px;
+        border-spacing: 1px;
+        font-size: 15px;
     }
     
     th {
-        padding: 6px 2px;
-        font-size: 11px;
-        min-width: 32px;
-        height: 32px;
+        padding: 6px 1px;
+        font-size: 12px;
+        height: 35px;
+        width: 12.5%; /* 8列布局，每列12.5% */
     }
     
     td {
-        padding: 8px 2px;
-        font-size: 13px;
-        height: 45px;
-        min-width: 32px;
+        padding: 8px 1px;
+        font-size: 15px;
+        height: 50px;
+        width: 12.5%; /* 8列布局，每列12.5% */
+        line-height: 1.1;
     }
     
     td:not(.timer-cell) {
-        padding: 10px 2px;
+        padding: 9px 1px;
     }
     
     .timer-cell {
-        font-size: 10px;
-        padding: 5px 1px;
-        height: 35px;
-        min-width: 32px;
+        font-size: 11px;
+        padding: 4px 1px;
+        height: 40px;
+        width: 12.5%;
     }
     
     .controls, .stats {
@@ -259,17 +270,17 @@
         width: 100%;
     }
     
-    /* 10列布局（超小屏幕） */
+    /* 8列布局（超小屏幕） */
     @media (max-width: 480px) {
         th, td {
-            width: 10%;
+            width: 12.5% !important;
         }
     }
     
-    /* 15列布局（手机端） */
+    /* 10列布局（手机端） */
     @media (min-width: 481px) and (max-width: 768px) {
         th, td {
-            width: 6.67%;
+            width: 10% !important;
         }
     }
 }
@@ -366,4 +377,84 @@
 @keyframes fadeOut {
     from { opacity: 1; transform: translate(-50%, -50%) scale(1); }
     to { opacity: 0; transform: translate(-50%, -50%) scale(0.9); }
+}
+
+/* 优化倒计时显示 */
+@media (max-width: 768px) {
+    .timer-display {
+        font-size: 10px !important;
+        line-height: 1.1 !important;
+        padding: 2px !important;
+        text-align: center;
+        word-break: break-all;
+        overflow: hidden;
+        max-height: 30px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+    
+    /* 确保3位数字能完整显示 */
+    td[data-line] {
+        position: relative;
+        font-size: 16px !important;
+        font-weight: 700;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+    }
+    
+    /* 超小屏幕的倒计时优化 */
+    @media (max-width: 480px) {
+        .timer-display {
+            font-size: 9px !important;
+            max-height: 25px;
+        }
+        
+        td[data-line] {
+            font-size: 15px !important;
+        }
+    }
+}
+
+/* 确保数字居中且完整显示 */
+@media (max-width: 768px) {
+    td {
+        display: table-cell;
+        vertical-align: middle;
+        position: relative;
+    }
+    
+    td:not(.timer-cell)::before {
+        content: attr(data-line);
+        position: absolute;
+        top: 50%;
+        left: 50%;
+        transform: translate(-50%, -50%);
+        font-weight: bold;
+        z-index: 1;
+    }
+    
+    /* 隐藏原始文本内容，使用伪元素显示 */
+    td:not(.timer-cell) {
+        color: transparent;
+        text-indent: -9999px;
+    }
+    
+    td:not(.timer-cell)::before {
+        color: inherit;
+        text-indent: 0;
+        color: white;
+    }
+    
+    /* 确保状态颜色应用到伪元素 */
+    .killed::before {
+        color: white;
+    }
+    
+    .killed-unknown::before {
+        color: white;
+    }
+    
+    .refreshed::before {
+        color: white;
+    }
 }

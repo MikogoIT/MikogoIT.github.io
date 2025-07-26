@@ -13,11 +13,11 @@ export class TableManager {
     updateLayoutSettings() {
         const screenWidth = window.innerWidth;
         if (screenWidth <= 480) {
-            this.cols = 10; // 超小屏幕：10列
-            this.rows = 40;
+            this.cols = 8; // 超小屏幕：8列，确保数字显示完整
+            this.rows = 50;
         } else if (screenWidth <= 768) {
-            this.cols = 15; // 手机端：15列
-            this.rows = Math.ceil(400 / 15);
+            this.cols = 10; // 手机端：10列，更宽的格子
+            this.rows = 40;
         } else {
             this.cols = 20; // 桌面端：20列
             this.rows = 20;
