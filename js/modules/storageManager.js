@@ -1,5 +1,5 @@
 // 存储管理器 - 处理本地存储操作
-class StorageManager {
+export class StorageManager {
     constructor() {
         this.prefix = 'pigTimer_'; // 存储前缀，避免冲突
     }

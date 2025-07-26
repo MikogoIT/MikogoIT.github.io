@@ -1,5 +1,5 @@
 // 动画管理器 - 处理所有动画效果
-class AnimationManager {
+export class AnimationManager {
     constructor() {
         this.isVibrationSupported = 'vibrate' in navigator;
     }

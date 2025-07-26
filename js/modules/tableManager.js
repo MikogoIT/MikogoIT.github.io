@@ -7,58 +7,82 @@ export class TableManager {
 
     // 初始化表格
     initializeTable(table, eventManager) {
-        // 检查是否已有测试行，如果有就从第21个开始
+        // 检查是否已有测试行，如果有就为其绑定事件
         const existingCells = table.querySelectorAll('td[data-line]');
-        let lineNumber = existingCells.length > 0 ? existingCells.length + 1 : 1;
-        let startRow = existingCells.length > 0 ? 1 : 0; // 如果已有测试行，从第二行开始
-        
-        console.log(`表格初始化: 现有单元格${existingCells.length}个, 从线路${lineNumber}开始`);
+        console.log(`表格初始化: 现有单元格${existingCells.length}个`);
         
         // 为现有的测试单元格绑定事件
         existingCells.forEach(cell => {
-            this.bindCellEvents(cell, eventManager);
-        });
-        
-        // 创建剩余的行
-        for (let i = startRow; i < this.rows; i++) {
-            const row = document.createElement('tr');
-            
-            for (let j = 0; j < this.cols; j++) {
-                // 如果是第一行且已有测试单元格，跳过已存在的
-                if (i === 0 && j < existingCells.length) {
-                    continue;
-                }
-                
-                const cell = document.createElement('td');
-                cell.textContent = lineNumber;
-                cell.dataset.line = lineNumber;
-                
-                // 添加提示
+            // 确保现有单元格有tooltip和timer display
+            if (!cell.querySelector('.tooltip')) {
                 const tooltip = document.createElement('div');
                 tooltip.className = 'tooltip';
                 tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
                 cell.appendChild(tooltip);
-                
-                // 添加定时器显示元素
+            }
+            
+            const lineNumber = cell.dataset.line;
+            if (lineNumber && !cell.querySelector('.timer-display')) {
                 const timerDisplay = document.createElement('div');
                 timerDisplay.id = `timer-${lineNumber}`;
                 timerDisplay.className = 'timer-display';
                 cell.appendChild(timerDisplay);
+            }
+            
+            this.bindCellEvents(cell, eventManager);
+        });
+        
+        // 如果现有单元格少于400个，需要生成剩余的
+        if (existingCells.length < 400) {
+            let lineNumber = existingCells.length + 1;
+            let currentRow = null;
+            let cellsInCurrentRow = 0;
+            
+            // 如果有测试行，获取当前行中的单元格数量
+            if (existingCells.length > 0) {
+                const lastCell = existingCells[existingCells.length - 1];
+                currentRow = lastCell.parentElement;
+                cellsInCurrentRow = currentRow.children.length;
+            }
+            
+            // 生成剩余的单元格
+            for (let i = lineNumber; i <= 400; i++) {
+                // 如果需要新行或者没有当前行
+                if (!currentRow || cellsInCurrentRow >= this.cols) {
+                    currentRow = document.createElement('tr');
+                    table.appendChild(currentRow);
+                    cellsInCurrentRow = 0;
+                }
+                
+                const cell = document.createElement('td');
+                cell.textContent = i;
+                cell.dataset.line = i;
+                
+                // 添加提示（检查是否已存在）
+                if (!cell.querySelector('.tooltip')) {
+                    const tooltip = document.createElement('div');
+                    tooltip.className = 'tooltip';
+                    tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
+                    cell.appendChild(tooltip);
+                }
+                
+                // 添加定时器显示元素（检查是否已存在）
+                if (!cell.querySelector('.timer-display')) {
+                    const timerDisplay = document.createElement('div');
+                    timerDisplay.id = `timer-${i}`;
+                    timerDisplay.className = 'timer-display';
+                    cell.appendChild(timerDisplay);
+                }
                 
                 // 绑定事件
                 this.bindCellEvents(cell, eventManager);
                 
-                row.appendChild(cell);
-                lineNumber++;
-            }
-            
-            // 只添加非空行
-            if (row.children.length > 0) {
-                table.appendChild(row);
+                currentRow.appendChild(cell);
+                cellsInCurrentRow++;
             }
         }
         
-        console.log(`表格初始化完成: 总共${lineNumber - 1}个线路`);
+        console.log(`表格初始化完成: 总共400个线路`);
     }
 
     // 绑定单元格事件
@@ -82,7 +106,7 @@ export class TableManager {
     }
 
     // 恢复单元格状态
-    restoreCellState(cell, status, killTime, lineNumber) {
+    restoreCellState(cell, lineNumber, status, killTime, testMode) {
         const tooltip = cell.querySelector('.tooltip');
         
         if (status === 'killed') {
@@ -94,6 +118,27 @@ export class TableManager {
         } else if (status === 'refreshed') {
             cell.classList.add('refreshed');
             tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+        }
+    }
+
+    // 设置单元格为刷新状态
+    setCellRefreshed(cell, lineNumber) {
+        // 移除所有其他状态
+        cell.classList.remove('killed', 'killed-unknown');
+        
+        // 添加刷新状态
+        cell.classList.add('refreshed');
+        
+        // 更新提示文本
+        const tooltip = cell.querySelector('.tooltip');
+        if (tooltip) {
+            tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+        }
+        
+        // 清除计时器显示
+        const timerDisplay = document.getElementById(`timer-${lineNumber}`);
+        if (timerDisplay) {
+            timerDisplay.textContent = '';
         }
     }
 

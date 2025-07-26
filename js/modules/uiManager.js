@@ -1,5 +1,5 @@
 // UI管理器 - 处理用户界面交互和提示
-class UIManager {
+export class UIManager {
     constructor() {
         this.statusSpan = document.getElementById('status');
         this.lastUpdateSpan = document.getElementById('last-update');

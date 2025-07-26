@@ -1,5 +1,5 @@
 // 统计管理器 - 处理统计数据和今日计数
-class StatsManager {
+export class StatsManager {
     constructor() {
         this.killEvents = JSON.parse(localStorage.getItem('killEvents')) || [];
         this.initElements();

@@ -47,40 +47,95 @@ class GoldPigMonitorApp {
     // 初始化应用
     async init() {
         try {
+            console.log('开始初始化应用...');
+            
+            // 检查必要的元素
+            if (!this.elements.table) {
+                throw new Error('未找到表格元素');
+            }
+            
             // 初始化表格
+            console.log('初始化表格...');
             this.tableManager.initializeTable(this.elements.table, this.eventManager);
             
+            // 验证表格生成
+            const cells = this.elements.table.querySelectorAll('td[data-line]');
+            console.log(`表格生成完成，共 ${cells.length} 个单元格`);
+            
+            if (cells.length === 0) {
+                throw new Error('表格生成失败，没有生成任何单元格');
+            }
+            
             // 恢复表格状态
+            console.log('恢复表格状态...');
             this.restoreTableState();
             
-            // 初始化图表
-            this.chartManager.initChart();
+            // 初始化其他组件（如果表格成功）
+            try {
+                console.log('初始化图表...');
+                this.chartManager.initChart();
+            } catch (chartError) {
+                console.warn('图表初始化失败:', chartError);
+            }
             
-            // 确保统计管理器元素绑定完成
-            this.statsManager.bindElements();
+            try {
+                console.log('绑定统计管理器元素...');
+                this.statsManager.bindElements();
+            } catch (statsError) {
+                console.warn('统计管理器初始化失败:', statsError);
+            }
             
-            // 初始化UI
-            this.uiManager.showRestoreStatus();
+            try {
+                console.log('初始化UI...');
+                this.uiManager.showRestoreStatus();
+            } catch (uiError) {
+                console.warn('UI初始化失败:', uiError);
+            }
             
             // 绑定全局函数
+            console.log('绑定全局函数...');
             this.bindGlobalFunctions();
             
             // 更新统计
+            console.log('更新统计...');
             this.updateStats();
             
             // 初始化备注
+            console.log('初始化备注...');
             this.initNotesInput();
             
             // 显示手机端提示
+            console.log('显示手机端提示...');
             this.uiManager.showInitialMobileHint();
             
             // 更新测试模式按钮
+            console.log('更新测试模式按钮...');
             this.uiManager.updateTestModeButton(this.testMode);
             this.timerManager.setTestMode(this.testMode);
             
+            console.log('应用初始化完成！');
+            
         } catch (error) {
             console.error('应用初始化失败:', error);
-            this.uiManager.showError('应用初始化失败，请刷新页面重试');
+            // 显示基本错误信息
+            if (this.elements.statusSpan) {
+                this.elements.statusSpan.textContent = '初始化失败';
+                this.elements.statusSpan.style.color = 'red';
+            }
+            
+            // 尝试显示用户友好的错误信息
+            try {
+                this.uiManager.showError(`应用初始化失败: ${error.message}`);
+            } catch (uiError) {
+                // 如果UI管理器也失败了，直接在页面上显示
+                const container = document.querySelector('.container');
+                if (container) {
+                    const errorDiv = document.createElement('div');
+                    errorDiv.style.cssText = 'background: red; color: white; padding: 20px; margin: 20px; border-radius: 10px; font-size: 18px; text-align: center;';
+                    errorDiv.textContent = `应用初始化失败: ${error.message}`;
+                    container.insertBefore(errorDiv, container.firstChild);
+                }
+            }
         }
     }
 
@@ -232,7 +287,22 @@ const app = new GoldPigMonitorApp();
 
 // DOM加载完成后初始化应用
 document.addEventListener('DOMContentLoaded', () => {
-    app.init();
+    console.log('DOM加载完成，开始初始化应用');
+    try {
+        app.init().then(() => {
+            console.log('应用初始化成功');
+        }).catch(error => {
+            console.error('应用初始化异步错误:', error);
+        });
+    } catch (error) {
+        console.error('应用创建失败:', error);
+        // 显示错误信息给用户
+        const statusElement = document.getElementById('status');
+        if (statusElement) {
+            statusElement.textContent = '初始化失败';
+            statusElement.style.color = 'red';
+        }
+    }
 });
 
 // 导出应用实例供调试使用

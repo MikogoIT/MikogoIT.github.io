@@ -1,5 +1,5 @@
 // 图表管理器 - 处理图表绘制和Canvas操作
-class ChartManager {
+export class ChartManager {
     constructor(statsManager) {
         this.statsManager = statsManager;
         this.canvas = document.getElementById('stats-chart');
