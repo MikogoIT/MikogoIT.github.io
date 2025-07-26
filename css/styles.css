@@ -960,13 +960,25 @@ footer {
 }
 
 .room-info .leave-room-btn {
-    background: #e74c3c;
-    color: white;
-    border: none;
-    border-radius: 5px;
-    padding: 5px 10px;
-    cursor: pointer;
-    font-size: 12px;
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    border-radius: 5px !important;
+    padding: 5px 10px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+    transition: background-color 0.2s ease !important;
+}
+
+.room-info .leave-room-btn:hover {
+    background: #c0392b !important;
+}
+
+.room-info .leave-room-btn:active {
+    background: #a93226 !important;
+    transform: scale(0.98);
 }
 
 .room-info .copy-btn {

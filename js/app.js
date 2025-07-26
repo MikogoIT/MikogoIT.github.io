@@ -454,6 +454,30 @@ class GoldPigMonitorApp {
             }
         };
         
+        // 添加全局调试方法
+        window.debugLeaveRoom = () => {
+            if (this.firebaseCollaborationManager) {
+                console.log('🧪 手动触发离开房间');
+                this.firebaseCollaborationManager.leaveRoom();
+            } else {
+                console.error('Firebase协作管理器未初始化');
+            }
+        };
+        
+        window.debugRoomState = () => {
+            if (this.firebaseCollaborationManager) {
+                console.log('🔍 当前房间状态:', {
+                    roomId: this.firebaseCollaborationManager.roomId,
+                    isHost: this.firebaseCollaborationManager.isHost,
+                    userId: this.firebaseCollaborationManager.userId,
+                    isInitialized: this.firebaseCollaborationManager.isInitialized,
+                    isConnected: this.firebaseCollaborationManager.isConnected
+                });
+            } else {
+                console.error('Firebase协作管理器未初始化');
+            }
+        };
+        
         // 测试数据管理功能
         window.testDataExport = () => {
             console.log('测试数据导出功能');

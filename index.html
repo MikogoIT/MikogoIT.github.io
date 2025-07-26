@@ -255,6 +255,9 @@
     <div style="position: fixed; top: 10px; right: 10px; background: rgba(0,0,0,0.8); color: white; padding: 10px; border-radius: 5px; z-index: 1000; font-size: 12px;">
         <div>表格状态: <span id="debug-table-status">检查中...</span></div>
         <div>单元格数: <span id="debug-cell-count">0</span></div>
+        <div style="margin-top: 5px;">
+            <button onclick="testLeaveRoomDebug()" style="background: #e74c3c; color: white; border: none; padding: 3px 6px; border-radius: 3px; cursor: pointer; font-size: 11px;">测试离开房间</button>
+        </div>
     </div>
 
     <!-- 主应用模块脚本 -->
@@ -1346,7 +1349,35 @@
         }, 3000); // 3秒后检查
     </script>
 
+    <!-- 测试函数 -->
+    <script>
+        function testLeaveRoomDebug() {
+            console.log('🧪 调试测试离开房间被触发');
+            
+            // 尝试多种方法
+            if (window.globalLeaveRoom) {
+                console.log('使用 globalLeaveRoom');
+                window.globalLeaveRoom();
+            } else if (window.leaveFirebaseRoom) {
+                console.log('使用 leaveFirebaseRoom');
+                window.leaveFirebaseRoom();
+            } else if (window.debugLeaveRoom) {
+                console.log('使用 debugLeaveRoom');
+                window.debugLeaveRoom();
+            } else {
+                // 尝试找到并点击按钮
+                const leaveBtn = document.getElementById('leave-room-btn');
+                if (leaveBtn) {
+                    console.log('找到按钮，模拟点击');
+                    leaveBtn.click();
+                } else {
+                    console.error('❌ 无法找到任何离开房间的方法');
+                    alert('未找到离开房间的方法。请确保已加入房间，或在控制台查看错误信息。');
+                }
+            }
+        }
+    </script>
+    
     <!-- 房间状态管理脚本 -->
-
 </body>
 </html>
