@@ -147,6 +147,11 @@ export class FirebaseCollaborationManager {
             this.isConnected = snapshot.val() === true;
             console.log('Firebase连接状态:', this.isConnected ? '已连接' : '已断开');
             
+            // 更新房间状态组件中的连接状态
+            if (typeof window.updateConnectionStatus === 'function') {
+                window.updateConnectionStatus(this.isConnected);
+            }
+            
             if (this.isConnected && this.roomId) {
                 // 重新连接后更新用户在线状态
                 this.updateUserPresence();
@@ -214,6 +219,11 @@ export class FirebaseCollaborationManager {
             
             // 同步当前游戏状态到Firebase
             await this.syncCurrentGameState();
+            
+            // 显示房间状态组件
+            if (typeof window.showRoomStatus === 'function') {
+                window.showRoomStatus(roomId, 'Firebase');
+            }
             
             console.log('✅ 房间创建成功:', roomId);
             
@@ -293,6 +303,11 @@ export class FirebaseCollaborationManager {
             // 同步房间状态到本地
             await this.syncRoomStateToLocal(roomData.gameState);
             
+            // 显示房间状态组件
+            if (typeof window.showRoomStatus === 'function') {
+                window.showRoomStatus(roomId, 'Firebase');
+            }
+            
             console.log('✅ 成功加入房间:', roomId);
             
             return true;
@@ -342,6 +357,11 @@ export class FirebaseCollaborationManager {
             this.roomRef = null;
             this.usersRef = null;
             this.gameStateRef = null;
+            
+            // 隐藏房间状态组件
+            if (typeof window.hideRoomStatus === 'function') {
+                window.hideRoomStatus();
+            }
             
             console.log('✅ 已离开房间');
             
@@ -580,7 +600,13 @@ export class FirebaseCollaborationManager {
     handleUsersChange(users) {
         if (!users) return;
         
-        console.log('用户列表更新:', Object.keys(users).length, '个用户');
+        const userCount = Object.keys(users).length;
+        console.log('用户列表更新:', userCount, '个用户');
+        
+        // 更新房间状态组件中的用户数量
+        if (typeof window.updateRoomUserCount === 'function') {
+            window.updateRoomUserCount(userCount);
+        }
         
         // 更新用户列表显示（如果有UI组件的话）
         // this.updateUserListUI(users);

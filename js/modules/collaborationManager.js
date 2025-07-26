@@ -246,6 +246,12 @@ export class CollaborationManager {
         });
         
         this.uiManager.showSuccess(`房间创建成功！房间号: ${this.roomId}`);
+        
+        // 显示房间状态组件
+        if (typeof window.showRoomStatus === 'function') {
+            window.showRoomStatus(this.roomId, 'P2P本地');
+        }
+        
         this.showRoomInfo();
         
         console.log('房间已创建:', this.roomId);
