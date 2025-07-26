@@ -89,11 +89,10 @@ export class CollaborationManager {
         return userColor;
     }
 
-    // 初始化信令通道（使用免费的信令服务）
+    // 初始化信令通道（优先使用本地BroadcastChannel）
     initSignalingChannel() {
         try {
-            // 使用免费的WebSocket信令服务或者简单的轮询方式
-            // 这里使用一个简化的localStorage + BroadcastChannel方案作为本地测试
+            // 使用稳定的本地BroadcastChannel信令服务
             this.signalingChannel = new BroadcastChannel('spawn-timer-signaling');
             
             this.signalingChannel.onmessage = (event) => {
@@ -101,31 +100,72 @@ export class CollaborationManager {
             };
             
             this.isSignalingConnected = true;
-            console.log('本地信令通道已连接');
+            console.log('✅ 本地信令通道已连接（支持同一浏览器多标签页协作）');
             
-            // 尝试连接到在线信令服务（可选，失败不影响本地功能）
-            setTimeout(() => {
-                this.connectToOnlineSignaling();
-            }, 1000);
+            // 显示协作模式信息
+            this.showCollaborationModeInfo();
+            
+            // 检查用户是否启用了在线信令
+            const enableOnlineSignaling = localStorage.getItem('enable-online-signaling') === 'true';
+            if (enableOnlineSignaling) {
+                console.log('用户启用了在线信令，尝试连接外部服务...');
+                setTimeout(() => {
+                    this.connectToOnlineSignaling();
+                }, 2000);
+            }
             
         } catch (error) {
-            console.error('信令通道初始化失败:', error);
+            console.error('❌ 信令通道初始化失败:', error);
             console.log('将使用基础协作模式');
+        }
+    }
+
+    // 显示协作模式信息
+    showCollaborationModeInfo() {
+        const enableOnlineSignaling = localStorage.getItem('enable-online-signaling') === 'true';
+        
+        if (enableOnlineSignaling) {
+            console.log('📡 协作模式：在线模式（支持跨设备协作）');
+        } else {
+            console.log('🏠 协作模式：本地模式（同一浏览器多标签页协作）');
+            console.log('💡 如需跨设备协作，请在协作设置中启用在线信令服务');
         }
     }
 
     // 连接到在线信令服务（支持真正的多人协作）
     connectToOnlineSignaling() {
-        console.log('尝试连接在线信令服务...');
+        console.log('🌐 尝试连接在线信令服务...');
         
-        // 方案1: 使用免费的Socket.IO服务
+        // 首先检查网络连接
+        if (!navigator.onLine) {
+            console.log('❌ 网络连接不可用，跳过在线信令连接');
+            this.showNetworkError();
+            return;
+        }
+        
+        // 尝试连接Socket.IO服务
         this.trySocketIOSignaling();
-        
-        // 方案2: 使用免费的WebSocket服务
-        // this.tryWebSocketSignaling();
-        
-        // 方案3: 使用Firebase (需要配置)
-        // this.tryFirebaseSignaling();
+    }
+
+    // 显示网络错误信息
+    showNetworkError() {
+        if (this.uiManager && this.uiManager.showMessage) {
+            this.uiManager.showMessage('网络连接不可用，使用本地协作模式', 'warning');
+        }
+    }
+
+    // 显示在线服务连接错误
+    showOnlineServiceError() {
+        if (this.uiManager && this.uiManager.showMessage) {
+            this.uiManager.showMessage(
+                '在线信令服务连接失败，已切换到本地模式。如需跨设备协作，请在协作设置中配置自己的信令服务器。', 
+                'warning'
+            );
+        }
+        console.log('💡 建议：');
+        console.log('1. 使用本地模式（同一浏览器多标签页协作）');
+        console.log('2. 配置自己的Socket.IO或Firebase信令服务器');
+        console.log('3. 参考 MULTIPLAYER_SETUP_GUIDE.md 文档');
     }
     
     // 尝试Socket.IO信令服务
@@ -178,32 +218,44 @@ export class CollaborationManager {
             });
             
             this.socket.on('connect_error', (error) => {
-                console.log('Socket.IO连接失败:', error);
-                this.tryWebSocketSignaling(); // 尝试备用方案
+                console.log('❌ Socket.IO连接失败:', error.message || error);
+                console.log('免费服务器可能不可用，这很常见');
+                this.showOnlineServiceError();
+                // 不再尝试其他服务，直接使用本地模式
             });
             
+            // 设置连接超时
+            setTimeout(() => {
+                if (!this.isOnlineSignalingConnected) {
+                    console.log('⏰ Socket.IO连接超时，使用本地模式');
+                    this.showOnlineServiceError();
+                }
+            }, 10000); // 10秒超时
+            
         } catch (error) {
-            console.log('Socket.IO初始化失败:', error);
-            this.tryWebSocketSignaling(); // 尝试备用方案
+            console.log('❌ Socket.IO初始化失败:', error.message || error);
+            this.showOnlineServiceError();
         }
     }
     
-    // 尝试WebSocket信令服务
+    // 尝试WebSocket信令服务（仅在用户明确要求时使用）
     tryWebSocketSignaling() {
         try {
-            console.log('尝试WebSocket信令服务...');
+            console.log('🌐 尝试WebSocket信令服务...');
             
-            // 使用稳定的免费WebSocket服务
+            // 警告用户免费服务的限制
+            console.log('⚠️  注意：免费WebSocket服务可能不稳定');
+            
+            // 使用免费WebSocket服务（echo服务，仅用于测试）
             const wsServers = [
-                'wss://echo.websocket.org/',           // 免费echo服务
-                'wss://ws.postman-echo.com/raw',       // Postman echo
-                'wss://socketsbay.com/wss/v2/1/demo/'  // SocketsBay演示
+                'wss://echo.websocket.org/',           // 免费echo服务（仅回显）
             ];
             
             this.signalingWs = new WebSocket(wsServers[0]);
             
             this.signalingWs.onopen = () => {
-                console.log('✅ WebSocket信令服务已连接');
+                console.log('✅ WebSocket连接已建立（echo测试服务）');
+                console.log('⚠️  此服务仅回显消息，不支持真正的信令功能');
                 this.isOnlineSignalingConnected = true;
                 this.updateSignalingStatus();
                 
@@ -1405,190 +1457,336 @@ export class CollaborationManager {
 
     // 显示Socket.IO设置说明
     showSocketIOSetup() {
-        const setupModal = document.createElement('div');
-        setupModal.className = 'collaboration-modal';
-        setupModal.innerHTML = `
+        const enableOnlineSignaling = localStorage.getItem('enable-online-signaling') === 'true';
+        
+        const modal = document.createElement('div');
+        modal.className = 'collaboration-modal';
+        modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3>📡 Socket.IO协作设置</h3>
+                    <h3>📡 Socket.IO在线协作设置</h3>
                     <button class="modal-close">✕</button>
                 </div>
                 <div class="modal-body">
-                    <div class="setup-instructions">
-                        <h4>步骤1: 添加Socket.IO客户端</h4>
-                        <p>在您的HTML文件的 &lt;head&gt; 标签中添加：</p>
-                        <div class="code-block">
-                            <code>&lt;script src="https://cdn.socket.io/4.7.2/socket.io.min.js"&gt;&lt;/script&gt;</code>
-                            <button class="copy-code-btn" data-code="&lt;script src=&quot;https://cdn.socket.io/4.7.2/socket.io.min.js&quot;&gt;&lt;/script&gt;">📋 复制</button>
-                        </div>
-                        
-                        <h4>步骤2: 刷新页面</h4>
-                        <p>添加脚本后刷新页面，系统会自动尝试连接Socket.IO服务</p>
-                        
-                        <h4>步骤3: 测试连接</h4>
-                        <p>重新打开协作面板，如果显示"在线协作已连接"则配置成功</p>
-                        
-                        <div class="warning-box">
-                            <strong>⚠️ 注意:</strong> 
-                            <p>免费的Socket.IO服务可能不稳定，建议生产环境使用自建服务器</p>
-                        </div>
-                        
-                        <button id="auto-add-socketio" class="action-btn">🚀 自动添加Script标签</button>
+                    <div class="warning-box" style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4>⚠️ 重要说明</h4>
+                        <p>免费的Socket.IO服务（如Heroku）经常不稳定或失效。建议：</p>
+                        <ul>
+                            <li>使用本地模式（同一浏览器多标签页协作）</li>
+                            <li>配置自己的Socket.IO服务器</li>
+                            <li>使用Firebase等更稳定的服务</li>
+                        </ul>
+                    </div>
+                    
+                    <div class="settings-section">
+                        <h4>协作模式设置</h4>
+                        <label class="setting-item">
+                            <input type="checkbox" id="enable-online-toggle" ${enableOnlineSignaling ? 'checked' : ''}>
+                            启用在线协作（跨设备）
+                        </label>
+                        <p class="setting-desc">
+                            ${enableOnlineSignaling ? 
+                                '✅ 当前：在线模式（会尝试连接外部服务器）' : 
+                                '🏠 当前：本地模式（仅同浏览器标签页协作）'
+                            }
+                        </p>
+                    </div>
+                    
+                    <div class="connection-test">
+                        <h4>连接测试</h4>
+                        <button id="test-socketio-btn" class="action-btn">测试Socket.IO连接</button>
+                        <div id="test-result" class="test-result"></div>
+                    </div>
+                    
+                    <div class="custom-server">
+                        <h4>自定义服务器</h4>
+                        <label>
+                            Socket.IO服务器地址：
+                            <input type="url" id="custom-socketio-url" placeholder="https://your-server.com" 
+                                value="${localStorage.getItem('custom-socketio-url') || ''}" />
+                        </label>
+                        <button id="save-custom-btn" class="action-btn">保存自定义设置</button>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="apply-settings-btn" class="action-btn primary">应用设置</button>
+                        <button id="open-guide-btn" class="action-btn">📖 查看设置指南</button>
                     </div>
                 </div>
             </div>
         `;
         
-        document.body.appendChild(setupModal);
-        setTimeout(() => setupModal.classList.add('show'), 10);
+        document.body.appendChild(modal);
+        this.bindSocketIOSetupEvents(modal);
         
-        // 绑定事件
-        setupModal.querySelector('.modal-close').addEventListener('click', () => {
-            setupModal.remove();
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    // 绑定Socket.IO设置事件
+    bindSocketIOSetupEvents(modal) {
+        // 关闭按钮
+        modal.querySelector('.modal-close').addEventListener('click', () => {
+            modal.remove();
         });
         
-        setupModal.querySelector('#auto-add-socketio').addEventListener('click', () => {
-            this.autoAddSocketIO();
-            setupModal.remove();
+        // 应用设置
+        modal.querySelector('#apply-settings-btn').addEventListener('click', () => {
+            const enableOnline = modal.querySelector('#enable-online-toggle').checked;
+            const customUrl = modal.querySelector('#custom-socketio-url').value.trim();
+            
+            localStorage.setItem('enable-online-signaling', enableOnline.toString());
+            if (customUrl) {
+                localStorage.setItem('custom-socketio-url', customUrl);
+            }
+            
+            console.log(`🔧 协作模式已设置为：${enableOnline ? '在线模式' : '本地模式'}`);
+            
+            if (this.uiManager && this.uiManager.showMessage) {
+                this.uiManager.showMessage(
+                    `协作模式已切换到${enableOnline ? '在线' : '本地'}模式，刷新页面生效`, 
+                    'success'
+                );
+            }
+            
+            modal.remove();
         });
         
-        // 复制代码按钮
-        setupModal.querySelectorAll('.copy-code-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                const code = btn.dataset.code;
-                navigator.clipboard.writeText(code).then(() => {
-                    btn.textContent = '✅ 已复制';
-                    setTimeout(() => btn.textContent = '📋 复制', 2000);
-                });
+        // 测试连接
+        modal.querySelector('#test-socketio-btn').addEventListener('click', () => {
+            this.testSocketIOConnection(modal);
+        });
+        
+        // 保存自定义设置
+        modal.querySelector('#save-custom-btn').addEventListener('click', () => {
+            const customUrl = modal.querySelector('#custom-socketio-url').value.trim();
+            if (customUrl) {
+                localStorage.setItem('custom-socketio-url', customUrl);
+                this.uiManager.showMessage('自定义服务器地址已保存', 'success');
+            }
+        });
+        
+        // 打开指南
+        modal.querySelector('#open-guide-btn').addEventListener('click', () => {
+            window.open('MULTIPLAYER_SETUP_GUIDE.md', '_blank');
+        });
+        
+        // 点击外部关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
+            }
+        });
+    }
+
+    // 测试Socket.IO连接
+    testSocketIOConnection(modal) {
+        const resultDiv = modal.querySelector('#test-result');
+        resultDiv.innerHTML = '<p>🔄 正在测试连接...</p>';
+        
+        try {
+            if (typeof io === 'undefined') {
+                resultDiv.innerHTML = `
+                    <p style="color: #e74c3c;">❌ Socket.IO客户端未加载</p>
+                    <p>请在HTML中添加：<br><code>&lt;script src="https://cdn.socket.io/4.7.2/socket.io.min.js"&gt;&lt;/script&gt;</code></p>
+                `;
+                return;
+            }
+            
+            const customUrl = localStorage.getItem('custom-socketio-url');
+            const testUrl = customUrl || 'https://socketio-chat-h9jt.herokuapp.com';
+            
+            const testSocket = io(testUrl, {
+                transports: ['websocket', 'polling'],
+                timeout: 10000
             });
-        });
-    }
-    
-    // 自动添加Socket.IO脚本
-    autoAddSocketIO() {
-        if (typeof io !== 'undefined') {
-            alert('Socket.IO已经加载！');
-            return;
+            
+            let connected = false;
+            
+            testSocket.on('connect', () => {
+                connected = true;
+                resultDiv.innerHTML = `<p style="color: #27ae60;">✅ 连接成功！服务器：${testUrl}</p>`;
+                testSocket.disconnect();
+            });
+            
+            testSocket.on('connect_error', (error) => {
+                if (!connected) {
+                    resultDiv.innerHTML = `
+                        <p style="color: #e74c3c;">❌ 连接失败</p>
+                        <p>服务器：${testUrl}</p>
+                        <p>错误：${error.message || error}</p>
+                        <p>建议使用本地模式或配置自己的服务器</p>
+                    `;
+                }
+                testSocket.disconnect();
+            });
+            
+            // 10秒超时
+            setTimeout(() => {
+                if (!connected) {
+                    resultDiv.innerHTML = `
+                        <p style="color: #f39c12;">⏰ 连接超时</p>
+                        <p>服务器可能不可用：${testUrl}</p>
+                        <p>建议使用本地模式</p>
+                    `;
+                    testSocket.disconnect();
+                }
+            }, 10000);
+            
+        } catch (error) {
+            resultDiv.innerHTML = `
+                <p style="color: #e74c3c;">❌ 测试失败</p>
+                <p>错误：${error.message}</p>
+            `;
         }
-        
-        const script = document.createElement('script');
-        script.src = 'https://cdn.socket.io/4.7.2/socket.io.min.js';
-        script.onload = () => {
-            alert('Socket.IO加载成功！请重新打开协作面板测试连接。');
-            // 立即尝试连接
-            this.trySocketIOSignaling();
-        };
-        script.onerror = () => {
-            alert('Socket.IO加载失败，请检查网络连接或手动添加脚本标签。');
-        };
-        
-        document.head.appendChild(script);
     }
-    
-    // 显示Firebase设置说明
+
+    // 显示Firebase设置界面
     showFirebaseSetup() {
-        const setupModal = document.createElement('div');
-        setupModal.className = 'collaboration-modal';
-        setupModal.innerHTML = `
+        const modal = document.createElement('div');
+        modal.className = 'collaboration-modal';
+        modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
                     <h3>🔥 Firebase协作设置</h3>
                     <button class="modal-close">✕</button>
                 </div>
                 <div class="modal-body">
-                    <div class="setup-instructions">
-                        <h4>Firebase Realtime Database 配置</h4>
-                        
-                        <div class="step">
-                            <h5>步骤1: 创建Firebase项目</h5>
-                            <p>1. 访问 <a href="https://console.firebase.google.com" target="_blank">Firebase控制台</a></p>
-                            <p>2. 创建新项目或选择现有项目</p>
-                            <p>3. 启用 Realtime Database</p>
-                        </div>
-                        
-                        <div class="step">
-                            <h5>步骤2: 获取配置信息</h5>
-                            <p>在项目设置中找到您的Web应用配置</p>
-                        </div>
-                        
-                        <div class="step">
-                            <h5>步骤3: 配置项目</h5>
-                            <label>Database URL:</label>
-                            <input type="text" id="firebase-url" placeholder="https://your-project.firebaseio.com/" />
-                            
-                            <label>API Key:</label>
-                            <input type="text" id="firebase-api-key" placeholder="your-api-key" />
-                            
-                            <button id="save-firebase-config" class="action-btn">保存配置</button>
-                        </div>
-                        
-                        <div class="info-box">
-                            <strong>💡 优势:</strong>
-                            <ul>
-                                <li>Google提供的稳定服务</li>
-                                <li>实时数据同步</li>
-                                <li>支持离线模式</li>
-                                <li>免费额度足够个人使用</li>
-                            </ul>
-                        </div>
+                    <div class="info-box" style="background: #e8f5e8; border: 1px solid #27ae60; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                        <h4>📋 Firebase配置步骤</h4>
+                        <ol>
+                            <li>访问 <a href="https://console.firebase.google.com" target="_blank">Firebase控制台</a></li>
+                            <li>创建新项目或选择现有项目</li>
+                            <li>启用 Firestore Database</li>
+                            <li>在项目设置中获取配置信息</li>
+                            <li>将配置信息填入下方表单</li>
+                        </ol>
                     </div>
+                    
+                    <div class="firebase-config">
+                        <h4>Firebase配置</h4>
+                        <div class="config-grid">
+                            <label>API Key: <input type="text" id="firebase-api-key" placeholder="your-api-key" /></label>
+                            <label>Auth Domain: <input type="text" id="firebase-auth-domain" placeholder="project.firebaseapp.com" /></label>
+                            <label>Project ID: <input type="text" id="firebase-project-id" placeholder="project-id" /></label>
+                            <label>Storage Bucket: <input type="text" id="firebase-storage-bucket" placeholder="project.appspot.com" /></label>
+                        </div>
+                        <button id="save-firebase-config" class="action-btn">保存Firebase配置</button>
+                    </div>
+                    
+                    <div class="action-buttons">
+                        <button id="test-firebase-btn" class="action-btn">测试Firebase连接</button>
+                        <button id="open-firebase-guide-btn" class="action-btn">📖 详细设置指南</button>
+                    </div>
+                    
+                    <div id="firebase-test-result" class="test-result"></div>
                 </div>
             </div>
         `;
         
-        document.body.appendChild(setupModal);
-        setTimeout(() => setupModal.classList.add('show'), 10);
+        document.body.appendChild(modal);
         
-        // 绑定事件
-        setupModal.querySelector('.modal-close').addEventListener('click', () => {
-            setupModal.remove();
+        // 加载已保存的配置
+        this.loadFirebaseConfig(modal);
+        this.bindFirebaseSetupEvents(modal);
+        
+        setTimeout(() => modal.classList.add('show'), 10);
+    }
+
+    // 加载Firebase配置
+    loadFirebaseConfig(modal) {
+        const config = JSON.parse(localStorage.getItem('firebase-config') || '{}');
+        modal.querySelector('#firebase-api-key').value = config.apiKey || '';
+        modal.querySelector('#firebase-auth-domain').value = config.authDomain || '';
+        modal.querySelector('#firebase-project-id').value = config.projectId || '';
+        modal.querySelector('#firebase-storage-bucket').value = config.storageBucket || '';
+    }
+
+    // 绑定Firebase设置事件
+    bindFirebaseSetupEvents(modal) {
+        modal.querySelector('.modal-close').addEventListener('click', () => {
+            modal.remove();
         });
         
-        setupModal.querySelector('#save-firebase-config').addEventListener('click', () => {
-            const url = setupModal.querySelector('#firebase-url').value;
-            const apiKey = setupModal.querySelector('#firebase-api-key').value;
+        modal.querySelector('#save-firebase-config').addEventListener('click', () => {
+            const config = {
+                apiKey: modal.querySelector('#firebase-api-key').value.trim(),
+                authDomain: modal.querySelector('#firebase-auth-domain').value.trim(),
+                projectId: modal.querySelector('#firebase-project-id').value.trim(),
+                storageBucket: modal.querySelector('#firebase-storage-bucket').value.trim()
+            };
             
-            if (url && apiKey) {
-                localStorage.setItem('firebase_database_url', url);
-                localStorage.setItem('firebase_api_key', apiKey);
-                alert('Firebase配置已保存！');
-                setupModal.remove();
-                // 这里可以添加Firebase初始化代码
+            if (config.apiKey && config.projectId) {
+                localStorage.setItem('firebase-config', JSON.stringify(config));
+                this.uiManager.showMessage('Firebase配置已保存', 'success');
             } else {
-                alert('请填写完整的配置信息');
+                this.uiManager.showMessage('请填写必要的配置项（API Key和Project ID）', 'error');
+            }
+        });
+        
+        modal.querySelector('#test-firebase-btn').addEventListener('click', () => {
+            this.testFirebaseConnection(modal);
+        });
+        
+        modal.querySelector('#open-firebase-guide-btn').addEventListener('click', () => {
+            window.open('MULTIPLAYER_SETUP_GUIDE.md#firebase配置', '_blank');
+        });
+        
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                modal.remove();
             }
         });
     }
-    
+
+    // 测试Firebase连接
+    testFirebaseConnection(modal) {
+        const resultDiv = modal.querySelector('#firebase-test-result');
+        resultDiv.innerHTML = '<p>🔄 正在测试Firebase连接...</p>';
+        
+        const config = JSON.parse(localStorage.getItem('firebase-config') || '{}');
+        
+        if (!config.apiKey || !config.projectId) {
+            resultDiv.innerHTML = '<p style="color: #e74c3c;">❌ 请先保存Firebase配置</p>';
+            return;
+        }
+        
+        if (typeof firebase === 'undefined') {
+            resultDiv.innerHTML = `
+                <p style="color: #e74c3c;">❌ Firebase SDK未加载</p>
+                <p>请在HTML中添加Firebase脚本</p>
+                <p>参考设置指南中的详细说明</p>
+            `;
+            return;
+        }
+        
+        // 这里会实际测试Firebase连接
+        resultDiv.innerHTML = '<p style="color: #f39c12;">⚠️ Firebase连接测试功能需要完整的SDK集成</p>';
+    }
+
     // 测试在线连接
     testOnlineConnection() {
-        const statusElement = document.getElementById('setup-status');
-        if (statusElement) {
-            statusElement.innerHTML = '<span style="color: #3498db;">🔄 正在测试连接...</span>';
+        console.log('🔍 测试在线连接状态...');
+        
+        const status = {
+            networkOnline: navigator.onLine,
+            localSignaling: this.isSignalingConnected,
+            onlineSignaling: this.isOnlineSignalingConnected,
+            socketIO: this.socket && this.socket.connected,
+            webSocket: this.signalingWs && this.signalingWs.readyState === WebSocket.OPEN
+        };
+        
+        console.log('连接状态详情:', status);
+        
+        if (this.uiManager && this.uiManager.showMessage) {
+            let message = '连接测试结果:\n';
+            message += `网络: ${status.networkOnline ? '✅' : '❌'}\n`;
+            message += `本地信令: ${status.localSignaling ? '✅' : '❌'}\n`;
+            message += `在线信令: ${status.onlineSignaling ? '✅' : '❌'}`;
+            
+            this.uiManager.showMessage(message, status.localSignaling ? 'success' : 'warning');
         }
         
-        // 测试Socket.IO
-        if (typeof io !== 'undefined') {
-            console.log('✅ Socket.IO客户端已加载');
-            this.trySocketIOSignaling();
-        } else {
-            console.log('❌ Socket.IO客户端未加载');
-        }
-        
-        // 测试WebSocket
-        this.tryWebSocketSignaling();
-        
-        // 更新状态
-        setTimeout(() => {
-            this.updateSignalingStatus();
-            if (statusElement) {
-                if (this.isOnlineSignalingConnected) {
-                    statusElement.innerHTML = '<span style="color: #27ae60;">✅ 在线协作连接成功！</span>';
-                } else {
-                    statusElement.innerHTML = '<span style="color: #e74c3c;">❌ 在线协作连接失败，请检查配置</span>';
-                }
-            }
-        }, 3000);
+        return status;
     }
 
     // 断开连接（清理方法）
