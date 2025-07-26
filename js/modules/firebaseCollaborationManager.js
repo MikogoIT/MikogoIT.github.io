@@ -485,7 +485,8 @@ export class FirebaseCollaborationManager {
             roomId: this.roomId,
             isHost: this.isHost,
             userId: this.userId,
-            isInitialized: this.isInitialized
+            isInitialized: this.isInitialized,
+            isConnected: this.isConnected
         });
         
         if (!this.roomId) {
@@ -514,34 +515,48 @@ export class FirebaseCollaborationManager {
             console.log('👂 移除事件监听器');
             this.removeRoomListeners();
             
-            if (this.isHost) {
-                console.log('👑 房主离开，关闭房间');
-                // 如果是房主，关闭房间
-                const activeRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/info/isActive`);
-                await this.firebaseUtils.set(activeRef, false);
-                console.log('✅ 房间已关闭');
+            // 检查Firebase连接状态和引用
+            if (!this.database || !this.firebaseUtils) {
+                console.warn('⚠️ Firebase数据库或工具未初始化，跳过远程清理');
             } else {
-                console.log('👤 成员离开，更新用户状态');
-                // 标记用户离线并移除
-                const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}`);
-                await this.firebaseUtils.update(userRef, {
-                    isOnline: false,
-                    lastSeen: this.firebaseUtils.serverTimestamp()
-                });
-                console.log('✅ 用户状态已更新为离线');
-                
-                // 延迟移除用户数据，给其他用户看到离线状态的时间
-                setTimeout(async () => {
+                // 尝试进行远程清理
+                if (this.isHost) {
+                    console.log('👑 房主离开，关闭房间');
                     try {
-                        await this.firebaseUtils.remove(userRef);
-                        console.log('✅ 用户数据已移除');
+                        const activeRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/info/isActive`);
+                        await this.firebaseUtils.set(activeRef, false);
+                        console.log('✅ 房间已关闭');
                     } catch (error) {
-                        console.warn('移除用户数据失败:', error);
+                        console.warn('⚠️ 关闭房间失败，可能是网络问题:', error);
                     }
-                }, 2000);
+                } else {
+                    console.log('👤 成员离开，更新用户状态');
+                    try {
+                        const userRef = this.firebaseUtils.ref(this.database, `rooms/${this.roomId}/users/${this.userId}`);
+                        
+                        // 标记用户离线
+                        await this.firebaseUtils.update(userRef, {
+                            isOnline: false,
+                            lastSeen: this.firebaseUtils.serverTimestamp()
+                        });
+                        console.log('✅ 用户状态已更新为离线');
+                        
+                        // 延迟移除用户数据
+                        setTimeout(async () => {
+                            try {
+                                await this.firebaseUtils.remove(userRef);
+                                console.log('✅ 用户数据已移除');
+                            } catch (error) {
+                                console.warn('⚠️ 移除用户数据失败:', error);
+                            }
+                        }, 2000);
+                    } catch (error) {
+                        console.warn('⚠️ 更新用户状态失败，可能是网络问题:', error);
+                    }
+                }
             }
             
-            // 重置状态
+            // 重置本地状态（这个必须执行，即使远程操作失败）
             console.log('🔄 重置本地状态');
             this.roomId = null;
             this.isHost = false;
@@ -562,7 +577,23 @@ export class FirebaseCollaborationManager {
             
         } catch (error) {
             console.error('❌ 离开房间失败:', error);
-            this.showTemporaryMessage(`离开房间失败: ${error.message}`, 'error');
+            
+            // 即使出错，也要执行基本的清理
+            console.log('🔄 执行强制清理...');
+            this.stopHeartbeat();
+            this.removeRoomListeners();
+            this.roomId = null;
+            this.isHost = false;
+            this.roomRef = null;
+            this.usersRef = null;
+            this.gameStateRef = null;
+            this.hideRoomInfo();
+            this.clearSavedRoomState();
+            
+            this.showTemporaryMessage(`离开房间时出现问题: ${error.message}`, 'error');
+            
+            // 重新抛出错误以便上层处理
+            throw error;
         }
     }
     
@@ -1253,7 +1284,48 @@ export class FirebaseCollaborationManager {
             console.log('🌐 全局离开房间函数被调用');
             this.leaveRoom().catch(error => {
                 console.error('❌ 全局离开房间失败:', error);
+                this.showTemporaryMessage('离开房间失败，请查看控制台获取详细信息', 'error');
             });
+        };
+        
+        // 添加调试用的安全离开函数
+        window.debugLeaveRoom = () => {
+            console.log('🔧 调试离开房间函数被调用');
+            console.log('🔍 Firebase Manager 状态:', {
+                isInitialized: this.isInitialized,
+                isConnected: this.isConnected,
+                roomId: this.roomId,
+                userId: this.userId,
+                isHost: this.isHost,
+                hasDatabase: !!this.database,
+                hasFirebaseUtils: !!this.firebaseUtils
+            });
+            
+            // 强制离开（忽略错误）
+            this.forceLeaveRoom();
+        };
+        
+        // 强制离开房间方法（用于调试）
+        this.forceLeaveRoom = () => {
+            console.log('⚡ 强制离开房间（调试模式）');
+            
+            try {
+                this.stopHeartbeat();
+                this.removeRoomListeners();
+                this.roomId = null;
+                this.isHost = false;
+                this.roomRef = null;
+                this.usersRef = null;
+                this.gameStateRef = null;
+                this.hideRoomInfo();
+                this.clearSavedRoomState();
+                
+                console.log('✅ 强制离开完成');
+                this.showTemporaryMessage('强制离开完成', 'success');
+            } catch (error) {
+                console.error('❌ 强制离开也失败了:', error);
+                this.showTemporaryMessage('强制离开失败', 'error');
+            }
         };
         
         // 等待一个微任务周期，确保DOM已经渲染
@@ -1281,52 +1353,59 @@ export class FirebaseCollaborationManager {
                     parentElement: leaveBtn.parentElement
                 });
                 
-                // 清除可能存在的旧事件监听器
-                leaveBtn.replaceWith(leaveBtn.cloneNode(true));
-                const newLeaveBtn = document.getElementById('leave-room-btn');
-                
-                // 直接设置onclick属性作为备选
-                newLeaveBtn.onclick = (e) => {
-                    console.log('🚪 离开房间按钮被点击 (onclick)');
+                // 创建安全的离开房间处理函数
+                const handleLeaveRoom = async (e) => {
+                    console.log('🚪 离开房间按钮被点击');
                     e.preventDefault();
                     e.stopPropagation();
                     
-                    // 添加确认对话框
-                    if (confirm('确定要离开房间吗？')) {
-                        console.log('✅ 用户确认离开房间');
-                        this.leaveRoom().catch(error => {
-                            console.error('❌ 离开房间时发生错误:', error);
-                            this.showTemporaryMessage('离开房间失败，请重试', 'error');
-                        });
-                    } else {
-                        console.log('❌ 用户取消离开房间');
+                    try {
+                        // 添加确认对话框
+                        const confirmed = confirm('确定要离开房间吗？');
+                        
+                        if (confirmed) {
+                            console.log('✅ 用户确认离开房间');
+                            
+                            // 禁用按钮防止重复点击
+                            leaveBtn.disabled = true;
+                            leaveBtn.style.opacity = '0.6';
+                            leaveBtn.textContent = '离开中...';
+                            
+                            try {
+                                await this.leaveRoom();
+                                console.log('✅ 成功离开房间');
+                            } catch (error) {
+                                console.error('❌ 离开房间时发生错误:', error);
+                                this.showTemporaryMessage('离开房间失败，请重试', 'error');
+                                
+                                // 恢复按钮状态
+                                leaveBtn.disabled = false;
+                                leaveBtn.style.opacity = '1';
+                                leaveBtn.textContent = '离开房间';
+                            }
+                        } else {
+                            console.log('❌ 用户取消离开房间');
+                        }
+                    } catch (error) {
+                        console.error('❌ 离开房间处理函数出错:', error);
+                        this.showTemporaryMessage('操作失败，请重试', 'error');
                     }
                 };
                 
-                newLeaveBtn.addEventListener('click', (e) => {
-                    console.log('🚪 离开房间按钮被点击 (addEventListener)');
-                    e.preventDefault();
-                    e.stopPropagation();
-                    
-                    // 添加确认对话框
-                    if (confirm('确定要离开房间吗？')) {
-                        console.log('✅ 用户确认离开房间');
-                        this.leaveRoom().catch(error => {
-                            console.error('❌ 离开房间时发生错误:', error);
-                            this.showTemporaryMessage('离开房间失败，请重试', 'error');
-                        });
-                    } else {
-                        console.log('❌ 用户取消离开房间');
-                    }
-                });
+                // 移除现有的事件监听器（如果有的话）
+                const newLeaveBtn = leaveBtn.cloneNode(true);
+                leaveBtn.parentNode.replaceChild(newLeaveBtn, leaveBtn);
                 
-                // 测试按钮是否可点击
+                // 绑定事件监听器
+                newLeaveBtn.addEventListener('click', handleLeaveRoom.bind(this));
+                
+                // 设置按钮样式确保可点击
                 newLeaveBtn.style.cursor = 'pointer';
                 newLeaveBtn.style.pointerEvents = 'auto';
                 newLeaveBtn.style.opacity = '1';
                 newLeaveBtn.style.zIndex = '10001';
                 
-                // 添加鼠标事件测试
+                // 添加调试事件监听器
                 newLeaveBtn.addEventListener('mousedown', () => {
                     console.log('🖱️ 离开按钮mousedown事件');
                 });

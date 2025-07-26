@@ -933,418 +933,193 @@ footer {
 
 /* 房间信息样式 */
 .room-info {
-    position: fixed;
-    top: 20px;
-    right: 20px;
-    background: white;
-    border: 2px solid #3498db;
-    border-radius: 10px;
-    padding: 15px;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-    z-index: 10000;
-    min-width: 250px;
-    max-width: 300px;
-    color: #2c3e50;
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: white !important;
+    border: 2px solid #3498db !important;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    z-index: 10000 !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+    font-family: Arial, sans-serif !important;
 }
 
-.room-info .room-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 10px;
+.room-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
 }
 
-.room-info .room-header h3 {
-    margin: 0;
-    color: #2c3e50;
+.room-header h3 {
+    margin: 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
 }
 
-.room-info .leave-room-btn {
+.connection-status {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+}
+
+.connection-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.connection-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.leave-room-btn {
     background: #e74c3c !important;
     color: white !important;
     border: none !important;
+    padding: 8px 12px !important;
     border-radius: 5px !important;
-    padding: 5px 10px !important;
     cursor: pointer !important;
-    font-size: 12px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    z-index: 10001 !important;
+    position: relative !important;
     pointer-events: auto !important;
     opacity: 1 !important;
-    transition: background-color 0.2s ease !important;
 }
 
-.room-info .leave-room-btn:hover {
+.leave-room-btn:hover {
     background: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
 }
 
-.room-info .leave-room-btn:active {
+.leave-room-btn:active {
     background: #a93226 !important;
-    transform: scale(0.98);
+    transform: translateY(0) !important;
 }
 
-.room-info .copy-btn {
-    background: #95a5a6;
-    color: white;
-    border: none;
-    border-radius: 3px;
-    padding: 2px 6px;
-    cursor: pointer;
-    font-size: 12px;
-    margin-left: 5px;
-    transition: all 0.3s ease;
+.leave-room-btn:disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
 }
 
-.room-info .copy-btn:hover {
-    background: #7f8c8d;
-    transform: scale(1.05);
+.room-details {
+    margin-bottom: 10px !important;
 }
 
-.room-info .copy-btn:active {
-    transform: scale(0.95);
+.room-details p {
+    margin: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 14px !important;
 }
 
-.room-info .users-list {
-    margin-top: 10px;
+.copy-btn {
+    background: #3498db !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-left: 5px !important;
+    transition: background 0.2s ease !important;
 }
 
-.room-info .user-item {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    margin-bottom: 8px;
-    padding: 6px;
-    border-radius: 6px;
-    transition: all 0.2s ease;
+.copy-btn:hover {
+    background: #2980b9 !important;
 }
 
-.room-info .user-item:hover {
-    background: rgba(0, 0, 0, 0.05);
+.users-list {
+    max-height: 150px !important;
+    overflow-y: auto !important;
+    margin-top: 10px !important;
 }
 
-.room-info .user-item.current-user {
-    background: rgba(52, 152, 219, 0.1);
-    border: 1px solid rgba(52, 152, 219, 0.3);
+.user-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 5px 0 !important;
+    border-bottom: 1px solid #ecf0f1 !important;
 }
 
-.room-info .user-item.offline {
-    opacity: 0.6;
+.user-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 8px !important;
 }
 
-.room-info .user-color {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    flex-shrink: 0;
-    border: 2px solid white;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+.user-name {
+    flex: 1 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
 }
 
-.room-info .user-info {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
+.user-status {
+    font-size: 12px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
 }
 
-.room-info .user-name {
-    font-size: 14px;
-    color: #2c3e50;
-    font-weight: 500;
-    line-height: 1.2;
+.user-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
 }
 
-.room-info .user-last-seen {
-    font-size: 11px;
-    color: #7f8c8d;
-    line-height: 1;
+.user-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
 }
 
-.room-info .user-status {
-    margin-left: auto;
-    font-size: 10px;
-    font-weight: 600;
-    padding: 2px 6px;
-    border-radius: 10px;
-    text-align: center;
-    min-width: 35px;
-    flex-shrink: 0;
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed !important;
+    top: 80px !important;
+    right: 20px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    z-index: 10001 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    animation: slideInRight 0.3s ease-out !important;
 }
 
-.room-info .user-status.connected {
-    color: #27ae60;
-    background: rgba(39, 174, 96, 0.1);
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
 }
 
-.room-info .user-status.disconnected {
-    color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    to {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
 }
 
-/* 连接状态指示器 */
-.room-info .connection-status {
-    font-size: 11px;
-    font-weight: 600;
-    padding: 2px 8px;
-    border-radius: 10px;
-    margin-left: 8px;
-}
-
-.room-info .connection-status.connected {
-    color: #27ae60;
-    background: rgba(39, 174, 96, 0.1);
-}
-
-.room-info .connection-status.disconnected {
-    color: #e74c3c;
-    background: rgba(231, 76, 60, 0.1);
-    animation: pulse 2s infinite;
-}
-
-@keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.7; transform: scale(1.1); }
-}
-
-/* 用户操作指示器 */
-.user-action-indicator {
-    position: absolute;
-    top: -20px;
-    left: 50%;
-    transform: translateX(-50%);
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 10px;
-    z-index: 1000;
-    animation: fadeInOut 2s ease-in-out forwards;
-}
-
-/* 用户光标 */
-.user-cursor {
-    position: fixed;
-    width: 20px;
-    height: 20px;
-    border-radius: 50%;
-    pointer-events: none;
-    z-index: 9999;
-    transform: translate(-50%, -50%);
-    opacity: 0.7;
-}
-
-.user-cursor .cursor-name {
-    position: absolute;
-    top: 25px;
-    left: 50%;
-    transform: translateX(-50%);
-    color: white;
-    padding: 2px 6px;
-    border-radius: 10px;
-    font-size: 10px;
-    white-space: nowrap;
-}
-
-@keyframes fadeInOut {
-    0% { opacity: 0; transform: translateX(-50%) scale(0.8); }
-    20% { opacity: 1; transform: translateX(-50%) scale(1); }
-    80% { opacity: 1; transform: translateX(-50%) scale(1); }
-    100% { opacity: 0; transform: translateX(-50%) scale(0.8); }
-}
-
-/* P2P协作增强样式 */
-.collaboration-modal .p2p-info {
-    background: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 8px;
-    padding: 15px;
-    margin: 15px 0;
-}
-
-.collaboration-modal .p2p-info h4 {
-    margin: 0 0 10px 0;
-    color: #2c3e50;
-    font-size: 14px;
-    font-weight: 600;
-}
-
-.collaboration-modal .p2p-info ul {
-    margin: 0;
-    padding-left: 20px;
-    font-size: 13px;
-    color: #34495e;
-}
-
-.collaboration-modal .p2p-info li {
-    margin-bottom: 5px;
-    line-height: 1.4;
-}
-
-/* 房间信息增强 */
-.room-info .user-status {
-    margin-left: auto;
-    font-size: 10px;
-    color: #95a5a6;
-}
-
-.room-info .user-status.connected {
-    color: #27ae60;
-}
-
-.room-info .room-details p {
-    margin-bottom: 8px;
-    font-size: 13px;
-    color: #34495e;
-    font-weight: 500;
-}
-
-/* 连接状态指示器 */
-.p2p-connection-indicator {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: #2c3e50;
-    color: white;
-    padding: 8px 12px;
-    border-radius: 20px;
-    font-size: 12px;
-    z-index: 9000;
-    display: none;
-}
-
-.p2p-connection-indicator.show {
-    display: block;
-    animation: fadeIn 0.3s ease;
-}
-
-.p2p-connection-indicator.host {
-    background: #e74c3c;
-}
-
-.p2p-connection-indicator.member {
-    background: #3498db;
-}
-
-/* 增强协作模态框文字对比度 */
+/* 协作功能样式 */
 .collaboration-modal {
-    color: #2c3e50;
-}
-
-.collaboration-modal p {
-    color: #34495e;
-    line-height: 1.5;
-}
-
-.collaboration-modal h4 {
-    color: #2c3e50;
-    font-weight: 600;
-}
-
-.collaboration-modal small {
-    color: #34495e;
-    font-weight: 500;
-}
-
-.collaboration-modal .connection-status p {
-    margin: 5px 0;
-    font-size: 14px;
-}
-
-.collaboration-modal .connection-status span {
-    font-weight: 600;
-}
-
-/* Firebase协作选择对话框样式 */
-.collaboration-options {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-    margin: 20px 0;
-}
-
-.collaboration-option {
-    background: rgba(255, 255, 255, 0.95);
-    border-radius: 12px;
-    padding: 20px;
-    border: 2px solid rgba(52, 152, 219, 0.3);
-    transition: all 0.3s ease;
-    color: #2c3e50;
-}
-
-.collaboration-option:hover {
-    border-color: #3498db;
-    box-shadow: 0 5px 20px rgba(52, 152, 219, 0.2);
-    transform: translateY(-2px);
-}
-
-.collaboration-option h4 {
-    color: #2c3e50;
-    margin-bottom: 10px;
-    font-size: 1.2rem;
-    font-weight: 600;
-}
-
-.collaboration-option p {
-    color: #34495e;
-    margin-bottom: 15px;
-    font-size: 0.95rem;
-    line-height: 1.4;
-}
-
-.collaboration-option ul {
-    list-style: none;
-    margin: 15px 0;
-    padding: 0;
-}
-
-.collaboration-option li {
-    margin: 8px 0;
-    font-size: 0.9rem;
-    line-height: 1.3;
-}
-
-.collaboration-option .action-btn {
-    width: 100%;
-    margin-top: 15px;
-    font-weight: 600;
-}
-
-.collaboration-option .action-btn.primary {
-    background: linear-gradient(135deg, #e67e22, #f39c12);
-    border-color: #e67e22;
-}
-
-.collaboration-option .action-btn.primary:hover {
-    background: linear-gradient(135deg, #d35400, #e67e22);
-    transform: translateY(-1px);
-    box-shadow: 0 5px 15px rgba(230, 126, 34, 0.3);
-}
-
-.collaboration-option .action-btn.secondary {
-    background: linear-gradient(135deg, #95a5a6, #7f8c8d);
-    border-color: #95a5a6;
-}
-
-.collaboration-option .action-btn.secondary:hover {
-    background: linear-gradient(135deg, #7f8c8d, #95a5a6);
-    transform: translateY(-1px);
-    box-shadow: 0 5px 15px rgba(149, 165, 166, 0.3);
-}
-
-/* 移动端响应式 */
-@media (max-width: 768px) {
-    .collaboration-options {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .collaboration-option {
-        padding: 15px;
-    }
-    
-    .collaboration-option h4 {
-        font-size: 1.1rem;
-    }
-}
-
-/* 通用对话框样式 */
-.dialog-overlay {
     position: fixed;
     top: 0;
     left: 0;
@@ -1355,302 +1130,1392 @@ footer {
     justify-content: center;
     align-items: center;
     z-index: 10000;
-    animation: fadeIn 0.3s ease;
+    opacity: 0;
+    transition: opacity 0.3s ease;
 }
 
-.dialog-content {
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    border-radius: 15px;
-    padding: 0;
-    max-width: 90%;
-    max-height: 90%;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-    animation: slideIn 0.3s ease;
-    position: relative;
+.collaboration-modal.show {
+    opacity: 1;
 }
 
-.dialog-header {
-    background: rgba(255, 255, 255, 0.1);
-    padding: 20px 30px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    border-radius: 15px 15px 0 0;
-}
-
-.dialog-header h3 {
-    color: white;
-    margin: 0;
-    font-size: 1.4rem;
-    font-weight: 600;
-}
-
-.dialog-close {
-    background: rgba(255, 255, 255, 0.2);
-    border: none;
-    color: white;
-    font-size: 24px;
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.3s ease;
-}
-
-.dialog-close:hover {
-    background: rgba(255, 255, 255, 0.3);
-    transform: rotate(90deg);
-}
-
-.dialog-body {
-    padding: 30px;
-    color: white;
-}
-
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
-
-@keyframes slideIn {
-    from {
-        opacity: 0;
-        transform: translateY(-50px) scale(0.9);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-    }
-}
-
-/* 移动端响应式 */
-@media (max-width: 768px) {
-    .dialog-content {
-        max-width: 95%;
-        margin: 10px;
-    }
-    
-    .dialog-header {
-        padding: 15px 20px;
-    }
-    
-    .dialog-body {
-        padding: 20px;
-    }
-    
-    .dialog-header h3 {
-        font-size: 1.2rem;
-    }
-}
-
-/* 房间状态组件样式 */
-/* 消息滑入动画 */
-@keyframes slideInFromRight {
-    from {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-    to {
-        opacity: 1;
-        transform: translateX(0);
-    }
-}
-
-/* 消息滑出动画 */
-@keyframes slideOutToRight {
-    from {
-        opacity: 1;
-        transform: translateX(0);
-    }
-    to {
-        opacity: 0;
-        transform: translateX(100%);
-    }
-}
-
-/* 协作选择悬浮窗样式 */
-.collaboration-choice-popup {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
+.collaboration-modal .modal-content {
     background: white;
-    border: 2px solid #007bff;
     border-radius: 15px;
-    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-    z-index: 10000;
-    width: 600px;
-    max-width: 90vw;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
     max-height: 80vh;
     overflow-y: auto;
-    animation: popupFadeIn 0.3s ease-out;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
 }
 
-.choice-popup-header {
+.collaboration-modal .modal-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 20px 25px 15px;
-    border-bottom: 1px solid #e9ecef;
-    background: linear-gradient(135deg, #007bff, #0056b3);
-    color: white;
-    border-radius: 13px 13px 0 0;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
 }
 
-.choice-popup-header h3 {
+.collaboration-modal .modal-header h3 {
     margin: 0;
-    font-size: 1.3rem;
-    font-weight: 600;
+    color: #2c3e50;
 }
 
-.popup-close {
-    background: none;
-    border: none;
+.collaboration-modal .modal-close {
+    background: #e74c3c;
     color: white;
-    font-size: 24px;
-    cursor: pointer;
-    padding: 0;
+    border: none;
+    border-radius: 50%;
     width: 30px;
     height: 30px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: background-color 0.2s ease;
-}
-
-.popup-close:hover {
-    background: rgba(255,255,255,0.2);
-}
-
-.choice-popup-body {
-    padding: 25px;
-}
-
-.choice-cards {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 20px;
-}
-
-.choice-card {
-    background: linear-gradient(135deg, #f8f9fa, #ffffff);
-    border: 2px solid #e9ecef;
-    border-radius: 12px;
-    padding: 20px;
-    text-align: center;
     cursor: pointer;
-    transition: all 0.3s ease;
-    position: relative;
-    overflow: hidden;
+    font-size: 16px;
 }
 
-.choice-card:hover {
-    transform: translateY(-3px);
-    border-color: #007bff;
-    box-shadow: 0 8px 20px rgba(0,123,255,0.15);
-}
-
-.firebase-choice {
-    border-color: #ff6b35;
-}
-
-.firebase-choice:hover {
-    border-color: #ff6b35;
-    box-shadow: 0 8px 20px rgba(255,107,53,0.15);
-}
-
-.p2p-choice {
-    border-color: #28a745;
-}
-
-.p2p-choice:hover {
-    border-color: #28a745;
-    box-shadow: 0 8px 20px rgba(40,167,69,0.15);
-}
-
-.choice-icon {
-    font-size: 2.5rem;
-    margin-bottom: 12px;
-}
-
-.choice-card h4 {
+.collaboration-modal .connection-status {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
     color: #2c3e50;
-    margin-bottom: 8px;
-    font-size: 1.1rem;
-    font-weight: 600;
+    font-weight: 500;
 }
 
-.choice-card p {
-    color: #6c757d;
-    font-size: 0.9rem;
-    margin-bottom: 12px;
-    line-height: 1.3;
+.collaboration-modal .room-actions {
+    margin-bottom: 20px;
 }
 
-.choice-card ul {
-    text-align: left;
-    margin: 0;
-    padding-left: 18px;
-    font-size: 0.8rem;
-    color: #495057;
+.collaboration-modal .join-room-section {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
 }
 
-.choice-card li {
-    margin-bottom: 4px;
-    line-height: 1.2;
+.collaboration-modal .join-room-section input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
 }
 
-.choice-recommended {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    background: linear-gradient(45deg, #ff6b35, #f7931e);
+.collaboration-modal .user-settings {
+    margin-top: 20px;
+}
+
+.collaboration-modal .user-settings label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.collaboration-modal .user-settings input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.collaboration-modal .action-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: linear-gradient(to right, #3498db, #2980b9);
     color: white;
-    padding: 3px 10px;
-    border-radius: 15px;
-    font-size: 0.7rem;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
 }
 
-@keyframes popupFadeIn {
+.collaboration-modal .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.collaboration-modal .action-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-btn.collaboration {
+    background: linear-gradient(to right, #9b59b6, #8e44ad);
+}
+
+.action-btn.collaboration:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(155, 89, 182, 0.4);
+}
+
+/* 房间信息样式 */
+.room-info {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: white !important;
+    border: 2px solid #3498db !important;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    z-index: 10000 !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.room-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+.room-header h3 {
+    margin: 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
+}
+
+.connection-status {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+}
+
+.connection-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.connection-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.leave-room-btn {
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    z-index: 10001 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.leave-room-btn:hover {
+    background: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leave-room-btn:active {
+    background: #a93226 !important;
+    transform: translateY(0) !important;
+}
+
+.leave-room-btn:disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.room-details {
+    margin-bottom: 10px !important;
+}
+
+.room-details p {
+    margin: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 14px !important;
+}
+
+.copy-btn {
+    background: #3498db !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-left: 5px !important;
+    transition: background 0.2s ease !important;
+}
+
+.copy-btn:hover {
+    background: #2980b9 !important;
+}
+
+.users-list {
+    max-height: 150px !important;
+    overflow-y: auto !important;
+    margin-top: 10px !important;
+}
+
+.user-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 5px 0 !important;
+    border-bottom: 1px solid #ecf0f1 !important;
+}
+
+.user-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 8px !important;
+}
+
+.user-name {
+    flex: 1 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+}
+
+.user-status {
+    font-size: 12px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+}
+
+.user-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.user-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed !important;
+    top: 80px !important;
+    right: 20px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    z-index: 10001 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    animation: slideInRight 0.3s ease-out !important;
+}
+
+@keyframes slideInRight {
     from {
-        opacity: 0;
-        transform: translate(-50%, -50%) scale(0.9);
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
     }
     to {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(1);
+        transform: translateX(0) !important;
+        opacity: 1 !important;
     }
 }
 
-@media (max-width: 768px) {
-    .collaboration-choice-popup {
-        width: 95vw;
-        max-height: 85vh;
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
     }
-    
-    .choice-cards {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
-    .choice-popup-body {
-        padding: 20px;
-    }
-    
-    .choice-card {
-        padding: 15px;
-    }
-    
-    .choice-icon {
-        font-size: 2rem;
+    to {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
     }
 }
+
+/* 协作功能样式 */
+.collaboration-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.collaboration-modal.show {
+    opacity: 1;
+}
+
+.collaboration-modal .modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.collaboration-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.collaboration-modal .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.collaboration-modal .modal-close {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.collaboration-modal .connection-status {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.collaboration-modal .room-actions {
+    margin-bottom: 20px;
+}
+
+.collaboration-modal .join-room-section {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.collaboration-modal .join-room-section input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.collaboration-modal .user-settings {
+    margin-top: 20px;
+}
+
+.collaboration-modal .user-settings label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.collaboration-modal .user-settings input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.collaboration-modal .action-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: linear-gradient(to right, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.collaboration-modal .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.collaboration-modal .action-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-btn.collaboration {
+    background: linear-gradient(to right, #9b59b6, #8e44ad);
+}
+
+.action-btn.collaboration:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(155, 89, 182, 0.4);
+}
+
+/* 房间信息样式 */
+.room-info {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: white !important;
+    border: 2px solid #3498db !important;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    z-index: 10000 !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.room-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+.room-header h3 {
+    margin: 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
+}
+
+.connection-status {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+}
+
+.connection-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.connection-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.leave-room-btn {
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    z-index: 10001 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.leave-room-btn:hover {
+    background: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leave-room-btn:active {
+    background: #a93226 !important;
+    transform: translateY(0) !important;
+}
+
+.leave-room-btn:disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.room-details {
+    margin-bottom: 10px !important;
+}
+
+.room-details p {
+    margin: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 14px !important;
+}
+
+.copy-btn {
+    background: #3498db !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-left: 5px !important;
+    transition: background 0.2s ease !important;
+}
+
+.copy-btn:hover {
+    background: #2980b9 !important;
+}
+
+.users-list {
+    max-height: 150px !important;
+    overflow-y: auto !important;
+    margin-top: 10px !important;
+}
+
+.user-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 5px 0 !important;
+    border-bottom: 1px solid #ecf0f1 !important;
+}
+
+.user-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 8px !important;
+}
+
+.user-name {
+    flex: 1 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+}
+
+.user-status {
+    font-size: 12px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+}
+
+.user-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.user-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed !important;
+    top: 80px !important;
+    right: 20px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    z-index: 10001 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    animation: slideInRight 0.3s ease-out !important;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    to {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+}
+
+/* 协作功能样式 */
+.collaboration-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.collaboration-modal.show {
+    opacity: 1;
+}
+
+.collaboration-modal .modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.collaboration-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.collaboration-modal .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.collaboration-modal .modal-close {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.collaboration-modal .connection-status {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.collaboration-modal .room-actions {
+    margin-bottom: 20px;
+}
+
+.collaboration-modal .join-room-section {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.collaboration-modal .join-room-section input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.collaboration-modal .user-settings {
+    margin-top: 20px;
+}
+
+.collaboration-modal .user-settings label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.collaboration-modal .user-settings input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.collaboration-modal .action-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: linear-gradient(to right, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.collaboration-modal .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.collaboration-modal .action-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-btn.collaboration {
+    background: linear-gradient(to right, #9b59b6, #8e44ad);
+}
+
+.action-btn.collaboration:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(155, 89, 182, 0.4);
+}
+
+/* 房间信息样式 */
+.room-info {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: white !important;
+    border: 2px solid #3498db !important;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    z-index: 10000 !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.room-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+.room-header h3 {
+    margin: 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
+}
+
+.connection-status {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+}
+
+.connection-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.connection-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.leave-room-btn {
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    z-index: 10001 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.leave-room-btn:hover {
+    background: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leave-room-btn:active {
+    background: #a93226 !important;
+    transform: translateY(0) !important;
+}
+
+.leave-room-btn:disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.room-details {
+    margin-bottom: 10px !important;
+}
+
+.room-details p {
+    margin: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 14px !important;
+}
+
+.copy-btn {
+    background: #3498db !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-left: 5px !important;
+    transition: background 0.2s ease !important;
+}
+
+.copy-btn:hover {
+    background: #2980b9 !important;
+}
+
+.users-list {
+    max-height: 150px !important;
+    overflow-y: auto !important;
+    margin-top: 10px !important;
+}
+
+.user-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 5px 0 !important;
+    border-bottom: 1px solid #ecf0f1 !important;
+}
+
+.user-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 8px !important;
+}
+
+.user-name {
+    flex: 1 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+}
+
+.user-status {
+    font-size: 12px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+}
+
+.user-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.user-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed !important;
+    top: 80px !important;
+    right: 20px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    z-index: 10001 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    animation: slideInRight 0.3s ease-out !important;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    to {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+}
+
+/* 协作功能样式 */
+.collaboration-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.collaboration-modal.show {
+    opacity: 1;
+}
+
+.collaboration-modal .modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.collaboration-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.collaboration-modal .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.collaboration-modal .modal-close {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.collaboration-modal .connection-status {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.collaboration-modal .room-actions {
+    margin-bottom: 20px;
+}
+
+.collaboration-modal .join-room-section {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.collaboration-modal .join-room-section input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.collaboration-modal .user-settings {
+    margin-top: 20px;
+}
+
+.collaboration-modal .user-settings label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.collaboration-modal .user-settings input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.collaboration-modal .action-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: linear-gradient(to right, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+
+.collaboration-modal .action-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+}
+
+.collaboration-modal .action-btn:disabled {
+    background: #bdc3c7;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.action-btn.collaboration {
+    background: linear-gradient(to right, #9b59b6, #8e44ad);
+}
+
+.action-btn.collaboration:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 12px rgba(155, 89, 182, 0.4);
+}
+
+/* 房间信息样式 */
+.room-info {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: white !important;
+    border: 2px solid #3498db !important;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    z-index: 10000 !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.room-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+.room-header h3 {
+    margin: 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
+}
+
+.connection-status {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+}
+
+.connection-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.connection-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.leave-room-btn {
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    z-index: 10001 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.leave-room-btn:hover {
+    background: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leave-room-btn:active {
+    background: #a93226 !important;
+    transform: translateY(0) !important;
+}
+
+.leave-room-btn:disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+.room-details {
+    margin-bottom: 10px !important;
+}
+
+.room-details p {
+    margin: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 14px !important;
+}
+
+.copy-btn {
+    background: #3498db !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-left: 5px !important;
+    transition: background 0.2s ease !important;
+}
+
+.copy-btn:hover {
+    background: #2980b9 !important;
+}
+
+.users-list {
+    max-height: 150px !important;
+    overflow-y: auto !important;
+    margin-top: 10px !important;
+}
+
+.user-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 5px 0 !important;
+    border-bottom: 1px solid #ecf0f1 !important;
+}
+
+.user-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 8px !important;
+}
+
+.user-name {
+    flex: 1 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+}
+
+.user-status {
+    font-size: 12px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+}
+
+.user-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.user-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed !important;
+    top: 80px !important;
+    right: 20px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    z-index: 10001 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    animation: slideInRight 0.3s ease-out !important;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    to {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+}
+
+/* 协作功能样式 */
+.collaboration-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.7);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.collaboration-modal.show {
+    opacity: 1;
+}
+
+.collaboration-modal .modal-content {
+    background: white;
+    border-radius: 15px;
+    padding: 25px;
+    max-width: 500px;
+    width: 90%;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+}
+
+.collaboration-modal .modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.collaboration-modal .modal-header h3 {
+    margin: 0;
+    color: #2c3e50;
+}
+
+.collaboration-modal .modal-close {
+    background: #e74c3c;
+    color: white;
+    border: none;
+    border-radius: 50%;
+    width: 30px;
+    height: 30px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+.collaboration-modal .connection-status {
+    margin-bottom: 20px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    color: #2c3e50;
+    font-weight: 500;
+}
+
+.collaboration-modal .room-actions {
+    margin-bottom: 20px;
+}
+
+.collaboration-modal .join-room-section {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.collaboration-modal .join-room-section input {
+    flex: 1;
+    padding: 10px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+}
+
+.collaboration-modal .user-settings {
+    margin-top: 20px;
+}
+
+.collaboration-modal .user-settings label {
+    display: block;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.collaboration-modal .user-settings input {
+    width: 100%;
+    padding: 8px;
+    border: 2px solid #ddd;
+    border-radius: 8px;
+    margin-top: 5px;
+}
+
+.collaboration-modal .action-btn {
+    display: block;
+    width: 100%;
+    padding: 12px;
+    margin-top: 10px;
+    background: linear-gradient(to right, #3498db, #2980b9);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.3s;

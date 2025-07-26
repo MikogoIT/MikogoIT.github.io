@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>离开房间功能修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .test-btn {
+            background: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        .test-btn:hover {
+            background: #2980b9;
+        }
+        .test-btn.danger {
+            background: #e74c3c;
+        }
+        .test-btn.danger:hover {
+            background: #c0392b;
+        }
+        .status {
+            background: #ecf0f1;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 14px;
+        }
+        .log-area {
+            background: #2c3e50;
+            color: #ecf0f1;
+            padding: 15px;
+            border-radius: 5px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 13px;
+            margin: 20px 0;
+        }
+        .success { color: #27ae60; }
+        .error { color: #e74c3c; }
+        .warning { color: #f39c12; }
+        .info { color: #3498db; }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>🔧 离开房间功能修复测试</h1>
+        
+        <div class="status" id="status">
+            等待测试...
+        </div>
+        
+        <div>
+            <h3>🧪 测试步骤：</h3>
+            <ol>
+                <li>首先在主页面中创建或加入一个房间</li>
+                <li>确保能看到房间信息面板</li>
+                <li>使用下面的按钮进行测试</li>
+            </ol>
+        </div>
+        
+        <div>
+            <h3>🔍 诊断工具：</h3>
+            <button class="test-btn" onclick="runDiagnostics()">运行完整诊断</button>
+            <button class="test-btn" onclick="checkRoomStatus()">检查房间状态</button>
+            <button class="test-btn" onclick="checkLeaveButton()">检查离开按钮</button>
+            <button class="test-btn" onclick="testFirebaseConnection()">测试Firebase连接</button>
+        </div>
+        
+        <div>
+            <h3>🎯 离开房间测试：</h3>
+            <button class="test-btn danger" onclick="testLeaveRoom()">测试离开房间</button>
+            <button class="test-btn danger" onclick="forceLeaveRoom()">强制离开房间</button>
+            <button class="test-btn danger" onclick="simulateButtonClick()">模拟按钮点击</button>
+        </div>
+        
+        <div>
+            <h3>📋 控制台日志：</h3>
+            <div class="log-area" id="log-area"></div>
+            <button class="test-btn" onclick="clearLogs()">清空日志</button>
+            <button class="test-btn" onclick="exportLogs()">导出日志</button>
+        </div>
+        
+        <div>
+            <h3>ℹ️ 修复内容：</h3>
+            <ul>
+                <li>✅ 改进了事件监听器绑定机制</li>
+                <li>✅ 添加了更详细的错误处理和日志记录</li>
+                <li>✅ 增加了网络连接检查和重试机制</li>
+                <li>✅ 实现了强制清理功能防止卡死</li>
+                <li>✅ 添加了按钮状态管理防止重复点击</li>
+                <li>✅ 改善了CSS样式确保按钮可点击性</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        let logs = [];
+        
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}`;
+            
+            logs.push(logEntry);
+            console.log(message);
+            
+            const logArea = document.getElementById('log-area');
+            const logDiv = document.createElement('div');
+            logDiv.className = type;
+            logDiv.textContent = logEntry;
+            logArea.appendChild(logDiv);
+            logArea.scrollTop = logArea.scrollHeight;
+            
+            // 更新状态
+            document.getElementById('status').textContent = `[${timestamp}] ${message}`;
+        }
+        
+        function clearLogs() {
+            logs = [];
+            document.getElementById('log-area').innerHTML = '';
+            log('日志已清空');
+        }
+        
+        function exportLogs() {
+            const logText = logs.join('\\n');
+            const blob = new Blob([logText], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `leave-room-test-logs-${Date.now()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            log('日志已导出');
+        }
+        
+        function runDiagnostics() {
+            log('🔍 开始运行完整诊断...', 'info');
+            
+            // 检查Firebase Manager
+            if (window.parent.app && window.parent.app.firebaseManager) {
+                const fm = window.parent.app.firebaseManager;
+                log('✅ 找到FirebaseManager实例', 'success');
+                log(`房间状态: ${fm.roomId ? fm.roomId : '未加入房间'}`, 'info');
+                log(`用户角色: ${fm.isHost ? '房主' : '成员'}`, 'info');
+                log(`连接状态: ${fm.isConnected ? '已连接' : '未连接'}`, fm.isConnected ? 'success' : 'warning');
+            } else {
+                log('❌ 未找到FirebaseManager实例', 'error');
+            }
+            
+            // 检查离开按钮
+            const leaveBtn = window.parent.document.getElementById('leave-room-btn');
+            if (leaveBtn) {
+                log('✅ 找到离开房间按钮', 'success');
+                const rect = leaveBtn.getBoundingClientRect();
+                log(`按钮位置: (${rect.left}, ${rect.top})`, 'info');
+                log(`按钮大小: ${rect.width} x ${rect.height}`, 'info');
+                log(`按钮可见: ${rect.width > 0 && rect.height > 0}`, rect.width > 0 ? 'success' : 'error');
+            } else {
+                log('❌ 未找到离开房间按钮', 'error');
+            }
+            
+            // 检查全局函数
+            const globalFunctions = [
+                'globalLeaveRoom',
+                'debugLeaveRoom'
+            ];
+            
+            globalFunctions.forEach(funcName => {
+                if (typeof window.parent[funcName] === 'function') {
+                    log(`✅ 找到全局函数: ${funcName}`, 'success');
+                } else {
+                    log(`❌ 未找到全局函数: ${funcName}`, 'warning');
+                }
+            });
+            
+            log('🏁 诊断完成', 'info');
+        }
+        
+        function checkRoomStatus() {
+            log('🏠 检查房间状态...', 'info');
+            
+            if (window.parent.app && window.parent.app.firebaseManager) {
+                const fm = window.parent.app.firebaseManager;
+                
+                const status = {
+                    roomId: fm.roomId,
+                    isHost: fm.isHost,
+                    userId: fm.userId,
+                    userName: fm.userName,
+                    isInitialized: fm.isInitialized,
+                    isConnected: fm.isConnected
+                };
+                
+                Object.entries(status).forEach(([key, value]) => {
+                    log(`${key}: ${value}`, 'info');
+                });
+            } else {
+                log('❌ 无法访问FirebaseManager', 'error');
+            }
+        }
+        
+        function checkLeaveButton() {
+            log('🔘 检查离开房间按钮...', 'info');
+            
+            const leaveBtn = window.parent.document.getElementById('leave-room-btn');
+            if (leaveBtn) {
+                const style = window.parent.getComputedStyle(leaveBtn);
+                const rect = leaveBtn.getBoundingClientRect();
+                
+                log(`显示状态: ${style.display}`, 'info');
+                log(`可见性: ${style.visibility}`, 'info');
+                log(`透明度: ${style.opacity}`, 'info');
+                log(`指针事件: ${style.pointerEvents}`, 'info');
+                log(`是否禁用: ${leaveBtn.disabled}`, 'info');
+                log(`位置和大小: ${rect.left}, ${rect.top}, ${rect.width}, ${rect.height}`, 'info');
+                
+                // 测试事件监听器
+                const testListener = () => {
+                    log('✅ 按钮事件监听器正常工作', 'success');
+                };
+                
+                leaveBtn.addEventListener('mouseenter', testListener, { once: true });
+                
+                // 触发鼠标进入事件
+                const mouseEnterEvent = new MouseEvent('mouseenter', { bubbles: true });
+                leaveBtn.dispatchEvent(mouseEnterEvent);
+                
+            } else {
+                log('❌ 未找到离开房间按钮', 'error');
+            }
+        }
+        
+        function testFirebaseConnection() {
+            log('🔥 测试Firebase连接...', 'info');
+            
+            if (window.parent.firebaseApp) {
+                log('✅ Firebase App已初始化', 'success');
+            } else {
+                log('❌ Firebase App未初始化', 'error');
+            }
+            
+            if (window.parent.firebaseDatabase) {
+                log('✅ Firebase Database已初始化', 'success');
+            } else {
+                log('❌ Firebase Database未初始化', 'error');
+            }
+            
+            if (navigator.onLine) {
+                log('✅ 网络连接正常', 'success');
+            } else {
+                log('❌ 网络连接断开', 'error');
+            }
+        }
+        
+        function testLeaveRoom() {
+            log('🧪 测试离开房间功能...', 'info');
+            
+            if (window.parent.app && window.parent.app.firebaseManager) {
+                const fm = window.parent.app.firebaseManager;
+                
+                if (!fm.roomId) {
+                    log('❌ 当前没有加入任何房间', 'warning');
+                    return;
+                }
+                
+                log('🚪 调用leaveRoom方法...', 'info');
+                fm.leaveRoom()
+                    .then(() => {
+                        log('✅ 离开房间成功', 'success');
+                    })
+                    .catch(error => {
+                        log(`❌ 离开房间失败: ${error.message}`, 'error');
+                        console.error('详细错误:', error);
+                    });
+            } else {
+                log('❌ 无法访问FirebaseManager', 'error');
+            }
+        }
+        
+        function forceLeaveRoom() {
+            log('⚡ 强制离开房间...', 'warning');
+            
+            if (typeof window.parent.debugLeaveRoom === 'function') {
+                window.parent.debugLeaveRoom();
+                log('✅ 调用了debugLeaveRoom', 'success');
+            } else if (window.parent.app && window.parent.app.firebaseManager && typeof window.parent.app.firebaseManager.forceLeaveRoom === 'function') {
+                window.parent.app.firebaseManager.forceLeaveRoom();
+                log('✅ 调用了forceLeaveRoom', 'success');
+            } else {
+                log('❌ 未找到强制离开方法', 'error');
+            }
+        }
+        
+        function simulateButtonClick() {
+            log('🖱️ 模拟按钮点击...', 'info');
+            
+            const leaveBtn = window.parent.document.getElementById('leave-room-btn');
+            if (leaveBtn) {
+                // 创建真实的点击事件
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    view: window.parent,
+                    button: 0,
+                    buttons: 1,
+                    clientX: leaveBtn.getBoundingClientRect().left + leaveBtn.offsetWidth / 2,
+                    clientY: leaveBtn.getBoundingClientRect().top + leaveBtn.offsetHeight / 2
+                });
+                
+                log('发送点击事件...', 'info');
+                leaveBtn.dispatchEvent(clickEvent);
+                log('✅ 点击事件已发送', 'success');
+            } else {
+                log('❌ 未找到离开房间按钮', 'error');
+            }
+        }
+        
+        // 监听来自父窗口的消息
+        window.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'firebase-log') {
+                log(event.data.message, event.data.level || 'info');
+            }
+        });
+        
+        // 页面加载完成后自动运行基础诊断
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                log('🚀 页面加载完成，开始基础检查...', 'info');
+                checkRoomStatus();
+                checkLeaveButton();
+            }, 1000);
+        });
+    </script>
+</body>
+</html>

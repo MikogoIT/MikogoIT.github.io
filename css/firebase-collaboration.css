@@ -1,0 +1,102 @@
+/* Firebase 协作房间信息样式 */
+.room-info {
+    position: fixed !important;
+    top: 20px !important;
+    right: 20px !important;
+    background: white !important;
+    border: 2px solid #3498db !important;
+    border-radius: 10px !important;
+    padding: 15px !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+    z-index: 10000 !important;
+    min-width: 300px !important;
+    max-width: 380px !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.room-header {
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    margin-bottom: 10px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+}
+
+.room-header h3 {
+    margin: 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
+}
+
+.connection-status {
+    padding: 4px 8px !important;
+    border-radius: 4px !important;
+    font-size: 12px !important;
+    font-weight: bold !important;
+}
+
+.connection-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.connection-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+.leave-room-btn {
+    background: #e74c3c !important;
+    color: white !important;
+    border: none !important;
+    padding: 8px 12px !important;
+    border-radius: 5px !important;
+    cursor: pointer !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    transition: all 0.2s ease !important;
+    z-index: 10001 !important;
+    position: relative !important;
+    pointer-events: auto !important;
+    opacity: 1 !important;
+}
+
+.leave-room-btn:hover {
+    background: #c0392b !important;
+    transform: translateY(-1px) !important;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
+}
+
+.leave-room-btn:active {
+    background: #a93226 !important;
+    transform: translateY(0) !important;
+}
+
+.leave-room-btn:disabled {
+    background: #bdc3c7 !important;
+    cursor: not-allowed !important;
+    opacity: 0.6 !important;
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+    to {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+}
+
+@keyframes slideOutRight {
+    from {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+    }
+    to {
+        transform: translateX(100%) !important;
+        opacity: 0 !important;
+    }
+}
