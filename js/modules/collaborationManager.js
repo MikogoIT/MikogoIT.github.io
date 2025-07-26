@@ -165,7 +165,12 @@ export class CollaborationManager {
 
     // 处理信令消息
     handleSignalingMessage(message) {
-        if (message.sender === this.userId) return; // 忽略自己的消息
+        console.log('收到信令消息:', message.type, message);
+        
+        if (message.sender === this.userId) {
+            console.log('忽略自己的消息');
+            return; // 忽略自己的消息
+        }
         
         switch (message.type) {
             case 'room-announcement':
@@ -173,6 +178,9 @@ export class CollaborationManager {
                 break;
             case 'join-request':
                 this.handleJoinRequest(message);
+                break;
+            case 'join-accepted':
+                this.handleJoinAccepted(message);
                 break;
             case 'ice-candidate':
                 this.handleIceCandidate(message);
@@ -183,6 +191,8 @@ export class CollaborationManager {
             case 'answer':
                 this.handleAnswer(message);
                 break;
+            default:
+                console.log('未知消息类型:', message.type);
         }
     }
 
@@ -247,6 +257,15 @@ export class CollaborationManager {
         
         this.uiManager.showInfo('正在加入房间...');
         console.log('发送加入请求:', roomId);
+        
+        // 设置超时检查
+        this.joinTimeout = setTimeout(() => {
+            if (!this.roomData || this.roomData.users.size <= 1) {
+                this.uiManager.showError('加入房间超时，请检查房间号是否正确或房主是否在线');
+                this.roomId = null;
+                this.isHost = false;
+            }
+        }, 10000); // 10秒超时
     }
 
     // 处理房间公告
@@ -258,12 +277,88 @@ export class CollaborationManager {
 
     // 处理加入请求（房主处理）
     handleJoinRequest(message) {
-        if (!this.isHost || message.roomId !== this.roomId) return;
+        console.log('处理加入请求:', message);
         
-        console.log(`收到加入请求: ${message.userName}`);
+        if (!this.isHost) {
+            console.log('不是房主，忽略加入请求');
+            return;
+        }
+        
+        if (message.roomId !== this.roomId) {
+            console.log(`房间号不匹配: 收到 ${message.roomId}, 当前 ${this.roomId}`);
+            return;
+        }
+        
+        console.log(`收到加入请求: ${message.userName} 要加入房间 ${message.roomId}`);
+        
+        // 发送加入确认
+        console.log('发送加入确认消息...');
+        this.sendSignalingMessage({
+            type: 'join-accepted',
+            roomId: this.roomId,
+            targetPeer: message.userId,
+            hostId: this.userId,
+            hostName: this.userName
+        });
+        
+        // 添加用户到房间数据
+        this.roomData.users.set(message.userId, {
+            userId: message.userId,
+            userName: message.userName,
+            userColor: message.userColor,
+            isHost: false
+        });
         
         // 创建WebRTC连接
         this.createPeerConnection(message.userId, message.userName, message.userColor, true);
+        
+        // 更新房间信息显示
+        this.updateUsersList();
+        
+        this.uiManager.showSuccess(`${message.userName} 请求加入房间`);
+    }
+
+    // 处理加入确认（加入者处理）
+    handleJoinAccepted(message) {
+        console.log('收到加入确认消息:', message);
+        
+        if (message.targetPeer !== this.userId) {
+            console.log(`目标用户不匹配: 收到 ${message.targetPeer}, 当前 ${this.userId}`);
+            return;
+        }
+        
+        console.log(`加入房间被接受: ${message.roomId}`);
+        
+        // 清除加入超时
+        if (this.joinTimeout) {
+            clearTimeout(this.joinTimeout);
+            this.joinTimeout = null;
+        }
+        
+        // 更新房间状态
+        this.isHost = false;
+        this.roomId = message.roomId;
+        
+        // 初始化房间数据
+        this.roomData = {
+            users: new Map(),
+            gameState: {},
+            lastUpdate: Date.now()
+        };
+        
+        // 添加自己到房间
+        this.roomData.users.set(this.userId, {
+            userId: this.userId,
+            userName: this.userName,
+            userColor: this.userColor,
+            isHost: false
+        });
+        
+        // 显示成功消息并显示房间信息
+        this.uiManager.showSuccess(`成功加入房间: ${message.roomId}`);
+        this.showRoomInfo();
+        
+        console.log('等待房主发起P2P连接...');
     }
 
     // 创建P2P连接
