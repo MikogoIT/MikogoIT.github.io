@@ -87,10 +87,6 @@
                         <div class="status-color status-3"></div>
                         <div>金猪已刷新（可再次击杀）</div>
                     </div>
-                    <div class="status-item">
-                        <div class="status-color status-4"></div>
-                        <div>倒计时显示</div>
-                    </div>
                 </div>
                 
                 <button class="action-btn reset" onclick="resetAll()">
@@ -105,7 +101,11 @@
                     🔬 开启测试模式（10秒倒计时）
                 </button>
                 
-                <button class="action-btn data-management" onclick="showDataManagement()">
+                <button class="action-btn collaboration" onclick="showCollaboration()">
+                    🤝 多人协作
+                </button>
+                
+                <button class="action-btn" onclick="window.goldPigApp.uiManager.showDataManagementDialog()">
                     📁 数据管理
                 </button>
                 

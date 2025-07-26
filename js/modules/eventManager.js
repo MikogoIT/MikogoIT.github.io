@@ -1,12 +1,13 @@
 // 事件管理器
 export class EventManager {
-    constructor(timerManager, statsManager, animationManager, uiManager, storageManager, chartManager) {
+    constructor(timerManager, statsManager, animationManager, uiManager, storageManager, chartManager, collaborationManager = null) {
         this.timerManager = timerManager;
         this.statsManager = statsManager;
         this.animationManager = animationManager;
         this.uiManager = uiManager;
         this.storageManager = storageManager;
         this.chartManager = chartManager;
+        this.collaborationManager = collaborationManager;
     }
 
     // 处理单元格单击
@@ -36,6 +37,19 @@ export class EventManager {
         
         // 记录击杀事件并检查里程碑
         const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
+        
+        // 添加到击杀事件列表
+        this.statsManager.addKillEvent(lineNumber, killTime);
+        
+        // 同步到其他用户
+        if (this.collaborationManager) {
+            this.collaborationManager.syncLineStateChange(lineNumber, 'killed', killTime);
+        }
+        
+        // 触发自定义事件（用于协作同步）
+        document.dispatchEvent(new CustomEvent('lineStateChanged', {
+            detail: { lineNumber, state: 'killed', killTime }
+        }));
         
         // 更新图表
         if (this.chartManager) {
@@ -92,6 +106,19 @@ export class EventManager {
         // 记录击杀事件
         this.statsManager.recordKillEvent(lineNumber, killTime);
         
+        // 添加到击杀事件列表（时间未知）
+        this.statsManager.addKillEvent(lineNumber, null);
+        
+        // 同步到其他用户
+        if (this.collaborationManager) {
+            this.collaborationManager.syncLineStateChange(lineNumber, 'killed-unknown', null);
+        }
+        
+        // 触发自定义事件
+        document.dispatchEvent(new CustomEvent('lineStateChanged', {
+            detail: { lineNumber, state: 'killed-unknown', killTime: null }
+        }));
+        
         // 更新图表
         if (this.chartManager) {
             this.chartManager.updateChart();
@@ -137,6 +164,16 @@ export class EventManager {
         
         // 从击杀事件中移除
         this.statsManager.removeKillEvent(lineNumber, killTime);
+        
+        // 同步到其他用户
+        if (this.collaborationManager) {
+            this.collaborationManager.syncLineStateChange(lineNumber, 'cancelled', null);
+        }
+        
+        // 触发自定义事件
+        document.dispatchEvent(new CustomEvent('lineStateChanged', {
+            detail: { lineNumber, state: 'cancelled', killTime: null }
+        }));
         
         // 更新图表
         if (this.chartManager) {

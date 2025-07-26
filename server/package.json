@@ -1,0 +1,23 @@
+{
+  "name": "spawn-timer-collaboration-server",
+  "version": "1.0.0",
+  "description": "金猪刷新监控系统协作服务器",
+  "main": "collaboration-server.js",
+  "scripts": {
+    "start": "node collaboration-server.js",
+    "dev": "nodemon collaboration-server.js"
+  },
+  "dependencies": {
+    "ws": "^8.14.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.1"
+  },
+  "keywords": [
+    "websocket",
+    "collaboration",
+    "real-time"
+  ],
+  "author": "Your Name",
+  "license": "MIT"
+}

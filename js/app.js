@@ -8,6 +8,7 @@ import { StatsManager } from './modules/statsManager.js';
 import { StorageManager } from './modules/storageManager.js';
 import { AnimationManager } from './modules/animationManager.js';
 import { UIManager } from './modules/uiManager.js';
+import { CollaborationManager } from './modules/collaborationManager.js';
 
 class GoldPigMonitorApp {
     constructor() {
@@ -19,13 +20,22 @@ class GoldPigMonitorApp {
         this.timerManager = new TimerManager(this.storageManager);
         this.tableManager = new TableManager();
         this.chartManager = new ChartManager(this.statsManager);
+        
+        // 初始化协作管理器
+        this.collaborationManager = new CollaborationManager(
+            this.storageManager,
+            this.uiManager,
+            this.statsManager
+        );
+        
         this.eventManager = new EventManager(
             this.timerManager, 
             this.statsManager, 
             this.animationManager,
             this.uiManager,
             this.storageManager,
-            this.chartManager
+            this.chartManager,
+            this.collaborationManager  // 传递协作管理器
         );
         
         // 测试模式标志
@@ -294,6 +304,23 @@ class GoldPigMonitorApp {
                 console.error('应用或统计管理器不存在');
                 return false;
             }
+        };
+        
+        // 多人协作功能
+        window.showCollaboration = () => {
+            this.collaborationManager.showCollaborationDialog();
+        };
+        
+        window.createRoom = () => {
+            this.collaborationManager.createRoom();
+        };
+        
+        window.joinRoom = (roomId) => {
+            this.collaborationManager.joinRoom(roomId);
+        };
+        
+        window.leaveRoom = () => {
+            this.collaborationManager.leaveRoom();
         };
     }
 
