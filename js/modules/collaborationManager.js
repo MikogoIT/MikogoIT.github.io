@@ -1039,6 +1039,12 @@ export class CollaborationManager {
 
     // 显示协作界面
     showCollaborationDialog() {
+        // 移除已存在的协作模态框
+        const existingModal = document.querySelector('.collaboration-modal');
+        if (existingModal) {
+            existingModal.remove();
+        }
+        
         const modal = document.createElement('div');
         modal.className = 'collaboration-modal';
         modal.innerHTML = `

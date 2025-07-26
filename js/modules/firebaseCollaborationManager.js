@@ -1122,6 +1122,13 @@ export class FirebaseCollaborationManager {
     showFloatingCollaborationPanel() {
         console.log('🏠 显示Firebase协作悬浮面板');
         
+        // 移除已存在的协作面板
+        const existingPanel = document.getElementById('firebase-collaboration-panel');
+        if (existingPanel) {
+            console.log('⚠️ 发现已存在的协作面板，先移除');
+            existingPanel.remove();
+        }
+        
         const panel = document.createElement('div');
         panel.id = 'firebase-collaboration-panel';
         panel.className = 'firebase-collaboration-panel';
@@ -1334,10 +1341,7 @@ export class FirebaseCollaborationManager {
                         console.log('✅ 房间创建成功:', roomId);
                         panel.remove();
                         this.showTemporaryMessage(`房间创建成功！房间号: ${roomId}`, 'success');
-                        // 重新显示房间信息面板
-                        setTimeout(() => {
-                            this.showFloatingCollaborationPanel();
-                        }, 1000);
+                        // createRoom() 方法已经会显示新的面板，这里不需要重复调用
                     }
                 } catch (error) {
                     console.error('❌ 创建房间失败:', error);
@@ -1370,10 +1374,7 @@ export class FirebaseCollaborationManager {
                         console.log('✅ 成功加入房间:', roomId);
                         panel.remove();
                         this.showTemporaryMessage(`成功加入房间: ${roomId}`, 'success');
-                        // 重新显示房间信息面板
-                        setTimeout(() => {
-                            this.showFloatingCollaborationPanel();
-                        }, 1000);
+                        // joinRoom() 方法已经会显示新的面板，这里不需要重复调用
                     }
                 } catch (error) {
                     console.error('❌ 加入房间失败:', error);
