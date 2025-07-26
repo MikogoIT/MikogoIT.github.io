@@ -638,13 +638,16 @@ export class FirebaseCollaborationManager {
     removeRoomListeners() {
         console.log('移除房间事件监听器...');
         
-        this.listeners.forEach((listener, key) => {
-            if (key === 'users' && this.usersRef) {
-                this.usersRef.off('value', listener);
-            } else if (key === 'gameState' && this.gameStateRef) {
-                this.gameStateRef.off('value', listener);
-            } else if (key === 'roomInfo' && this.roomRef) {
-                this.database.ref(`rooms/${this.roomId}/info`).off('value', listener);
+        this.listeners.forEach((unsubscribe, key) => {
+            try {
+                if (typeof unsubscribe === 'function') {
+                    console.log(`移除监听器: ${key}`);
+                    unsubscribe(); // 在Firebase v9+中，onValue返回的是unsubscribe函数
+                } else {
+                    console.warn(`监听器 ${key} 不是有效的取消订阅函数`);
+                }
+            } catch (error) {
+                console.warn(`移除监听器 ${key} 时出错:`, error);
             }
         });
         
@@ -1610,5 +1613,18 @@ export class FirebaseCollaborationManager {
         });
         
         console.log(`✅ 用户列表已更新，显示 ${userCount} 个用户`);
+    }
+
+    // 隐藏房间信息（离开房间时调用）
+    hideRoomInfo() {
+        console.log('🔒 隐藏房间信息');
+        
+        // 隐藏悬浮协作面板
+        this.hideFloatingCollaborationPanel();
+        
+        // 可以在这里添加其他房间信息的隐藏逻辑
+        // 比如隐藏房间状态指示器等
+        
+        console.log('✅ 房间信息已隐藏');
     }
 }
