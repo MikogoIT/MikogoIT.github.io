@@ -1,6 +1,9 @@
 // P2P协作管理器 - 基于WebRTC的点对点多人协作
 export class CollaborationManager {
     constructor(storageManager, uiManager, statsManager) {
+        console.log('CollaborationManager构造函数开始');
+        console.log('参数:', { storageManager, uiManager, statsManager });
+        
         this.storageManager = storageManager;
         this.uiManager = uiManager;
         this.statsManager = statsManager;
@@ -9,6 +12,8 @@ export class CollaborationManager {
         this.userId = this.generateUserId();
         this.userName = this.getUserName();
         this.userColor = this.generateUserColor();
+        
+        console.log('用户信息:', { userId: this.userId, userName: this.userName, userColor: this.userColor });
         
         // 房间信息
         this.roomId = null;
@@ -35,11 +40,19 @@ export class CollaborationManager {
             lastUpdate: Date.now()
         };
         
-        // 绑定事件
-        this.bindEvents();
-        
-        // 初始化信令通道
-        this.initSignalingChannel();
+        try {
+            // 绑定事件
+            console.log('绑定事件...');
+            this.bindEvents();
+            
+            // 初始化信令通道
+            console.log('初始化信令通道...');
+            this.initSignalingChannel();
+            
+            console.log('CollaborationManager构造完成');
+        } catch (error) {
+            console.error('CollaborationManager初始化失败:', error);
+        }
     }
 
     // 生成用户ID
@@ -1092,4 +1105,4 @@ export class CollaborationManager {
         this.leaveRoom();
     }
 }
-}
+
