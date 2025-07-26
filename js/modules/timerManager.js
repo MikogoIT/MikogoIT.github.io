@@ -14,7 +14,7 @@ export class TimerManager {
     }
 
     // 启动倒计时
-    startTimer(lineNumber, killTime, initialRemaining = null) {
+    startTimer(lineNumber, killTime, initialRemaining = null, cellElement = null, onComplete = null) {
         const timerCell = document.getElementById(`timer-${lineNumber}`);
         if (!timerCell) return;
 
@@ -29,14 +29,8 @@ export class TimerManager {
         // 如果有初始剩余时间，使用它
         let remaining = initialRemaining !== null ? initialRemaining : timerDuration;
 
-        // 立即更新一次显示
-        this.updateTimerDisplay();
-
-        // 启动计时器
-        const timerId = setInterval(() => this.updateTimerDisplay(), 1000);
-        this.timers[lineNumber] = timerId;
-
-        function updateTimerDisplay() {
+        // 定义更新显示函数
+        const updateTimerDisplay = () => {
             // 计算从击杀时间到现在的时间
             const currentTime = new Date().getTime();
             const elapsed = currentTime - killTime;
@@ -44,19 +38,19 @@ export class TimerManager {
 
             // 如果倒计时结束
             if (remaining <= 0) {
-                clearInterval(timerId);
+                clearInterval(this.timers[lineNumber]);
+                delete this.timers[lineNumber];
                 timerCell.textContent = '';
 
                 // 更新线路状态
-                const lineCell = document.querySelector(`td[data-line="${lineNumber}"]`);
+                const lineCell = cellElement || document.querySelector(`td[data-line="${lineNumber}"]`);
                 if (lineCell) {
                     lineCell.classList.remove('killed');
                     lineCell.classList.add('refreshed');
-                    const tooltip = lineCell.querySelector('.tooltip');
-                    if (tooltip) {
-                        tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
-                    }
-                    localStorage.setItem(`line-${lineNumber}`, 'refreshed');
+                    
+                    // 更新存储状态
+                    this.storageManager.setLineState(lineNumber, 'refreshed');
+                    this.storageManager.removeKillTime(lineNumber);
 
                     // 🎉 金猪刷新动画效果
                     const rect = lineCell.getBoundingClientRect();
@@ -67,16 +61,29 @@ export class TimerManager {
                     if (window.app && window.app.animationManager) {
                         window.app.animationManager.createRefreshAnimation(refreshX, refreshY);
                     }
+                    
+                    // 更新tooltip
+                    const tooltip = lineCell.querySelector('.tooltip');
+                    if (tooltip) {
+                        tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+                    }
                 }
 
                 // 更新状态显示
                 const statusSpan = document.getElementById('status');
-                statusSpan.textContent = `线路 ${lineNumber} 金猪已刷新 🎉`;
-                statusSpan.style.color = '#2ecc71';
-                setTimeout(() => {
-                    statusSpan.textContent = '运行中';
-                    statusSpan.style.color = '';
-                }, 5000);
+                if (statusSpan) {
+                    statusSpan.textContent = `线路 ${lineNumber} 金猪已刷新 🎉`;
+                    statusSpan.style.color = '#2ecc71';
+                    setTimeout(() => {
+                        statusSpan.textContent = '运行中';
+                        statusSpan.style.color = '';
+                    }, 5000);
+                }
+
+                // 调用完成回调
+                if (onComplete) {
+                    onComplete(lineNumber);
+                }
 
                 return;
             }
@@ -88,11 +95,13 @@ export class TimerManager {
 
             // 显示倒计时
             timerCell.textContent = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
-        }
+        };
 
-        // 绑定updateTimerDisplay到正确的上下文
-        updateTimerDisplay = updateTimerDisplay.bind(this);
+        // 立即更新一次显示
         updateTimerDisplay();
+
+        // 启动计时器
+        this.timers[lineNumber] = setInterval(updateTimerDisplay, 1000);
     }
 
     // 清除单个计时器

@@ -81,6 +81,7 @@ export class EventManager {
         
         // 记录击杀时间（用于统计，但不开始倒计时）
         const killTime = new Date().getTime();
+        this.storageManager.setKillTime(lineNumber, killTime);
         
         // 记录击杀事件
         this.statsManager.recordKillEvent(lineNumber, killTime);
@@ -238,21 +239,10 @@ export class EventManager {
     }
 
     // 定时器完成回调
-    onTimerComplete(lineNumber, cell) {
-        // 更新线路状态
-        cell.classList.remove('killed');
-        cell.classList.add('refreshed');
-        this.uiManager.updateCellTooltip(cell, '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间');
-        this.storageManager.setLineState(lineNumber, 'refreshed');
-        
-        // 创建刷新动画效果
-        const coords = this.uiManager.getCellCoordinates(cell);
-        this.animationManager.createRefreshAnimation(coords.x, coords.y);
-        
-        // 更新状态显示
-        this.uiManager.showRefreshStatus(lineNumber);
-        
+    onTimerComplete(lineNumber) {
         // 更新统计
         this.statsManager.updateStats();
     }
 }
+
+export { EventManager };

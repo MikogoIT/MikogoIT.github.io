@@ -66,10 +66,17 @@ class StatsManager {
     // 移除击杀事件
     removeKillEvent(lineNumber, killTime) {
         if (killTime) {
+            // 找到并移除匹配的事件
+            const originalLength = this.killEvents.length;
             this.killEvents = this.killEvents.filter(event => 
-                !(event.line == lineNumber && event.timestamp == killTime)
+                !(event.line == lineNumber && Math.abs(event.timestamp - killTime) < 1000)
             );
-            localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+            
+            // 只有成功移除事件时才更新存储
+            if (this.killEvents.length < originalLength) {
+                localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+                console.log(`已移除线路 ${lineNumber} 的击杀记录, 击杀时间: ${new Date(killTime)}`);
+            }
         }
     }
 

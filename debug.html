@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>金猪监控系统 - 调试测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-grid { display: grid; grid-template-columns: repeat(5, 60px); gap: 5px; margin: 10px 0; }
+        .test-cell { 
+            width: 60px; height: 60px; border: 1px solid #ccc; 
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; position: relative;
+        }
+        .test-cell.killed { background-color: #e74c3c; color: white; }
+        .test-cell.killed-unknown { background-color: #f39c12; color: white; }
+        .test-cell.refreshed { background-color: #2ecc71; color: white; }
+        .timer-display { font-size: 10px; position: absolute; bottom: 2px; }
+        .stats-display { margin: 10px 0; padding: 10px; background-color: #f8f9fa; }
+        .log { background-color: #f0f0f0; padding: 10px; margin: 10px 0; height: 200px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+        button { margin: 5px; padding: 8px 15px; cursor: pointer; }
+    </style>
+</head>
+<body>
+    <h1>金猪监控系统 - 功能调试</h1>
+    
+    <div class="test-section">
+        <h3>测试网格 (前25个线路)</h3>
+        <div class="test-grid" id="test-grid"></div>
+        
+        <div class="stats-display">
+            <strong>统计信息:</strong><br>
+            击杀中: <span id="debug-killed">0</span> | 
+            未知时间: <span id="debug-unknown">0</span> | 
+            已刷新: <span id="debug-refreshed">0</span> | 
+            可用: <span id="debug-available">25</span> | 
+            今日击杀: <span id="debug-today">0</span>
+        </div>
+        
+        <button onclick="toggleTestMode()">切换测试模式 (10秒)</button>
+        <button onclick="clearAllData()">清除所有数据</button>
+        <button onclick="refreshStats()">刷新统计</button>
+    </div>
+    
+    <div class="test-section">
+        <h3>操作日志</h3>
+        <div class="log" id="debug-log"></div>
+        <button onclick="clearLog()">清除日志</button>
+    </div>
+
+    <script type="module">
+        import { GAME_CONFIG } from './js/config.js';
+        import { TimerManager } from './js/modules/timerManager.js';
+        import { StatsManager } from './js/modules/statsManager.js';
+        import { StorageManager } from './js/modules/storageManager.js';
+        import { AnimationManager } from './js/modules/animationManager.js';
+        import { UIManager } from './js/modules/uiManager.js';
+        import { EventManager } from './js/modules/eventManager.js';
+
+        // 初始化管理器
+        const storageManager = new StorageManager();
+        const statsManager = new StatsManager();
+        const animationManager = new AnimationManager();
+        const uiManager = new UIManager();
+        const timerManager = new TimerManager(storageManager);
+        const eventManager = new EventManager(timerManager, statsManager, animationManager, uiManager, storageManager);
+
+        let testMode = false;
+
+        // 日志函数
+        function log(message) {
+            const logDiv = document.getElementById('debug-log');
+            const time = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${time}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[DEBUG] ${message}`);
+        }
+
+        // 创建测试网格
+        function createTestGrid() {
+            const grid = document.getElementById('test-grid');
+            for (let i = 1; i <= 25; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'test-cell';
+                cell.dataset.line = i;
+                cell.textContent = i;
+                
+                // 添加定时器显示元素
+                const timerDiv = document.createElement('div');
+                timerDiv.id = `timer-${i}`;
+                timerDiv.className = 'timer-display';
+                cell.appendChild(timerDiv);
+                
+                // 绑定事件
+                cell.addEventListener('click', (e) => {
+                    log(`左键点击线路 ${i}`);
+                    eventManager.handleCellClick(e);
+                    updateDebugStats();
+                });
+                
+                cell.addEventListener('contextmenu', (e) => {
+                    log(`右键点击线路 ${i}`);
+                    eventManager.handleCellRightClick(e);
+                    updateDebugStats();
+                });
+                
+                cell.addEventListener('dblclick', (e) => {
+                    log(`双击线路 ${i}`);
+                    eventManager.handleCellDoubleClick(e);
+                    updateDebugStats();
+                });
+                
+                grid.appendChild(cell);
+            }
+        }
+
+        // 更新调试统计
+        function updateDebugStats() {
+            const cells = document.querySelectorAll('.test-cell');
+            let killed = 0, unknown = 0, refreshed = 0, available = 0;
+            
+            cells.forEach(cell => {
+                if (cell.classList.contains('killed')) killed++;
+                else if (cell.classList.contains('killed-unknown')) unknown++;
+                else if (cell.classList.contains('refreshed')) refreshed++;
+                else available++;
+            });
+            
+            document.getElementById('debug-killed').textContent = killed;
+            document.getElementById('debug-unknown').textContent = unknown;
+            document.getElementById('debug-refreshed').textContent = refreshed;
+            document.getElementById('debug-available').textContent = available;
+            
+            const todayCount = statsManager.getTodayKillCount();
+            document.getElementById('debug-today').textContent = todayCount;
+            
+            log(`统计更新: 击杀=${killed}, 未知=${unknown}, 刷新=${refreshed}, 可用=${available}, 今日=${todayCount}`);
+        }
+
+        // 全局函数
+        window.toggleTestMode = function() {
+            testMode = !testMode;
+            timerManager.setTestMode(testMode);
+            log(`测试模式: ${testMode ? '开启 (10秒倒计时)' : '关闭 (24小时倒计时)'}`);
+        };
+
+        window.clearAllData = function() {
+            // 清除所有状态
+            document.querySelectorAll('.test-cell').forEach(cell => {
+                cell.className = 'test-cell';
+                const timer = cell.querySelector('.timer-display');
+                if (timer) timer.textContent = '';
+            });
+            
+            // 清除存储
+            localStorage.clear();
+            
+            // 重新初始化
+            statsManager.killEvents = [];
+            timerManager.clearAllTimers();
+            
+            updateDebugStats();
+            log('所有数据已清除');
+        };
+
+        window.refreshStats = function() {
+            updateDebugStats();
+            log('统计已刷新');
+        };
+
+        window.clearLog = function() {
+            document.getElementById('debug-log').innerHTML = '';
+        };
+
+        // 初始化
+        createTestGrid();
+        updateDebugStats();
+        log('调试系统初始化完成');
+    </script>
+</body>
+</html>
