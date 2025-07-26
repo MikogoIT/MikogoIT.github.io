@@ -99,6 +99,9 @@ class GoldPigMonitorApp {
                 throw new Error('表格生成失败，没有生成任何单元格');
             }
             
+            // 确保所有必要元素就绪
+            this.ensureAllElementsReady();
+            
             // 恢复表格状态
             console.log('恢复表格状态...');
             this.restoreTableState();
@@ -188,31 +191,113 @@ class GoldPigMonitorApp {
 
     // 恢复表格状态
     restoreTableState() {
+        console.log('开始恢复表格状态...');
+        let restoredCount = 0;
+        let timerCount = 0;
+        
         for (let i = 1; i <= 400; i++) {
             const cell = document.querySelector(`td[data-line="${i}"]`);
-            if (!cell) continue;
+            if (!cell) {
+                console.warn(`线路${i}的单元格未找到`);
+                continue;
+            }
             
             const savedState = this.storageManager.getLineState(i);
             const killTime = this.storageManager.getKillTime(i);
             
-            this.tableManager.restoreCellState(cell, i, savedState, killTime, this.testMode);
+            console.log(`恢复线路${i}: 状态=${savedState}, 击杀时间=${killTime ? new Date(killTime).toLocaleString() : '无'}`);
             
-            // 如果有倒计时需要恢复，启动计时器
-            if (savedState === 'killed' && killTime) {
-                const currentTime = new Date().getTime();
-                const elapsed = currentTime - killTime;
-                const timerDuration = this.testMode ? GAME_CONFIG.TEST_TIMER : GAME_CONFIG.NORMAL_TIMER;
+            // 清除现有状态
+            cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+            
+            if (savedState) {
+                // 恢复状态类
+                cell.classList.add(savedState);
+                restoredCount++;
                 
-                if (elapsed < timerDuration) {
-                    const remaining = timerDuration - elapsed;
-                    this.timerManager.startTimer(i, killTime, remaining, cell, this.onTimerComplete.bind(this));
-                } else {
-                    // 时间已到，设置为刷新状态
-                    this.tableManager.setCellRefreshed(cell, i);
-                    this.storageManager.setLineState(i, 'refreshed');
+                // 使用tableManager的方法恢复单元格状态
+                this.tableManager.restoreCellState(cell, i, savedState, killTime, this.testMode);
+                
+                // 如果有倒计时需要恢复，启动计时器
+                if (savedState === 'killed' && killTime) {
+                    const currentTime = new Date().getTime();
+                    const elapsed = currentTime - killTime;
+                    const timerDuration = this.testMode ? GAME_CONFIG.TEST_TIMER : GAME_CONFIG.NORMAL_TIMER;
+                    
+                    console.log(`检查线路${i}倒计时: 已过时间=${elapsed}ms, 总时长=${timerDuration}ms`);
+                    
+                    if (elapsed < timerDuration) {
+                        const remaining = timerDuration - elapsed;
+                        console.log(`启动线路${i}倒计时，剩余时间=${remaining}ms`);
+                        
+                        // 确保定时器元素存在
+                        let timerElement = document.getElementById(`timer-${i}`);
+                        if (!timerElement) {
+                            timerElement = document.createElement('div');
+                            timerElement.id = `timer-${i}`;
+                            timerElement.className = 'timer-display';
+                            cell.appendChild(timerElement);
+                            console.log(`为线路${i}创建定时器元素`);
+                        }
+                        
+                        this.timerManager.startTimer(i, killTime, remaining, cell, this.onTimerComplete.bind(this));
+                        timerCount++;
+                    } else {
+                        // 时间已到，设置为刷新状态
+                        console.log(`线路${i}倒计时已过期，设置为刷新状态`);
+                        cell.classList.remove('killed');
+                        cell.classList.add('refreshed');
+                        this.tableManager.setCellRefreshed(cell, i);
+                        this.storageManager.setLineState(i, 'refreshed');
+                    }
                 }
             }
         }
+        
+        console.log(`✅ 表格状态恢复完成: 恢复${restoredCount}个状态，启动${timerCount}个倒计时`);
+        
+        // 确保所有元素正确初始化
+        setTimeout(() => {
+            this.ensureAllElementsReady();
+        }, 100);
+    }
+    
+    // 确保所有必要的元素都已准备就绪
+    ensureAllElementsReady() {
+        console.log('确保所有必要元素已准备就绪...');
+        
+        const cells = document.querySelectorAll('td[data-line]');
+        let fixedCount = 0;
+        
+        cells.forEach(cell => {
+            const lineNumber = cell.dataset.line;
+            
+            // 确保定时器元素存在
+            let timerElement = cell.querySelector('.timer-display');
+            if (!timerElement) {
+                timerElement = document.createElement('div');
+                timerElement.id = `timer-${lineNumber}`;
+                timerElement.className = 'timer-display';
+                cell.appendChild(timerElement);
+                fixedCount++;
+            }
+            
+            // 确保tooltip存在
+            let tooltip = cell.querySelector('.tooltip');
+            if (!tooltip) {
+                tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
+                cell.appendChild(tooltip);
+                fixedCount++;
+            }
+        });
+        
+        if (fixedCount > 0) {
+            console.log(`修复了${fixedCount}个缺失的元素`);
+        }
+        
+        console.log('元素检查完成');
     }
 
     // 定时器完成回调
@@ -448,6 +533,43 @@ class GoldPigMonitorApp {
         }
         
         console.log('状态恢复完成');
+    }
+
+    // 调试：检查事件绑定状态
+    debugEventBindings() {
+        console.log('=== 调试事件绑定状态 ===');
+        
+        const testCells = [1, 50, 100, 200, 400]; // 测试几个关键线路
+        
+        testCells.forEach(lineNumber => {
+            const cell = document.querySelector(`td[data-line="${lineNumber}"]`);
+            if (cell) {
+                console.log(`线路${lineNumber}:`);
+                console.log('  - DOM元素存在:', !!cell);
+                console.log('  - 有click监听器:', cell.onclick !== null || cell.click);
+                console.log('  - 有定时器元素:', !!cell.querySelector('.timer-display'));
+                console.log('  - 有tooltip:', !!cell.querySelector('.tooltip'));
+                console.log('  - 当前状态类:', Array.from(cell.classList));
+                
+                // 尝试手动触发点击事件
+                console.log('  - 尝试模拟点击...');
+                try {
+                    const clickEvent = new MouseEvent('click', {
+                        bubbles: true,
+                        cancelable: true,
+                        view: window
+                    });
+                    cell.dispatchEvent(clickEvent);
+                    console.log('  - 点击事件触发成功');
+                } catch (error) {
+                    console.log('  - 点击事件触发失败:', error.message);
+                }
+            } else {
+                console.log(`线路${lineNumber}: DOM元素不存在`);
+            }
+        });
+        
+        console.log('=== 调试完成 ===');
     }
 }
 

@@ -570,13 +570,64 @@ export class UIManager {
         debugRestoreBtn.title = '如果导入后格子状态没有恢复，点击此按钮手动恢复';
         debugRestoreBtn.addEventListener('click', () => {
             console.log('手动触发状态恢复...');
-            if (window.app && window.app.statsManager) {
-                window.app.statsManager.triggerFullStateRestore();
-                this.showTemporaryMessage('正在恢复状态，请稍候...', 'info');
-                
-                setTimeout(() => {
-                    this.showTemporaryMessage('状态恢复完成，请检查格子状态', 'success');
-                }, 2000);
+            this.showTemporaryMessage('正在重新初始化表格和恢复状态...', 'info');
+            
+            if (window.app) {
+                try {
+                    // 先确保所有必要元素存在
+                    console.log('确保所有元素就绪...');
+                    window.app.ensureAllElementsReady();
+                    
+                    // 重新绑定事件
+                    if (window.app.statsManager && window.app.statsManager.ensureEventBindings) {
+                        console.log('重新绑定事件...');
+                        window.app.statsManager.ensureEventBindings();
+                    }
+                    
+                    // 恢复状态
+                    console.log('恢复表格状态...');
+                    window.app.restoreTableState();
+                    
+                    // 更新统计
+                    if (window.app.statsManager) {
+                        window.app.statsManager.updateStats();
+                    }
+                    
+                    setTimeout(() => {
+                        this.showTemporaryMessage('✅ 状态恢复完成！如果问题仍然存在，请刷新页面。', 'success');
+                    }, 2000);
+                    
+                } catch (error) {
+                    console.error('手动恢复失败:', error);
+                    this.showTemporaryMessage('❌ 恢复失败，请刷新页面重试', 'error');
+                }
+            } else {
+                this.showTemporaryMessage('❌ 应用未初始化，请刷新页面', 'error');
+            }
+        });
+        
+        // 添加调试事件绑定按钮
+        const debugEventsBtn = document.createElement('button');
+        debugEventsBtn.textContent = '🔍 调试事件';
+        debugEventsBtn.style.cssText = `
+            margin: 5px;
+            padding: 8px 15px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        `;
+        debugEventsBtn.title = '调试事件绑定状态（检查控制台）';
+        debugEventsBtn.addEventListener('click', () => {
+            console.log('开始调试事件绑定...');
+            if (window.app && window.app.debugEventBindings) {
+                window.app.debugEventBindings();
+                this.showTemporaryMessage('调试信息已输出到控制台', 'info');
+            } else {
+                console.error('调试方法不可用');
+                this.showTemporaryMessage('调试方法不可用', 'error');
             }
         });
         
@@ -584,6 +635,7 @@ export class UIManager {
         const controlPanel = document.querySelector('.controls') || document.querySelector('.buttons-container');
         if (controlPanel) {
             controlPanel.appendChild(debugRestoreBtn);
+            controlPanel.appendChild(debugEventsBtn);
         }
     }
     

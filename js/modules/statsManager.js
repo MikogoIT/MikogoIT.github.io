@@ -1030,8 +1030,9 @@ export class StatsManager {
             console.log('使用主应用的restoreTableState方法');
             window.app.restoreTableState();
             
-            // 同时更新统计
+            // 确保所有单元格重新绑定事件
             setTimeout(() => {
+                this.ensureEventBindings();
                 this.updateStats();
                 if (window.app.chartManager) {
                     window.app.chartManager.updateChart();
@@ -1041,5 +1042,50 @@ export class StatsManager {
             console.warn('主应用不可用，使用备用恢复方法');
             this.restoreTableStateAfterImport();
         }
+    }
+    
+    // 确保事件绑定正确
+    ensureEventBindings() {
+        console.log('确保事件绑定正确...');
+        
+        const lineCells = document.querySelectorAll('td[data-line]');
+        console.log(`重新检查 ${lineCells.length} 个单元格的事件绑定`);
+        
+        lineCells.forEach(cell => {
+            const lineNumber = cell.dataset.line;
+            
+            // 确保定时器元素存在
+            let timerElement = cell.querySelector('.timer-display');
+            if (!timerElement) {
+                console.log(`为线路${lineNumber}创建定时器元素`);
+                timerElement = document.createElement('div');
+                timerElement.id = `timer-${lineNumber}`;
+                timerElement.className = 'timer-display';
+                cell.appendChild(timerElement);
+            }
+            
+            // 确保tooltip存在
+            let tooltip = cell.querySelector('.tooltip');
+            if (!tooltip) {
+                console.log(`为线路${lineNumber}创建tooltip元素`);
+                tooltip = document.createElement('div');
+                tooltip.className = 'tooltip';
+                tooltip.textContent = '左键击杀开始倒计时，右键击杀但不知时间';
+                cell.appendChild(tooltip);
+            }
+            
+            // 重新绑定事件（如果应用和管理器可用）
+            if (window.app && window.app.tableManager && window.app.eventManager) {
+                // 使用安全的方式重新绑定事件
+                try {
+                    window.app.tableManager.bindCellEvents(cell, window.app.eventManager);
+                    console.log(`重新绑定线路${lineNumber}的事件`);
+                } catch (error) {
+                    console.error(`绑定线路${lineNumber}事件失败:`, error);
+                }
+            }
+        });
+        
+        console.log('事件绑定检查完成');
     }
 }
