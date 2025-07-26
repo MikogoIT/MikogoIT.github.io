@@ -284,6 +284,8 @@ export class StatsManager {
             }
         }
         
+        console.log(`导出线路状态: ${Object.keys(lineStates).length}个状态, ${Object.keys(killTimes).length}个击杀时间`);
+        
         return { lineStates, killTimes };
     }
     
@@ -696,23 +698,44 @@ export class StatsManager {
             }
             
             // 导入线路状态
+            let hasLineStates = false;
             if (data.lineStates) {
                 const { lineStates, killTimes } = data.lineStates;
                 
-                // 清除现有状态
-                for (let i = 1; i <= 400; i++) {
-                    localStorage.removeItem(`pigTimer_line_${i}_state`);
-                    localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+                // 检查是否有实际的状态数据
+                const hasStates = Object.keys(lineStates).length > 0;
+                const hasTimes = Object.keys(killTimes).length > 0;
+                hasLineStates = hasStates || hasTimes;
+                
+                console.log(`线路状态数据检查: ${Object.keys(lineStates).length}个状态, ${Object.keys(killTimes).length}个时间`);
+                
+                if (hasLineStates) {
+                    // 清除现有状态
+                    for (let i = 1; i <= 400; i++) {
+                        localStorage.removeItem(`pigTimer_line_${i}_state`);
+                        localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+                    }
+                    
+                    // 设置新状态
+                    Object.entries(lineStates).forEach(([line, state]) => {
+                        localStorage.setItem(`pigTimer_line_${line}_state`, state);
+                    });
+                    
+                    Object.entries(killTimes).forEach(([line, time]) => {
+                        localStorage.setItem(`pigTimer_line_${line}_killTime`, time.toString());
+                    });
+                    
+                    console.log(`✅ 导入了 ${Object.keys(lineStates).length} 个线路状态和 ${Object.keys(killTimes).length} 个击杀时间`);
+                } else {
+                    console.log('⚠️ JSON文件中没有线路状态数据');
                 }
-                
-                // 设置新状态
-                Object.entries(lineStates).forEach(([line, state]) => {
-                    localStorage.setItem(`pigTimer_line_${line}_state`, state);
-                });
-                
-                Object.entries(killTimes).forEach(([line, time]) => {
-                    localStorage.setItem(`pigTimer_line_${line}_killTime`, time.toString());
-                });
+            }
+            
+            // 如果没有线路状态数据，但有击杀事件，尝试从击杀事件重建状态
+            if (!hasLineStates && data.killEvents && data.killEvents.length > 0) {
+                console.log('📋 从击杀事件重建线路状态...');
+                const result = this.rebuildStatesFromKillEvents(data.killEvents);
+                console.log(`🔄 重建结果: ${result.rebuiltStates}个状态, ${result.rebuiltTimers}个倒计时`);
             }
             
             // 导入备注
@@ -741,6 +764,58 @@ export class StatsManager {
             alert('数据导入失败: ' + error.message);
             return false;
         }
+    }
+
+    // 从击杀事件重建线路状态
+    rebuildStatesFromKillEvents(killEvents) {
+        console.log(`从 ${killEvents.length} 个击杀事件重建线路状态...`);
+        
+        const currentTime = new Date().getTime();
+        const testMode = window.app ? window.app.testMode : false;
+        const timerDuration = testMode ? 10000 : (24 * 60 * 60 * 1000); // 10秒或24小时
+        
+        let rebuiltStates = 0;
+        let rebuiltTimers = 0;
+        
+        // 按线路分组击杀事件，只保留最新的击杀时间
+        const latestKillByLine = {};
+        
+        killEvents.forEach(event => {
+            const line = event.line.toString();
+            const timestamp = event.timestamp;
+            
+            if (!latestKillByLine[line] || timestamp > latestKillByLine[line]) {
+                latestKillByLine[line] = timestamp;
+            }
+        });
+        
+        console.log(`发现 ${Object.keys(latestKillByLine).length} 个线路有击杀记录`);
+        
+        // 为每个线路设置状态
+        Object.entries(latestKillByLine).forEach(([line, killTime]) => {
+            const timeSinceKill = currentTime - killTime;
+            
+            console.log(`线路${line}: 击杀时间=${new Date(killTime).toLocaleString()}, 已过时间=${Math.round(timeSinceKill/1000)}秒`);
+            
+            if (timeSinceKill < timerDuration) {
+                // 倒计时还没结束，设置为击杀状态
+                localStorage.setItem(`pigTimer_line_${line}_state`, 'killed');
+                localStorage.setItem(`pigTimer_line_${line}_killTime`, killTime.toString());
+                rebuiltStates++;
+                rebuiltTimers++;
+                console.log(`线路${line}设置为击杀状态，剩余倒计时${Math.round((timerDuration - timeSinceKill)/1000)}秒`);
+            } else {
+                // 倒计时已结束，设置为刷新状态
+                localStorage.setItem(`pigTimer_line_${line}_state`, 'refreshed');
+                localStorage.removeItem(`pigTimer_line_${line}_killTime`);
+                rebuiltStates++;
+                console.log(`线路${line}设置为刷新状态（倒计时已结束）`);
+            }
+        });
+        
+        console.log(`✅ 状态重建完成: ${rebuiltStates}个状态，${rebuiltTimers}个倒计时`);
+        
+        return { rebuiltStates, rebuiltTimers };
     }
 
     // 导入后恢复表格状态
