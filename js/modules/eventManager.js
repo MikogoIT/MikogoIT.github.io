@@ -1,11 +1,12 @@
 // 事件管理器
 export class EventManager {
-    constructor(timerManager, statsManager, animationManager, uiManager, storageManager) {
+    constructor(timerManager, statsManager, animationManager, uiManager, storageManager, chartManager) {
         this.timerManager = timerManager;
         this.statsManager = statsManager;
         this.animationManager = animationManager;
         this.uiManager = uiManager;
         this.storageManager = storageManager;
+        this.chartManager = chartManager;
     }
 
     // 处理单元格单击
@@ -35,6 +36,11 @@ export class EventManager {
         
         // 记录击杀事件并检查里程碑
         const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
+        
+        // 更新图表
+        if (this.chartManager) {
+            this.chartManager.updateChart();
+        }
         
         // 创建掉落动画效果
         this.animationManager.createPigDropAnimation(coords.x, coords.y);
@@ -86,6 +92,11 @@ export class EventManager {
         // 记录击杀事件
         this.statsManager.recordKillEvent(lineNumber, killTime);
         
+        // 更新图表
+        if (this.chartManager) {
+            this.chartManager.updateChart();
+        }
+        
         // 创建掉落动画效果
         this.animationManager.createPigDropAnimation(coords.x, coords.y);
         
@@ -126,6 +137,11 @@ export class EventManager {
         
         // 从击杀事件中移除
         this.statsManager.removeKillEvent(lineNumber, killTime);
+        
+        // 更新图表
+        if (this.chartManager) {
+            this.chartManager.updateChart();
+        }
         
         // 更新状态显示
         this.uiManager.showCancelStatus(lineNumber);

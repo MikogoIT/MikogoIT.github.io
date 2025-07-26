@@ -24,7 +24,8 @@ class GoldPigMonitorApp {
             this.statsManager, 
             this.animationManager,
             this.uiManager,
-            this.storageManager
+            this.storageManager,
+            this.chartManager
         );
         
         // 测试模式标志
