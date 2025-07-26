@@ -42,38 +42,40 @@
         -webkit-overflow-scrolling: touch;
         background: rgba(0, 0, 0, 0.1);
         border-radius: 10px;
-        margin-bottom: 60px; /* 为底部提示留出空间 */
+        margin-bottom: 60px;
     }
     
     table {
-        min-width: 100%;
-        font-size: 16px;
-        border-spacing: 2px;
         width: 100%;
-        table-layout: fixed; /* 固定表格布局确保列宽均匀 */
+        font-size: 16px;
+        border-spacing: 3px;
+        table-layout: fixed;
+        border-collapse: separate;
+    }
+    
+    /* 10列布局 */
+    th, td {
+        width: 10%;
+        padding: 8px 4px;
+        box-sizing: border-box;
+        text-align: center;
+        border: 1px solid rgba(255, 255, 255, 0.2);
     }
     
     th {
-        padding: 8px 2px;
         font-size: 13px;
         height: 40px;
-        width: 10%; /* 10列布局，每列10% */
-        box-sizing: border-box;
-        text-align: center;
+        background: rgba(52, 152, 219, 0.3);
     }
     
     td {
-        padding: 8px 2px;
         font-size: 16px;
         height: 55px;
-        width: 10%; /* 10列布局，每列10% */
-        box-sizing: border-box;
-        text-align: center;
         font-weight: bold;
-        line-height: 1.2;
-        word-break: keep-all; /* 防止数字换行 */
-        white-space: nowrap; /* 防止文字换行 */
-        overflow: visible; /* 允许内容溢出显示 */
+        line-height: 1.3;
+        background: rgba(0, 0, 0, 0.3);
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     }
     
     /* 增大可点击区域和触摸反馈 */
@@ -94,13 +96,11 @@
     
     .timer-cell {
         font-size: 12px;
-        padding: 4px 1px;
+        padding: 4px 2px;
         height: 45px;
         line-height: 1.1;
-        width: 10%;
         font-weight: normal;
-        word-break: keep-all;
-        white-space: nowrap;
+        background: rgba(0, 0, 0, 0.5) !important;
     }
     
     /* 控制面板适配 */
@@ -146,38 +146,11 @@
     
     .table-container {
         padding: 3px;
-        margin-bottom: 80px; /* 为底部提示留出更多空间 */
+        margin-bottom: 80px;
     }
     
     table {
-        border-spacing: 1px;
-        font-size: 15px;
-    }
-    
-    th {
-        padding: 6px 1px;
-        font-size: 12px;
-        height: 35px;
-        width: 12.5%; /* 8列布局，每列12.5% */
-    }
-    
-    td {
-        padding: 8px 1px;
-        font-size: 15px;
-        height: 50px;
-        width: 12.5%; /* 8列布局，每列12.5% */
-        line-height: 1.1;
-    }
-    
-    td:not(.timer-cell) {
-        padding: 9px 1px;
-    }
-    
-    .timer-cell {
-        font-size: 11px;
-        padding: 4px 1px;
-        height: 40px;
-        width: 12.5%;
+        border-spacing: 2px;
     }
     
     .controls, .stats {
@@ -264,24 +237,25 @@
 
 /* 响应式表格布局 */
 @media (max-width: 768px) {
-    /* 动态列数布局 */
-    table {
-        table-layout: fixed;
-        width: 100%;
-    }
-    
-    /* 8列布局（超小屏幕） */
-    @media (max-width: 480px) {
-        th, td {
-            width: 12.5% !important;
-        }
-    }
-    
     /* 10列布局（手机端） */
-    @media (min-width: 481px) and (max-width: 768px) {
-        th, td {
-            width: 10% !important;
-        }
+    th, td {
+        width: 10% !important;
+    }
+}
+
+/* 8列布局（超小屏幕） */
+@media (max-width: 480px) {
+    th, td {
+        width: 12.5% !important;
+    }
+    
+    table {
+        font-size: 15px;
+    }
+    
+    td {
+        font-size: 15px;
+        height: 50px;
     }
 }
 
@@ -421,40 +395,26 @@
         display: table-cell;
         vertical-align: middle;
         position: relative;
+        text-align: center;
     }
     
-    td:not(.timer-cell)::before {
-        content: attr(data-line);
-        position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        font-weight: bold;
-        z-index: 1;
-    }
-    
-    /* 隐藏原始文本内容，使用伪元素显示 */
+    /* 移除之前的伪元素方案，直接优化文本显示 */
     td:not(.timer-cell) {
-        color: transparent;
-        text-indent: -9999px;
+        color: white;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        font-weight: bold;
     }
     
-    td:not(.timer-cell)::before {
-        color: inherit;
-        text-indent: 0;
-        color: white;
+    /* 确保状态颜色正常显示 */
+    .killed {
+        color: white !important;
     }
     
-    /* 确保状态颜色应用到伪元素 */
-    .killed::before {
-        color: white;
+    .killed-unknown {
+        color: white !important;
     }
     
-    .killed-unknown::before {
-        color: white;
-    }
-    
-    .refreshed::before {
-        color: white;
+    .refreshed {
+        color: white !important;
     }
 }

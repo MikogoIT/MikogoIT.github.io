@@ -63,6 +63,9 @@ class GoldPigMonitorApp {
             const cells = this.elements.table.querySelectorAll('td[data-line]');
             console.log(`表格生成完成，共 ${cells.length} 个单元格`);
             
+            // 调试表格布局
+            this.tableManager.debugTableLayout();
+            
             if (cells.length === 0) {
                 throw new Error('表格生成失败，没有生成任何单元格');
             }

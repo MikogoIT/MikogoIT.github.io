@@ -27,6 +27,19 @@ export class TableManager {
 
     // 初始化表格
     initializeTable(table, eventManager) {
+        // 检查现有表头是否匹配当前布局
+        const existingHeader = table.querySelector('tr');
+        const existingHeaderCells = existingHeader ? existingHeader.querySelectorAll('th').length : 0;
+        
+        console.log(`现有表头列数: ${existingHeaderCells}, 需要列数: ${this.cols}`);
+        
+        // 如果表头列数不匹配，重新生成整个表格
+        if (existingHeaderCells !== this.cols) {
+            console.log('表头列数不匹配，重新生成整个表格');
+            this.regenerateTable(table, eventManager, null);
+            return;
+        }
+        
         // 检查是否已有测试行，如果有就为其绑定事件
         const existingCells = table.querySelectorAll('td[data-line]');
         console.log(`表格初始化: 现有单元格${existingCells.length}个`);
@@ -128,6 +141,9 @@ export class TableManager {
         // 清空表格
         table.innerHTML = '';
         
+        // 重新生成表头
+        this.generateTableHeader(table);
+        
         // 重新生成表格结构
         let lineNumber = 1;
         for (let row = 0; row < this.rows; row++) {
@@ -172,6 +188,27 @@ export class TableManager {
         }
         
         console.log(`表格重新生成完成: ${this.cols}列 x ${this.rows}行`);
+    }
+    
+    // 生成表头
+    generateTableHeader(table) {
+        const headerRow = document.createElement('tr');
+        const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        
+        for (let i = 0; i < this.cols; i++) {
+            const th = document.createElement('th');
+            if (i < 26) {
+                th.textContent = letters[i];
+            } else {
+                // 超过26列时使用AA, AB等
+                const firstLetter = letters[Math.floor((i - 26) / 26)];
+                const secondLetter = letters[(i - 26) % 26];
+                th.textContent = firstLetter + secondLetter;
+            }
+            headerRow.appendChild(th);
+        }
+        
+        table.appendChild(headerRow);
     }
 
     // 绑定单元格事件
@@ -256,6 +293,42 @@ export class TableManager {
             if (timerDisplay) {
                 timerDisplay.textContent = '';
             }
+        }
+    }
+
+    // 调试表格状态
+    debugTableLayout() {
+        const table = document.querySelector('.grid-table');
+        if (!table) {
+            console.log('未找到表格');
+            return;
+        }
+        
+        const rows = table.querySelectorAll('tr');
+        console.log(`表格调试信息:`);
+        console.log(`- 总行数: ${rows.length}`);
+        console.log(`- 期望列数: ${this.cols}`);
+        
+        rows.forEach((row, index) => {
+            const cells = row.querySelectorAll('td, th');
+            console.log(`第${index + 1}行: ${cells.length}个单元格`);
+            if (index < 3) { // 只显示前3行的内容
+                const cellContents = Array.from(cells).map(cell => cell.textContent.trim()).join(', ');
+                console.log(`  内容: ${cellContents}`);
+            }
+        });
+        
+        const allCells = table.querySelectorAll('td[data-line]');
+        console.log(`- 总单元格数: ${allCells.length}`);
+        
+        // 检查CSS应用情况
+        const firstCell = table.querySelector('td[data-line]');
+        if (firstCell) {
+            const styles = window.getComputedStyle(firstCell);
+            console.log(`第一个单元格样式:`);
+            console.log(`- width: ${styles.width}`);
+            console.log(`- display: ${styles.display}`);
+            console.log(`- font-size: ${styles.fontSize}`);
         }
     }
 }
