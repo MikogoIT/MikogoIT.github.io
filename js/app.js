@@ -473,46 +473,49 @@ class GoldPigMonitorApp {
         window.showCollaborationChoice = () => {
             console.log('显示协作方式选择对话框');
             
-            const modal = document.createElement('div');
-            modal.className = 'modal-overlay';
-            modal.innerHTML = `
-                <div class="modal">
-                    <div class="modal-header">
-                        <h3>🤝 选择协作方式</h3>
-                        <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="collaboration-choice">
-                            <div class="choice-card firebase-choice" onclick="showFirebaseCollaboration(); this.closest('.modal-overlay').remove();">
-                                <div class="choice-icon">🔥</div>
-                                <h4>Firebase云协作</h4>
-                                <p>基于Google Firebase的实时同步，支持跨设备、跨浏览器多人协作</p>
-                                <ul>
-                                    <li>✅ 真正的实时同步</li>
-                                    <li>✅ 支持无限用户</li>
-                                    <li>✅ 断线重连</li>
-                                    <li>✅ 永久房间存储</li>
-                                </ul>
-                                <div class="choice-recommended">推荐</div>
-                            </div>
-                            
-                            <div class="choice-card p2p-choice" onclick="window.goldPigApp.collaborationManager.showCollaborationDialog(); this.closest('.modal-overlay').remove();">
-                                <div class="choice-icon">👥</div>
-                                <h4>本地P2P协作</h4>
-                                <p>基于WebRTC的点对点连接，数据不经过服务器</p>
-                                <ul>
-                                    <li>✅ 完全私密</li>
-                                    <li>✅ 低延迟</li>
-                                    <li>⚠️ 需要手动连接</li>
-                                    <li>⚠️ 房主离开后断开</li>
-                                </ul>
-                            </div>
+            // 移除已存在的协作选择窗口
+            const existingChoice = document.getElementById('collaboration-choice-popup');
+            if (existingChoice) {
+                existingChoice.remove();
+            }
+            
+            const popup = document.createElement('div');
+            popup.id = 'collaboration-choice-popup';
+            popup.className = 'collaboration-choice-popup';
+            popup.innerHTML = `
+                <div class="choice-popup-header">
+                    <h3>🤝 选择协作方式</h3>
+                    <button class="popup-close" onclick="this.closest('.collaboration-choice-popup').remove()">×</button>
+                </div>
+                <div class="choice-popup-body">
+                    <div class="choice-cards">
+                        <div class="choice-card firebase-choice" onclick="showFirebaseCollaboration(); this.closest('.collaboration-choice-popup').remove();">
+                            <div class="choice-icon">🔥</div>
+                            <h4>Firebase云协作</h4>
+                            <p>实时同步，支持跨设备多人协作</p>
+                            <ul>
+                                <li>✅ 真正的实时同步</li>
+                                <li>✅ 支持无限用户</li>
+                                <li>✅ 断线重连</li>
+                            </ul>
+                            <div class="choice-recommended">推荐</div>
+                        </div>
+                        
+                        <div class="choice-card p2p-choice" onclick="window.goldPigApp.collaborationManager.showCollaborationDialog(); this.closest('.collaboration-choice-popup').remove();">
+                            <div class="choice-icon">👥</div>
+                            <h4>本地P2P协作</h4>
+                            <p>点对点连接，数据不经过服务器</p>
+                            <ul>
+                                <li>✅ 完全私密</li>
+                                <li>✅ 低延迟</li>
+                                <li>⚠️ 需要手动连接</li>
+                            </ul>
                         </div>
                     </div>
                 </div>
             `;
             
-            document.body.appendChild(modal);
+            document.body.appendChild(popup);
         };
         
         // 兼容性处理，添加到应用实例

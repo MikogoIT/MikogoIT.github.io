@@ -1461,12 +1461,69 @@ footer {
     }
 }
 
-/* 协作选择对话框样式 */
-.collaboration-choice {
+/* 协作选择悬浮窗样式 */
+.collaboration-choice-popup {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: white;
+    border: 2px solid #007bff;
+    border-radius: 15px;
+    box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+    z-index: 10000;
+    width: 600px;
+    max-width: 90vw;
+    max-height: 80vh;
+    overflow-y: auto;
+    animation: popupFadeIn 0.3s ease-out;
+}
+
+.choice-popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 25px 15px;
+    border-bottom: 1px solid #e9ecef;
+    background: linear-gradient(135deg, #007bff, #0056b3);
+    color: white;
+    border-radius: 13px 13px 0 0;
+}
+
+.choice-popup-header h3 {
+    margin: 0;
+    font-size: 1.3rem;
+    font-weight: 600;
+}
+
+.popup-close {
+    background: none;
+    border: none;
+    color: white;
+    font-size: 24px;
+    cursor: pointer;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.popup-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+
+.choice-popup-body {
+    padding: 25px;
+}
+
+.choice-cards {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 20px;
-    margin: 20px 0;
 }
 
 .choice-card {
@@ -1482,9 +1539,9 @@ footer {
 }
 
 .choice-card:hover {
-    transform: translateY(-5px);
+    transform: translateY(-3px);
     border-color: #007bff;
-    box-shadow: 0 10px 25px rgba(0,123,255,0.15);
+    box-shadow: 0 8px 20px rgba(0,123,255,0.15);
 }
 
 .firebase-choice {
@@ -1493,7 +1550,7 @@ footer {
 
 .firebase-choice:hover {
     border-color: #ff6b35;
-    box-shadow: 0 10px 25px rgba(255,107,53,0.15);
+    box-shadow: 0 8px 20px rgba(255,107,53,0.15);
 }
 
 .p2p-choice {
@@ -1502,58 +1559,79 @@ footer {
 
 .p2p-choice:hover {
     border-color: #28a745;
-    box-shadow: 0 10px 25px rgba(40,167,69,0.15);
+    box-shadow: 0 8px 20px rgba(40,167,69,0.15);
 }
 
 .choice-icon {
-    font-size: 3rem;
-    margin-bottom: 15px;
+    font-size: 2.5rem;
+    margin-bottom: 12px;
 }
 
 .choice-card h4 {
     color: #2c3e50;
-    margin-bottom: 10px;
-    font-size: 1.2rem;
+    margin-bottom: 8px;
+    font-size: 1.1rem;
+    font-weight: 600;
 }
 
 .choice-card p {
     color: #6c757d;
     font-size: 0.9rem;
-    margin-bottom: 15px;
-    line-height: 1.4;
+    margin-bottom: 12px;
+    line-height: 1.3;
 }
 
 .choice-card ul {
     text-align: left;
     margin: 0;
-    padding-left: 20px;
-    font-size: 0.85rem;
+    padding-left: 18px;
+    font-size: 0.8rem;
     color: #495057;
 }
 
 .choice-card li {
-    margin-bottom: 5px;
-    line-height: 1.3;
+    margin-bottom: 4px;
+    line-height: 1.2;
 }
 
 .choice-recommended {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     background: linear-gradient(45deg, #ff6b35, #f7931e);
     color: white;
-    padding: 4px 12px;
-    border-radius: 20px;
-    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 15px;
+    font-size: 0.7rem;
     font-weight: 600;
     text-transform: uppercase;
     letter-spacing: 0.5px;
 }
 
+@keyframes popupFadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(0.9);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(1);
+    }
+}
+
 @media (max-width: 768px) {
-    .collaboration-choice {
+    .collaboration-choice-popup {
+        width: 95vw;
+        max-height: 85vh;
+    }
+    
+    .choice-cards {
         grid-template-columns: 1fr;
         gap: 15px;
+    }
+    
+    .choice-popup-body {
+        padding: 20px;
     }
     
     .choice-card {
@@ -1561,6 +1639,6 @@ footer {
     }
     
     .choice-icon {
-        font-size: 2.5rem;
+        font-size: 2rem;
     }
 }
