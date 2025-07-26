@@ -273,8 +273,8 @@ export class StatsManager {
         const killTimes = {};
         
         for (let i = 1; i <= 400; i++) {
-            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
-            const killTime = localStorage.getItem(`pigTimer_line_${i}_killTime`);
+            const state = localStorage.getItem(`pigTimer_line-${i}`);
+            const killTime = localStorage.getItem(`pigTimer_killTime-${i}`);
             
             if (state) {
                 lineStates[i] = state;
@@ -710,22 +710,28 @@ export class StatsManager {
                 console.log(`线路状态数据检查: ${Object.keys(lineStates).length}个状态, ${Object.keys(killTimes).length}个时间`);
                 
                 if (hasLineStates) {
-                    // 清除现有状态
+                    // 清除现有状态 - 使用正确的键名格式
                     for (let i = 1; i <= 400; i++) {
+                        // 清除两种格式的键名以确保兼容性
                         localStorage.removeItem(`pigTimer_line_${i}_state`);
                         localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+                        localStorage.removeItem(`pigTimer_line-${i}`);
+                        localStorage.removeItem(`pigTimer_killTime-${i}`);
                     }
                     
-                    // 设置新状态
+                    // 设置新状态 - 使用storageManager兼容的格式
                     Object.entries(lineStates).forEach(([line, state]) => {
-                        localStorage.setItem(`pigTimer_line_${line}_state`, state);
+                        // 使用storageManager的格式
+                        localStorage.setItem(`pigTimer_line-${line}`, state);
                     });
                     
                     Object.entries(killTimes).forEach(([line, time]) => {
-                        localStorage.setItem(`pigTimer_line_${line}_killTime`, time.toString());
+                        // 使用storageManager的格式
+                        localStorage.setItem(`pigTimer_killTime-${line}`, time.toString());
                     });
                     
                     console.log(`✅ 导入了 ${Object.keys(lineStates).length} 个线路状态和 ${Object.keys(killTimes).length} 个击杀时间`);
+                    console.log('✅ 使用storageManager兼容的键名格式');
                 } else {
                     console.log('⚠️ JSON文件中没有线路状态数据');
                 }
@@ -810,16 +816,16 @@ export class StatsManager {
             console.log(`线路${line}: 击杀时间=${new Date(killTime).toLocaleString()}, 已过时间=${Math.round(timeSinceKill/1000)}秒`);
             
             if (timeSinceKill < timerDuration) {
-                // 倒计时还没结束，设置为击杀状态
-                localStorage.setItem(`pigTimer_line_${line}_state`, 'killed');
-                localStorage.setItem(`pigTimer_line_${line}_killTime`, killTime.toString());
+                // 倒计时还没结束，设置为击杀状态 - 使用storageManager格式
+                localStorage.setItem(`pigTimer_line-${line}`, 'killed');
+                localStorage.setItem(`pigTimer_killTime-${line}`, killTime.toString());
                 rebuiltStates++;
                 rebuiltTimers++;
                 console.log(`线路${line}设置为击杀状态，剩余倒计时${Math.round((timerDuration - timeSinceKill)/1000)}秒`);
             } else {
-                // 倒计时已结束，设置为刷新状态
-                localStorage.setItem(`pigTimer_line_${line}_state`, 'refreshed');
-                localStorage.removeItem(`pigTimer_line_${line}_killTime`);
+                // 倒计时已结束，设置为刷新状态 - 使用storageManager格式
+                localStorage.setItem(`pigTimer_line-${line}`, 'refreshed');
+                localStorage.removeItem(`pigTimer_killTime-${line}`);
                 rebuiltStates++;
                 console.log(`线路${line}设置为刷新状态（倒计时已结束）`);
             }
@@ -866,9 +872,9 @@ export class StatsManager {
                 // 清除所有状态类
                 cell.classList.remove('killed', 'killed-unknown', 'refreshed');
                 
-                // 获取存储的状态
-                const state = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
-                const killTime = localStorage.getItem(`pigTimer_line_${lineNumber}_killTime`);
+                // 获取存储的状态 - 使用storageManager兼容格式
+                const state = localStorage.getItem(`pigTimer_line-${lineNumber}`);
+                const killTime = localStorage.getItem(`pigTimer_killTime-${lineNumber}`);
                 
                 if (state) {
                     console.log(`恢复线路${lineNumber}: 状态=${state}, 击杀时间=${killTime ? new Date(parseInt(killTime)).toLocaleString() : '无'}`);
@@ -929,7 +935,7 @@ export class StatsManager {
                 let successCount = 0;
                 finalCheck.forEach(cell => {
                     const lineNumber = cell.dataset.line;
-                    const expectedState = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
+                    const expectedState = localStorage.getItem(`pigTimer_line-${lineNumber}`);
                     if (expectedState) {
                         const hasCorrectClass = cell.classList.contains(expectedState);
                         if (hasCorrectClass) {
@@ -959,8 +965,8 @@ export class StatsManager {
     syncImportedStateToCollaborators() {
         // 遍历所有状态并同步
         for (let i = 1; i <= 400; i++) {
-            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
-            const killTime = localStorage.getItem(`pigTimer_line_${i}_killTime`);
+            const state = localStorage.getItem(`pigTimer_line-${i}`);
+            const killTime = localStorage.getItem(`pigTimer_killTime-${i}`);
             
             if (state && window.app.collaborationManager) {
                 const killTimeNum = killTime ? parseInt(killTime) : null;
@@ -982,9 +988,9 @@ export class StatsManager {
         let mismatchedStates = [];
         let convertedStates = 0; // 记录因过期而转换的状态
         
-        // 统计localStorage中的状态（使用最新的状态）
+        // 统计localStorage中的状态（使用storageManager兼容的键名）
         for (let i = 1; i <= 400; i++) {
-            const currentState = localStorage.getItem(`pigTimer_line_${i}_state`);
+            const currentState = localStorage.getItem(`pigTimer_line-${i}`);
             if (currentState) {
                 expectedStates++;
                 
@@ -1063,7 +1069,7 @@ export class StatsManager {
                     
                     // 如果是击杀状态，尝试恢复倒计时
                     if (expectedState === 'killed' && window.app && window.app.timerManager) {
-                        const killTime = localStorage.getItem(`pigTimer_line_${line}_killTime`);
+                        const killTime = localStorage.getItem(`pigTimer_killTime-${line}`);
                         if (killTime) {
                             const killTimeNum = parseInt(killTime);
                             const currentTime = new Date().getTime();
@@ -1089,11 +1095,11 @@ export class StatsManager {
                                         }
                                     });
                             } else {
-                                // 时间已过期，设置为刷新状态
+                                // 时间已过期，设置为刷新状态 - 使用storageManager格式
                                 cell.classList.remove('killed');
                                 cell.classList.add('refreshed');
-                                localStorage.setItem(`pigTimer_line_${line}_state`, 'refreshed');
-                                localStorage.removeItem(`pigTimer_line_${line}_killTime`);
+                                localStorage.setItem(`pigTimer_line-${line}`, 'refreshed');
+                                localStorage.removeItem(`pigTimer_killTime-${line}`);
                                 
                                 if (tooltip) {
                                     tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
@@ -1116,7 +1122,7 @@ export class StatsManager {
             setTimeout(() => {
                 let finalActualStates = 0;
                 for (let i = 1; i <= 400; i++) {
-                    const state = localStorage.getItem(`pigTimer_line_${i}_state`);
+                    const state = localStorage.getItem(`pigTimer_line-${i}`);
                     if (state) {
                         const cell = document.querySelector(`td[data-line="${i}"]`);
                         if (cell && cell.classList.contains(state)) {
@@ -1156,7 +1162,7 @@ export class StatsManager {
             const lineNumber = cell.dataset.line;
             if (!lineNumber) return;
             
-            const state = localStorage.getItem(`pigTimer_line_${lineNumber}_state`);
+            const state = localStorage.getItem(`pigTimer_line-${lineNumber}`);
             if (state) {
                 // 强制清除并重新应用状态
                 cell.classList.remove('killed', 'killed-unknown', 'refreshed');
@@ -1176,7 +1182,7 @@ export class StatsManager {
                 
                 // 如果是击杀状态，重新启动倒计时
                 if (state === 'killed') {
-                    const killTime = localStorage.getItem(`pigTimer_line_${lineNumber}_killTime`);
+                    const killTime = localStorage.getItem(`pigTimer_killTime-${lineNumber}`);
                     if (killTime && window.app && window.app.timerManager) {
                         const killTimeNum = parseInt(killTime);
                         console.log(`强制重启线路${lineNumber}倒计时`);
@@ -1276,8 +1282,8 @@ export class StatsManager {
         const timerDuration = testMode ? 10000 : (24 * 60 * 60 * 1000);
         
         for (let i = 1; i <= 400; i++) {
-            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
-            const killTime = localStorage.getItem(`pigTimer_line_${i}_killTime`);
+            const state = localStorage.getItem(`pigTimer_line-${i}`);
+            const killTime = localStorage.getItem(`pigTimer_killTime-${i}`);
             
             if (state) {
                 const cell = document.querySelector(`td[data-line="${i}"]`);
@@ -1297,11 +1303,11 @@ export class StatsManager {
                             const elapsed = currentTime - killTimeNum;
                             
                             if (elapsed >= timerDuration) {
-                                // 过期了，设置为刷新状态
+                                // 过期了，设置为刷新状态 - 使用storageManager格式
                                 console.log(`🔧 线路${i}击杀时间已过期，设置为刷新状态`);
                                 cell.classList.add('refreshed');
-                                localStorage.setItem(`pigTimer_line_${i}_state`, 'refreshed');
-                                localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+                                localStorage.setItem(`pigTimer_line-${i}`, 'refreshed');
+                                localStorage.removeItem(`pigTimer_killTime-${i}`);
                                 expiredCount++;
                                 
                                 // 更新提示文本
