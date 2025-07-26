@@ -430,3 +430,59 @@ document.addEventListener('DOMContentLoaded', () => {
 // 导出应用实例供调试使用
 window.goldPigApp = app;
 window.app = app;
+
+// 调试函数：测试CSV导出
+window.debugCSV = function() {
+    if (window.app && window.app.statsManager) {
+        return window.app.statsManager.debugCSVContent();
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
+
+// 调试函数：验证导出数据
+window.validateData = function() {
+    if (window.app && window.app.statsManager) {
+        return window.app.statsManager.validateExportData();
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
+
+// 调试函数：查看所有击杀记录
+window.showKillEvents = function() {
+    if (window.app && window.app.statsManager) {
+        console.log('所有击杀记录:', window.app.statsManager.killEvents);
+        return window.app.statsManager.killEvents;
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
+
+// 调试函数：强制导出CSV（无论是否有数据）
+window.forceExportCSV = function() {
+    console.log('强制导出CSV...');
+    if (window.app && window.app.statsManager) {
+        // 临时添加测试数据（如果没有数据）
+        if (window.app.statsManager.killEvents.length === 0) {
+            console.log('没有数据，添加测试数据');
+            const testEvent = {
+                line: 1,
+                timestamp: Date.now()
+            };
+            window.app.statsManager.killEvents.push(testEvent);
+        }
+        return window.app.statsManager.exportToCSV();
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
+
+// 调试函数：显示数据管理界面
+window.showDataManagement = function() {
+    if (window.app && window.app.uiManager) {
+        window.app.uiManager.showDataManagement();
+    } else {
+        console.error('应用或UI管理器未初始化');
+    }
+};

@@ -314,6 +314,13 @@ export class StatsManager {
             }, 100);
             
             console.log('数据导出完成');
+            
+            // 显示导出成功消息
+            setTimeout(() => {
+                const exportData = this.exportAllData();
+                alert(`JSON数据已导出成功！\n\n文件名: ${link.download}\n文件已保存到浏览器默认下载目录\n\n包含内容:\n- 击杀记录: ${exportData.killEvents.length} 条\n- 线路状态: ${Object.keys(exportData.lineStates.lineStates).length} 个\n- 击杀时间: ${Object.keys(exportData.lineStates.killTimes).length} 个\n- 备注信息和统计数据`);
+            }, 200);
+            
             return true;
         } catch (error) {
             console.error('导出JSON时发生错误:', error);
@@ -334,34 +341,82 @@ export class StatsManager {
                 return false;
             }
             
-            let csvContent = '线路号,击杀时间,击杀日期\n';
+            // 添加BOM头以支持中文显示 (UTF-8 BOM)
+            let csvContent = '\uFEFF';
             
-            this.killEvents.forEach(event => {
+            // CSV标题行（不使用引号，简化格式）
+            csvContent += '线路号,击杀时间,击杀日期,完整时间戳\n';
+            
+            // 按时间排序击杀事件（最新的在前）
+            const sortedEvents = this.killEvents.slice().sort((a, b) => b.timestamp - a.timestamp);
+            
+            // 数据行
+            sortedEvents.forEach(event => {
                 const date = new Date(event.timestamp);
-                const dateStr = date.toLocaleDateString('zh-CN');
-                const timeStr = date.toLocaleTimeString('zh-CN');
-                csvContent += `${event.line},${timeStr},${dateStr}\n`;
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                
+                const dateStr = `${year}-${month}-${day}`;  // 使用标准日期格式
+                const timeStr = `${hours}:${minutes}:${seconds}`;
+                const fullTimestamp = date.toLocaleString('zh-CN', {
+                    year: 'numeric',
+                    month: '2-digit',
+                    day: '2-digit',
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    second: '2-digit'
+                });
+                
+                // 不使用引号，直接输出（避免Excel解析问题）
+                csvContent += `${event.line},${timeStr},${dateStr},${fullTimestamp}\n`;
             });
             
             console.log('CSV内容长度:', csvContent.length);
+            console.log('CSV前200字符:', csvContent.substring(0, 200));
+            console.log('CSV示例行:');
+            const lines = csvContent.split('\n');
+            lines.slice(0, 5).forEach((line, index) => {
+                console.log(`行${index + 1}: ${line}`);
+            });
             
-            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            // 创建Blob，使用标准的CSV MIME类型
+            const blob = new Blob([csvContent], { 
+                type: 'text/csv;charset=utf-8' 
+            });
+            
             const url = URL.createObjectURL(blob);
-            
             const link = document.createElement('a');
             link.href = url;
             link.download = `金猪击杀记录_${this.formatDateForFilename(new Date())}.csv`;
             console.log('CSV下载文件名:', link.download);
             
+            // 添加到DOM并触发下载
+            link.style.display = 'none';
             document.body.appendChild(link);
             link.click();
-            document.body.removeChild(link);
-            URL.revokeObjectURL(url);
+            
+            // 延迟清理
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+                console.log('CSV清理完成');
+            }, 100);
             
             console.log('CSV导出完成');
+            
+            // 显示导出成功消息，包含文件位置提示
+            setTimeout(() => {
+                alert(`CSV文件已导出成功！\n\n文件名: ${link.download}\n文件已保存到浏览器默认下载目录\n\n包含 ${sortedEvents.length} 条击杀记录\n按时间倒序排列（最新的在前）`);
+            }, 200);
+            
             return true;
         } catch (error) {
             console.error('导出CSV时发生错误:', error);
+            alert('CSV导出失败: ' + error.message);
             return false;
         }
     }
@@ -374,6 +429,106 @@ export class StatsManager {
         const hours = date.getHours().toString().padStart(2, '0');
         const minutes = date.getMinutes().toString().padStart(2, '0');
         return `${year}${month}${day}_${hours}${minutes}`;
+    }
+    
+    // 调试CSV内容（开发用）
+    debugCSVContent() {
+        try {
+            console.log('=== CSV内容调试 ===');
+            console.log('击杀事件数量:', this.killEvents.length);
+            
+            if (this.killEvents.length === 0) {
+                console.log('没有击杀记录');
+                return;
+            }
+            
+            // 模拟CSV生成过程
+            let csvContent = '\uFEFF';
+            csvContent += '线路号,击杀时间,击杀日期,完整时间戳\n';
+            
+            const sortedEvents = this.killEvents.slice().sort((a, b) => b.timestamp - a.timestamp);
+            console.log('排序后事件数量:', sortedEvents.length);
+            
+            // 只显示前5条记录的详细信息
+            const debugEvents = sortedEvents.slice(0, 5);
+            debugEvents.forEach((event, index) => {
+                const date = new Date(event.timestamp);
+                console.log(`记录${index + 1}:`, {
+                    原始数据: event,
+                    解析时间: date.toString(),
+                    时间戳: event.timestamp,
+                    线路: event.line
+                });
+                
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                
+                const dateStr = `${year}-${month}-${day}`;
+                const timeStr = `${hours}:${minutes}:${seconds}`;
+                const fullTimestamp = date.toLocaleString('zh-CN');
+                
+                const csvLine = `${event.line},${timeStr},${dateStr},${fullTimestamp}`;
+                csvContent += csvLine + '\n';
+                
+                console.log(`CSV行${index + 2}:`, csvLine);
+            });
+            
+            console.log('=== 完整CSV前500字符 ===');
+            console.log(csvContent.substring(0, 500));
+            
+            console.log('=== CSV调试完成 ===');
+            
+            // 返回生成的CSV内容供测试
+            return csvContent;
+            
+        } catch (error) {
+            console.error('CSV调试出错:', error);
+        }
+    }
+    
+    // 测试导出数据的有效性
+    validateExportData() {
+        try {
+            console.log('=== 导出数据验证 ===');
+            
+            // 验证击杀事件
+            console.log('击杀事件检查:');
+            console.log('- 总数:', this.killEvents.length);
+            console.log('- 示例事件:', this.killEvents.slice(0, 3));
+            
+            // 验证时间戳
+            if (this.killEvents.length > 0) {
+                const timestamps = this.killEvents.map(e => e.timestamp);
+                const validTimestamps = timestamps.filter(t => !isNaN(t) && t > 0);
+                console.log('- 有效时间戳:', validTimestamps.length, '/', timestamps.length);
+                
+                if (validTimestamps.length !== timestamps.length) {
+                    console.warn('发现无效时间戳！');
+                    this.killEvents.forEach((event, index) => {
+                        if (isNaN(event.timestamp) || event.timestamp <= 0) {
+                            console.warn(`无效事件[${index}]:`, event);
+                        }
+                    });
+                }
+            }
+            
+            // 验证线路状态
+            const lineStatesData = this.getLineStatesData();
+            console.log('线路状态检查:');
+            console.log('- 状态数量:', Object.keys(lineStatesData.lineStates).length);
+            console.log('- 击杀时间数量:', Object.keys(lineStatesData.killTimes).length);
+            
+            console.log('=== 验证完成 ===');
+            return true;
+            
+        } catch (error) {
+            console.error('数据验证出错:', error);
+            return false;
+        }
     }
     
     // 导入数据
