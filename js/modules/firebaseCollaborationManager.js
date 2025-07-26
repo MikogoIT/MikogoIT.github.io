@@ -1096,6 +1096,14 @@ export class FirebaseCollaborationManager {
     
     // 显示Firebase协作对话框
     showCollaborationDialog() {
+        // 如果用户已经在房间中，显示房间信息框而不是对话框
+        if (this.roomId) {
+            console.log('✅ 用户已在房间中，显示房间信息框');
+            this.showRoomInfo();
+            return;
+        }
+        
+        console.log('🏠 显示Firebase协作对话框');
         const modal = document.createElement('div');
         modal.className = 'collaboration-modal';
         modal.innerHTML = `
@@ -1209,10 +1217,42 @@ export class FirebaseCollaborationManager {
         // 离开房间
         const leaveBtn = modal.querySelector('#firebase-leave-room-btn');
         if (leaveBtn) {
-            leaveBtn.addEventListener('click', async () => {
-                await this.leaveRoom();
-                modal.remove();
-                alert('已离开房间');
+            leaveBtn.addEventListener('click', async (e) => {
+                console.log('🚪 模态对话框离开房间按钮被点击');
+                e.preventDefault();
+                e.stopPropagation();
+                
+                try {
+                    // 添加确认对话框
+                    const confirmed = confirm('确定要离开房间吗？');
+                    
+                    if (confirmed) {
+                        console.log('✅ 用户确认离开房间');
+                        
+                        // 禁用按钮防止重复点击
+                        leaveBtn.disabled = true;
+                        leaveBtn.textContent = '离开中...';
+                        
+                        try {
+                            await this.leaveRoom();
+                            console.log('✅ 成功离开房间');
+                            modal.remove();
+                            this.showTemporaryMessage('已离开房间', 'success');
+                        } catch (error) {
+                            console.error('❌ 离开房间时发生错误:', error);
+                            this.showTemporaryMessage('离开房间失败，请重试', 'error');
+                            
+                            // 恢复按钮状态
+                            leaveBtn.disabled = false;
+                            leaveBtn.textContent = '🚪 离开房间';
+                        }
+                    } else {
+                        console.log('❌ 用户取消离开房间');
+                    }
+                } catch (error) {
+                    console.error('❌ 离开房间处理函数出错:', error);
+                    this.showTemporaryMessage('操作失败，请重试', 'error');
+                }
             });
         }
         
@@ -1244,7 +1284,7 @@ export class FirebaseCollaborationManager {
 
         const roomInfo = document.createElement('div');
         roomInfo.id = 'room-info';
-        roomInfo.className = 'room-info';
+        roomInfo.className = `room-info ${this.isHost ? 'host-mode' : ''}`;
         roomInfo.innerHTML = `
             <div class="room-header">
                 <h3>🏠 Firebase协作房间</h3>
@@ -1260,19 +1300,21 @@ export class FirebaseCollaborationManager {
             </div>
         `;
         
-        // 添加样式
+        // 添加内联样式确保显示正确
         roomInfo.style.cssText = `
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: white;
-            border: 2px solid ${this.isHost ? '#e74c3c' : '#3498db'};
-            border-radius: 10px;
-            padding: 15px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-            z-index: 10000;
-            min-width: 300px;
-            max-width: 380px;
+            position: fixed !important;
+            top: 20px !important;
+            right: 20px !important;
+            background: white !important;
+            border: 2px solid ${this.isHost ? '#e74c3c' : '#3498db'} !important;
+            border-radius: 10px !important;
+            padding: 15px !important;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2) !important;
+            z-index: 10000 !important;
+            min-width: 300px !important;
+            max-width: 380px !important;
+            font-family: Arial, sans-serif !important;
+            color: #333 !important;
         `;
         
         document.body.appendChild(roomInfo);

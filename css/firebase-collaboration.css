@@ -12,21 +12,42 @@
     min-width: 300px !important;
     max-width: 380px !important;
     font-family: Arial, sans-serif !important;
+    color: #333 !important;
+}
+
+.room-info.host-mode {
+    border-color: #e74c3c !important;
 }
 
 .room-header {
     display: flex !important;
     justify-content: space-between !important;
-    align-items: center !important;
+    align-items: flex-start !important;
     margin-bottom: 10px !important;
     flex-wrap: wrap !important;
-    gap: 10px !important;
+    gap: 8px !important;
 }
 
 .room-header h3 {
     margin: 0 !important;
     color: #2c3e50 !important;
     font-size: 16px !important;
+    flex: 1 !important;
+    min-width: 160px !important;
+}
+
+.room-details {
+    margin-bottom: 10px !important;
+}
+
+.room-details p {
+    margin: 5px 0 !important;
+    color: #34495e !important;
+    font-size: 14px !important;
+}
+
+.room-details strong {
+    color: #2c3e50 !important;
 }
 
 .connection-status {
@@ -34,6 +55,7 @@
     border-radius: 4px !important;
     font-size: 12px !important;
     font-weight: bold !important;
+    white-space: nowrap !important;
 }
 
 .connection-status.connected {
@@ -53,13 +75,15 @@
     padding: 8px 12px !important;
     border-radius: 5px !important;
     cursor: pointer !important;
-    font-size: 14px !important;
+    font-size: 13px !important;
     font-weight: bold !important;
     transition: all 0.2s ease !important;
     z-index: 10001 !important;
     position: relative !important;
     pointer-events: auto !important;
     opacity: 1 !important;
+    white-space: nowrap !important;
+    min-width: 80px !important;
 }
 
 .leave-room-btn:hover {
@@ -77,6 +101,114 @@
     background: #bdc3c7 !important;
     cursor: not-allowed !important;
     opacity: 0.6 !important;
+    transform: none !important;
+}
+
+.copy-btn {
+    background: #3498db !important;
+    color: white !important;
+    border: none !important;
+    padding: 4px 6px !important;
+    border-radius: 3px !important;
+    cursor: pointer !important;
+    font-size: 12px !important;
+    margin-left: 5px !important;
+    transition: background 0.2s ease !important;
+}
+
+.copy-btn:hover {
+    background: #2980b9 !important;
+}
+
+.users-list {
+    max-height: 150px !important;
+    overflow-y: auto !important;
+    margin-top: 10px !important;
+    border-top: 1px solid #ecf0f1 !important;
+    padding-top: 8px !important;
+}
+
+.user-item {
+    display: flex !important;
+    align-items: center !important;
+    padding: 4px 0 !important;
+    border-bottom: 1px solid #f8f9fa !important;
+}
+
+.user-item:last-child {
+    border-bottom: none !important;
+}
+
+.user-color {
+    width: 12px !important;
+    height: 12px !important;
+    border-radius: 50% !important;
+    margin-right: 8px !important;
+    flex-shrink: 0 !important;
+}
+
+.user-name {
+    flex: 1 !important;
+    font-size: 13px !important;
+    color: #2c3e50 !important;
+    margin-right: 8px !important;
+}
+
+.user-status {
+    font-size: 11px !important;
+    padding: 2px 6px !important;
+    border-radius: 3px !important;
+    flex-shrink: 0 !important;
+}
+
+.user-status.connected {
+    background: #d4edda !important;
+    color: #155724 !important;
+}
+
+.user-status.disconnected {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+}
+
+/* 临时消息样式 */
+.temporary-message {
+    position: fixed !important;
+    top: 80px !important;
+    right: 20px !important;
+    padding: 12px 16px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 500 !important;
+    z-index: 10001 !important;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1) !important;
+    max-width: 300px !important;
+    word-wrap: break-word !important;
+    animation: slideInRight 0.3s ease-out !important;
+}
+
+.temporary-message.success {
+    background: #d4edda !important;
+    color: #155724 !important;
+    border: 1px solid #c3e6cb !important;
+}
+
+.temporary-message.error {
+    background: #f8d7da !important;
+    color: #721c24 !important;
+    border: 1px solid #f5c6cb !important;
+}
+
+.temporary-message.warning {
+    background: #fff3cd !important;
+    color: #856404 !important;
+    border: 1px solid #ffeaa7 !important;
+}
+
+.temporary-message.info {
+    background: #d1ecf1 !important;
+    color: #0c5460 !important;
+    border: 1px solid #bee5eb !important;
 }
 
 @keyframes slideInRight {
