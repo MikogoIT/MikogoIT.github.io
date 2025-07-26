@@ -846,6 +846,8 @@ footer {
     padding: 15px;
     background: #f8f9fa;
     border-radius: 8px;
+    color: #2c3e50;
+    font-weight: 500;
 }
 
 .collaboration-modal .room-actions {
@@ -931,6 +933,7 @@ footer {
     z-index: 10000;
     min-width: 250px;
     max-width: 300px;
+    color: #2c3e50;
 }
 
 .room-info .room-header {
@@ -985,6 +988,8 @@ footer {
 
 .room-info .user-name {
     font-size: 14px;
+    color: #2c3e50;
+    font-weight: 500;
 }
 
 /* 用户操作指示器 */
@@ -1042,19 +1047,21 @@ footer {
 
 .collaboration-modal .p2p-info h4 {
     margin: 0 0 10px 0;
-    color: #495057;
+    color: #2c3e50;
     font-size: 14px;
+    font-weight: 600;
 }
 
 .collaboration-modal .p2p-info ul {
     margin: 0;
     padding-left: 20px;
     font-size: 13px;
-    color: #6c757d;
+    color: #34495e;
 }
 
 .collaboration-modal .p2p-info li {
     margin-bottom: 5px;
+    line-height: 1.4;
 }
 
 /* 房间信息增强 */
@@ -1071,6 +1078,8 @@ footer {
 .room-info .room-details p {
     margin-bottom: 8px;
     font-size: 13px;
+    color: #34495e;
+    font-weight: 500;
 }
 
 /* 连接状态指示器 */
@@ -1098,4 +1107,33 @@ footer {
 
 .p2p-connection-indicator.member {
     background: #3498db;
+}
+
+/* 增强协作模态框文字对比度 */
+.collaboration-modal {
+    color: #2c3e50;
+}
+
+.collaboration-modal p {
+    color: #34495e;
+    line-height: 1.5;
+}
+
+.collaboration-modal h4 {
+    color: #2c3e50;
+    font-weight: 600;
+}
+
+.collaboration-modal small {
+    color: #34495e;
+    font-weight: 500;
+}
+
+.collaboration-modal .connection-status p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+.collaboration-modal .connection-status span {
+    font-weight: 600;
 }
