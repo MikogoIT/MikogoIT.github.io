@@ -743,18 +743,24 @@ export class StatsManager {
                 localStorage.setItem('pigTimer_notes', data.notes);
             }
             
-            // 更新统计
-            this.updateStats();
+            // 先不更新统计，等状态恢复完成后再更新
+            console.log('数据导入到localStorage完成，开始恢复状态...');
             
             // 使用完整状态恢复方法
             setTimeout(() => {
                 this.triggerFullStateRestore();
                 
-                // 验证恢复情况 - 延长等待时间确保DOM完全更新
+                // 状态恢复完成后更新统计
                 setTimeout(() => {
-                    this.verifyStateRestoration();
-                }, 1500); // 增加到1.5秒
-            }, 300); // 增加到300ms
+                    console.log('状态恢复完成，更新统计数据...');
+                    this.updateStats();
+                    
+                    // 验证恢复情况 - 在状态转换完成后进行
+                    setTimeout(() => {
+                        this.verifyStateRestoration();
+                    }, 1000); // 增加延迟确保所有状态转换完成
+                }, 1200); // 增加等待时间确保状态完全恢复和转换
+            }, 300);
             
             console.log('数据导入完成');
             return true;
@@ -968,17 +974,18 @@ export class StatsManager {
         let actualStates = 0;
         let missingStates = [];
         let mismatchedStates = [];
+        let convertedStates = 0; // 记录因过期而转换的状态
         
-        // 统计localStorage中的状态
+        // 统计localStorage中的状态（使用最新的状态）
         for (let i = 1; i <= 400; i++) {
-            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
-            if (state) {
+            const currentState = localStorage.getItem(`pigTimer_line_${i}_state`);
+            if (currentState) {
                 expectedStates++;
                 
                 // 检查DOM中是否正确应用
                 const cell = document.querySelector(`td[data-line="${i}"]`);
                 if (cell) {
-                    const hasExpectedState = cell.classList.contains(state);
+                    const hasExpectedState = cell.classList.contains(currentState);
                     
                     if (hasExpectedState) {
                         actualStates++;
@@ -989,24 +996,35 @@ export class StatsManager {
                         );
                         
                         if (actualClasses.length > 0) {
-                            mismatchedStates.push({ 
-                                line: i, 
-                                expectedState: state, 
-                                actualState: actualClasses.join(','), 
-                                cell 
-                            });
+                            // 检查是否是合理的状态转换（如过期的killed变成refreshed）
+                            if (currentState === 'refreshed' && actualClasses.includes('refreshed')) {
+                                // 这是正常的状态转换，不算错误
+                                actualStates++;
+                                convertedStates++;
+                                console.log(`线路${i}: 状态已正确转换为 ${currentState}`);
+                            } else {
+                                mismatchedStates.push({ 
+                                    line: i, 
+                                    expectedState: currentState, 
+                                    actualState: actualClasses.join(','), 
+                                    cell 
+                                });
+                            }
                         } else {
-                            missingStates.push({ line: i, expectedState: state, cell });
+                            missingStates.push({ line: i, expectedState: currentState, cell });
                         }
                     }
                 } else {
                     console.error(`线路${i}的DOM元素未找到`);
-                    missingStates.push({ line: i, expectedState: state, cell: null });
+                    missingStates.push({ line: i, expectedState: currentState, cell: null });
                 }
             }
         }
         
         console.log(`状态恢复验证: 期望${expectedStates}个状态，实际恢复${actualStates}个状态`);
+        if (convertedStates > 0) {
+            console.log(`其中${convertedStates}个状态因过期等原因发生了正常转换`);
+        }
         
         if (mismatchedStates.length > 0) {
             console.warn(`发现${mismatchedStates.length}个状态不匹配:`, 
