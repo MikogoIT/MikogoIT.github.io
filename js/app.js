@@ -113,6 +113,9 @@ class GoldPigMonitorApp {
             this.uiManager.updateTestModeButton(this.testMode);
             this.timerManager.setTestMode(this.testMode);
             
+            // 设置初始化完成标志
+            this.initialized = true;
+            
             console.log('应用初始化完成！');
             
         } catch (error) {
