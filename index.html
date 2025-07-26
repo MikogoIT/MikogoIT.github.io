@@ -463,12 +463,24 @@
             }
             
             // 清除存储 - 使用storageManager的方法或直接清除
+            let killTime = null;
             if (window.goldPigApp && window.goldPigApp.storageManager) {
+                killTime = window.goldPigApp.storageManager.getKillTime(lineNumber);
                 window.goldPigApp.storageManager.removeLineState(lineNumber);
                 window.goldPigApp.storageManager.removeKillTime(lineNumber);
             } else {
+                killTime = localStorage.getItem(`pigTimer_killTime-${lineNumber}`);
+                if (killTime) killTime = parseInt(killTime);
                 localStorage.removeItem(`pigTimer_line-${lineNumber}`);
                 localStorage.removeItem(`pigTimer_killTime-${lineNumber}`);
+            }
+            
+            // 从击杀事件中移除 - 优先使用statsManager
+            if (window.goldPigApp && window.goldPigApp.statsManager) {
+                window.goldPigApp.statsManager.removeKillEvent(lineNumber, killTime);
+            } else {
+                // 备用移除击杀事件
+                removeKillEventFallback(lineNumber, killTime);
             }
             
             // 停止倒计时 - 优先使用timerManager
@@ -602,6 +614,42 @@
                 console.log('备用记录击杀事件:', killEvent);
             } catch (e) {
                 console.error('保存击杀事件失败:', e);
+            }
+        }
+        
+        // 备用移除击杀事件函数
+        function removeKillEventFallback(lineNumber, killTime) {
+            try {
+                const stored = localStorage.getItem('killEvents');
+                if (!stored) return;
+                
+                let killEvents = JSON.parse(stored);
+                const originalLength = killEvents.length;
+                
+                if (killTime) {
+                    // 有击杀时间时，精确匹配 - 使用与statsManager相同的逻辑
+                    killEvents = killEvents.filter(event => 
+                        !(event.line == lineNumber && Math.abs(event.timestamp - killTime) < 1000)
+                    );
+                } else {
+                    // 没有击杀时间时，移除该线路的最近一次击杀记录
+                    for (let i = killEvents.length - 1; i >= 0; i--) {
+                        if (killEvents[i].line == lineNumber) {
+                            killEvents.splice(i, 1);
+                            break;
+                        }
+                    }
+                }
+                
+                // 只有成功移除事件时才更新存储
+                if (killEvents.length < originalLength) {
+                    localStorage.setItem('killEvents', JSON.stringify(killEvents));
+                    console.log(`备用移除线路 ${lineNumber} 的击杀记录${killTime ? ', 击杀时间: ' + new Date(killTime) : ' (最近一次)'}`);
+                } else {
+                    console.warn(`备用系统未找到线路 ${lineNumber} 的击杀记录${killTime ? ', 击杀时间: ' + new Date(killTime) : ''}`);
+                }
+            } catch (e) {
+                console.error('备用移除击杀事件失败:', e);
             }
         }
         

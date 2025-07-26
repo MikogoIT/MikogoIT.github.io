@@ -88,18 +88,30 @@ export class StatsManager {
 
     // 移除击杀事件
     removeKillEvent(lineNumber, killTime) {
+        const originalLength = this.killEvents.length;
+        
         if (killTime) {
-            // 找到并移除匹配的事件
-            const originalLength = this.killEvents.length;
+            // 有击杀时间时，精确匹配
             this.killEvents = this.killEvents.filter(event => 
                 !(event.line == lineNumber && Math.abs(event.timestamp - killTime) < 1000)
             );
-            
-            // 只有成功移除事件时才更新存储
-            if (this.killEvents.length < originalLength) {
-                localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
-                console.log(`已移除线路 ${lineNumber} 的击杀记录, 击杀时间: ${new Date(killTime)}`);
+        } else {
+            // 没有击杀时间时，移除该线路的最近一次击杀记录
+            // 找到该线路的最后一个击杀事件并移除
+            for (let i = this.killEvents.length - 1; i >= 0; i--) {
+                if (this.killEvents[i].line == lineNumber) {
+                    this.killEvents.splice(i, 1);
+                    break;
+                }
             }
+        }
+        
+        // 只有成功移除事件时才更新存储
+        if (this.killEvents.length < originalLength) {
+            localStorage.setItem('killEvents', JSON.stringify(this.killEvents));
+            console.log(`已移除线路 ${lineNumber} 的击杀记录${killTime ? ', 击杀时间: ' + new Date(killTime) : ' (最近一次)'}`);
+        } else {
+            console.warn(`未找到线路 ${lineNumber} 的击杀记录${killTime ? ', 击杀时间: ' + new Date(killTime) : ''}`);
         }
     }
 
