@@ -350,6 +350,3 @@ export class UIManager {
         this.showAlert(shortcuts);
     }
 }
-
-// 导出UI管理器
-export { UIManager };

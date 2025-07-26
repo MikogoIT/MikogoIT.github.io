@@ -244,5 +244,3 @@ export class EventManager {
         this.statsManager.updateStats();
     }
 }
-
-export { EventManager };

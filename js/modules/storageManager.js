@@ -294,6 +294,3 @@ export class StorageManager {
         });
     }
 }
-
-// 导出存储管理器
-export { StorageManager };

@@ -178,6 +178,3 @@ export class AnimationManager {
         }
     }
 }
-
-// 导出动画管理器
-export { AnimationManager };

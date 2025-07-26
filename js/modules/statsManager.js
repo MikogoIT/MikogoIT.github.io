@@ -217,6 +217,3 @@ export class StatsManager {
         }).length;
     }
 }
-
-// 导出统计管理器
-export { StatsManager };
