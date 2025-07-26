@@ -750,16 +750,22 @@ export class StatsManager {
             setTimeout(() => {
                 this.triggerFullStateRestore();
                 
-                // 状态恢复完成后更新统计
+                // 立即进行强制状态修复（不等待验证失败）
                 setTimeout(() => {
-                    console.log('状态恢复完成，更新统计数据...');
-                    this.updateStats();
+                    console.log('🔧 主动强制修复所有状态...');
+                    this.forceFixAllStatesFromLocalStorage();
                     
-                    // 验证恢复情况 - 在状态转换完成后进行
+                    // 强制修复完成后更新统计
                     setTimeout(() => {
-                        this.verifyStateRestoration();
-                    }, 1000); // 增加延迟确保所有状态转换完成
-                }, 1200); // 增加等待时间确保状态完全恢复和转换
+                        console.log('✅ 状态强制修复完成，更新统计数据...');
+                        this.updateStats();
+                        
+                        // 最后进行验证
+                        setTimeout(() => {
+                            this.verifyStateRestoration();
+                        }, 500);
+                    }, 300);
+                }, 800); // 等待主要恢复完成
             }, 300);
             
             console.log('数据导入完成');
@@ -1043,23 +1049,68 @@ export class StatsManager {
                     cell.classList.remove('killed', 'killed-unknown', 'refreshed');
                     cell.classList.add(expectedState);
                     
+                    // 更新提示文本
+                    const tooltip = cell.querySelector('.tooltip');
+                    if (tooltip) {
+                        if (expectedState === 'killed') {
+                            tooltip.textContent = '双击取消击杀状态';
+                        } else if (expectedState === 'killed-unknown') {
+                            tooltip.textContent = '双击取消击杀状态';
+                        } else if (expectedState === 'refreshed') {
+                            tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+                        }
+                    }
+                    
                     // 如果是击杀状态，尝试恢复倒计时
                     if (expectedState === 'killed' && window.app && window.app.timerManager) {
                         const killTime = localStorage.getItem(`pigTimer_line_${line}_killTime`);
                         if (killTime) {
                             const killTimeNum = parseInt(killTime);
-                            window.app.timerManager.startTimer(line, killTimeNum, null, cell, 
-                                (completedLine) => {
-                                    if (window.app && window.app.eventManager) {
-                                        window.app.eventManager.onTimerComplete(completedLine);
-                                    }
-                                });
+                            const currentTime = new Date().getTime();
+                            const elapsed = currentTime - killTimeNum;
+                            const timerDuration = window.app.testMode ? 10000 : (24 * 60 * 60 * 1000);
+                            
+                            if (elapsed < timerDuration) {
+                                const remaining = timerDuration - elapsed;
+                                
+                                // 确保定时器元素存在
+                                let timerElement = document.getElementById(`timer-${line}`);
+                                if (!timerElement) {
+                                    timerElement = document.createElement('div');
+                                    timerElement.id = `timer-${line}`;
+                                    timerElement.className = 'timer-display';
+                                    cell.appendChild(timerElement);
+                                }
+                                
+                                window.app.timerManager.startTimer(line, killTimeNum, remaining, cell, 
+                                    (completedLine) => {
+                                        if (window.app && window.app.eventManager) {
+                                            window.app.eventManager.onTimerComplete(completedLine);
+                                        }
+                                    });
+                            } else {
+                                // 时间已过期，设置为刷新状态
+                                cell.classList.remove('killed');
+                                cell.classList.add('refreshed');
+                                localStorage.setItem(`pigTimer_line_${line}_state`, 'refreshed');
+                                localStorage.removeItem(`pigTimer_line_${line}_killTime`);
+                                
+                                if (tooltip) {
+                                    tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+                                }
+                            }
                         }
                     }
                 } else {
                     console.error(`线路${line}的DOM元素未找到`);
                 }
             });
+            
+            // 修复完成后立即更新统计
+            setTimeout(() => {
+                console.log('🔄 状态修复完成，更新统计数据...');
+                this.updateStats();
+            }, 100);
             
             // 再次验证
             setTimeout(() => {
@@ -1212,5 +1263,109 @@ export class StatsManager {
         });
         
         console.log('事件绑定检查完成');
+    }
+
+    // 强制修复所有localStorage中的状态到DOM
+    forceFixAllStatesFromLocalStorage() {
+        console.log('🔧 强制修复所有localStorage状态到DOM...');
+        
+        let fixedCount = 0;
+        let expiredCount = 0;
+        const currentTime = new Date().getTime();
+        const testMode = window.app ? window.app.testMode : false;
+        const timerDuration = testMode ? 10000 : (24 * 60 * 60 * 1000);
+        
+        for (let i = 1; i <= 400; i++) {
+            const state = localStorage.getItem(`pigTimer_line_${i}_state`);
+            const killTime = localStorage.getItem(`pigTimer_line_${i}_killTime`);
+            
+            if (state) {
+                const cell = document.querySelector(`td[data-line="${i}"]`);
+                if (cell) {
+                    // 检查DOM是否已有正确状态
+                    const hasCorrectState = cell.classList.contains(state);
+                    
+                    if (!hasCorrectState) {
+                        console.log(`🔧 修复线路${i}: ${state}`);
+                        
+                        // 清除所有状态
+                        cell.classList.remove('killed', 'killed-unknown', 'refreshed');
+                        
+                        // 对于killed状态，检查是否过期
+                        if (state === 'killed' && killTime) {
+                            const killTimeNum = parseInt(killTime);
+                            const elapsed = currentTime - killTimeNum;
+                            
+                            if (elapsed >= timerDuration) {
+                                // 过期了，设置为刷新状态
+                                console.log(`🔧 线路${i}击杀时间已过期，设置为刷新状态`);
+                                cell.classList.add('refreshed');
+                                localStorage.setItem(`pigTimer_line_${i}_state`, 'refreshed');
+                                localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+                                expiredCount++;
+                                
+                                // 更新提示文本
+                                const tooltip = cell.querySelector('.tooltip');
+                                if (tooltip) {
+                                    tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+                                }
+                                
+                                // 清除计时器显示
+                                const timerDisplay = document.getElementById(`timer-${i}`);
+                                if (timerDisplay) {
+                                    timerDisplay.textContent = '';
+                                }
+                            } else {
+                                // 还没过期，恢复killed状态和计时器
+                                cell.classList.add('killed');
+                                
+                                // 更新提示文本
+                                const tooltip = cell.querySelector('.tooltip');
+                                if (tooltip) {
+                                    tooltip.textContent = '双击取消击杀状态';
+                                }
+                                
+                                // 恢复计时器
+                                if (window.app && window.app.timerManager) {
+                                    const remaining = timerDuration - elapsed;
+                                    
+                                    // 确保定时器元素存在
+                                    let timerElement = document.getElementById(`timer-${i}`);
+                                    if (!timerElement) {
+                                        timerElement = document.createElement('div');
+                                        timerElement.id = `timer-${i}`;
+                                        timerElement.className = 'timer-display';
+                                        cell.appendChild(timerElement);
+                                    }
+                                    
+                                    window.app.timerManager.startTimer(i, killTimeNum, remaining, cell, 
+                                        window.app.onTimerComplete.bind(window.app));
+                                }
+                            }
+                        } else {
+                            // 其他状态直接设置
+                            cell.classList.add(state);
+                            
+                            // 更新提示文本
+                            const tooltip = cell.querySelector('.tooltip');
+                            if (tooltip) {
+                                if (state === 'killed-unknown') {
+                                    tooltip.textContent = '双击取消击杀状态';
+                                } else if (state === 'refreshed') {
+                                    tooltip.textContent = '金猪已刷新，左键击杀开始倒计时，右键击杀但不知时间';
+                                }
+                            }
+                        }
+                        
+                        fixedCount++;
+                    }
+                } else {
+                    console.error(`线路${i}的DOM元素未找到`);
+                }
+            }
+        }
+        
+        console.log(`🔧 强制修复完成: 修复${fixedCount}个状态，转换${expiredCount}个过期状态`);
+        return { fixedCount, expiredCount };
     }
 }
