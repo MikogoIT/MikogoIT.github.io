@@ -816,7 +816,13 @@ export class FirebaseCollaborationManager {
         }
         
         try {
-            console.log(`同步线路${lineNumber}状态变化:`, state);
+            console.log(`📤 同步线路${lineNumber}状态变化:`, {
+                state: state,
+                killTime: killTime,
+                userId: this.userId,
+                userName: this.userName,
+                isHost: this.isHost
+            });
             
             // 创建操作记录
             const operation = {
@@ -883,6 +889,8 @@ export class FirebaseCollaborationManager {
     // 处理用户变化
     handleUsersChange(users) {
         console.log('🔥 handleUsersChange 被调用，用户数据:', users);
+        console.log('🔥 当前用户ID:', this.userId);
+        console.log('🔥 当前用户是否为房主:', this.isHost);
         
         if (!users) {
             console.log('🔥 没有用户数据，退出处理');
@@ -891,6 +899,17 @@ export class FirebaseCollaborationManager {
         
         const userCount = Object.keys(users).length;
         console.log('🔥 用户列表更新:', userCount, '个用户', users);
+        
+        // 详细输出每个用户的信息
+        Object.entries(users).forEach(([userId, userData]) => {
+            console.log(`🔥 用户 ${userId}:`, {
+                userName: userData.userName,
+                userColor: userData.userColor,
+                isHost: userData.isHost,
+                isOnline: userData.isOnline,
+                lastSeen: userData.lastSeen
+            });
+        });
         
         // 更新房间信息组件中的用户列表和数量
         this.updateRoomInfoUsersList(users);
@@ -914,14 +933,7 @@ export class FirebaseCollaborationManager {
         
         console.log('🎮 游戏状态更新:', gameState);
         
-        // 防止自己的操作触发重复更新
-        if (this._isLocalUpdate) {
-            this._isLocalUpdate = false;
-            console.log('跳过本地更新触发的状态变化');
-            return;
-        }
-        
-        // 更新本地状态
+        // 更新本地状态（所有用户都应该接收并应用远程状态变化）
         this.updateLocalStateFromRemote(gameState);
         
         // 更新统计信息
@@ -965,6 +977,15 @@ export class FirebaseCollaborationManager {
                     (data.killTime && currentKillTime !== data.killTime.toString());
                 
                 if (needUpdate) {
+                    console.log(`📥 收到线路${line}状态更新:`, {
+                        line: line,
+                        newState: data.state,
+                        newKillTime: data.killTime,
+                        fromUser: data.userName,
+                        fromUserId: data.userId,
+                        isFromCurrentUser: data.userId === this.userId
+                    });
+                    
                     // 更新localStorage
                     localStorage.setItem(`pigTimer_line_${line}_state`, data.state);
                     if (data.killTime) {
@@ -1186,6 +1207,7 @@ export class FirebaseCollaborationManager {
                 </p>
                 <p><strong>模式:</strong> ${this.isHost ? '🛡️ 房主模式' : '👥 成员模式'}</p>
                 <p><strong>连接数:</strong> <span id="connection-count">1 人在线</span></p>
+                <button id="refresh-users-btn" class="action-btn secondary" style="margin: 5px 0; font-size: 12px;">🔄 刷新用户列表</button>
                 <div id="users-list" class="users-list"></div>
             </div>
             <div class="room-actions">
@@ -1269,6 +1291,15 @@ export class FirebaseCollaborationManager {
 
     // 绑定房间面板事件
     bindRoomPanelEvents(panel) {
+        // 刷新用户列表按钮
+        const refreshBtn = panel.querySelector('#refresh-users-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', () => {
+                console.log('🔄 用户点击刷新用户列表按钮');
+                this.refreshUsersList();
+            });
+        }
+        
         // 离开房间按钮
         const leaveBtn = panel.querySelector('#leave-room-btn');
         if (leaveBtn) {
@@ -1451,6 +1482,23 @@ export class FirebaseCollaborationManager {
         connectionCount.textContent = '1 人在线';
     }
 
+    // 手动刷新用户列表（调试用）
+    refreshUsersList() {
+        if (!this.roomId || !this.usersRef) {
+            console.log('❌ 无法刷新用户列表：缺少房间ID或用户引用');
+            return;
+        }
+        
+        console.log('🔄 手动刷新用户列表...');
+        this.firebaseUtils.get(this.usersRef).then(snapshot => {
+            const users = snapshot.val();
+            console.log('🔄 手动获取的用户数据:', users);
+            this.handleUsersChange(users);
+        }).catch(error => {
+            console.error('❌ 手动刷新用户列表失败:', error);
+        });
+    }
+
     // 隐藏悬浮协作面板
     hideFloatingCollaborationPanel() {
         const panel = document.getElementById('firebase-collaboration-panel');
@@ -1558,6 +1606,7 @@ export class FirebaseCollaborationManager {
     // 更新房间信息界面中的用户列表
     updateRoomInfoUsersList(users) {
         console.log('🔄 更新房间信息用户列表:', users);
+        console.log('🔄 传入的用户数量:', users ? Object.keys(users).length : 0);
         
         // 查找房间信息面板
         const panel = document.getElementById('firebase-collaboration-panel');
@@ -1579,6 +1628,7 @@ export class FirebaseCollaborationManager {
         usersList.innerHTML = '';
         
         const userCount = users ? Object.keys(users).length : 0;
+        console.log('🔄 实际用户数量:', userCount);
         
         // 更新连接数显示
         if (connectionCount) {
@@ -1592,15 +1642,22 @@ export class FirebaseCollaborationManager {
         
         // 添加在线用户
         Object.entries(users).forEach(([userId, userData]) => {
-            if (!userData || !userData.isOnline) return;
+            console.log(`🔄 处理用户 ${userId}:`, userData);
+            
+            if (!userData || !userData.isOnline) {
+                console.log(`🔄 跳过用户 ${userId}，不在线或数据无效`);
+                return;
+            }
             
             const userDiv = document.createElement('div');
             userDiv.className = `user-item ${userId === this.userId ? 'current-user' : ''}`;
             
-            const userName = userData.name || `用户${userId.slice(-4)}`;
-            const userColor = userData.color || '#3498db';
+            const userName = userData.userName || `用户${userId.slice(-4)}`;
+            const userColor = userData.userColor || '#3498db';
             const isHost = userData.isHost || false;
             const isSelf = userId === this.userId;
+            
+            console.log(`🔄 显示用户: ${userName}, 颜色: ${userColor}, 房主: ${isHost}, 自己: ${isSelf}`);
             
             userDiv.innerHTML = `
                 <div class="user-color" style="background-color: ${userColor}"></div>
@@ -1613,6 +1670,7 @@ export class FirebaseCollaborationManager {
             `;
             
             usersList.appendChild(userDiv);
+            console.log(`🔄 已添加用户 ${userName} 到列表`);
         });
         
         console.log(`✅ 用户列表已更新，显示 ${userCount} 个用户`);
