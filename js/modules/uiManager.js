@@ -372,6 +372,15 @@ export class UIManager {
                             <button id="export-csv-btn" class="export-btn">
                                 📊 导出击杀记录 (CSV)
                             </button>
+                            <button id="export-ascii-csv-btn" class="export-btn">
+                                📝 导出纯英文CSV (无乱码)
+                            </button>
+                            <button id="export-tsv-btn" class="export-btn">
+                                📋 导出制表符格式 (TSV)
+                            </button>
+                        </div>
+                        <div class="export-tips">
+                            💡 提示：如果CSV有乱码，请尝试"纯英文CSV"或"制表符格式"
                         </div>
                     </div>
                     
@@ -411,6 +420,8 @@ export class UIManager {
     bindDataManagementEvents(modal) {
         const exportJsonBtn = modal.querySelector('#export-json-btn');
         const exportCsvBtn = modal.querySelector('#export-csv-btn');
+        const exportAsciiCsvBtn = modal.querySelector('#export-ascii-csv-btn');
+        const exportTsvBtn = modal.querySelector('#export-tsv-btn');
         const importBtn = modal.querySelector('#import-btn');
         const importFile = modal.querySelector('#import-file');
         const clearAllBtn = modal.querySelector('#clear-all-btn');
@@ -446,6 +457,40 @@ export class UIManager {
                 console.log('导出结果:', success);
                 if (success) {
                     this.showTemporaryMessage('击杀记录导出成功！', 'success');
+                }
+            } else {
+                console.error('应用实例或统计管理器不可用');
+                this.showTemporaryMessage('导出失败：应用未正确初始化', 'error');
+            }
+        });
+        
+        // 导出纯英文CSV（无乱码）
+        exportAsciiCsvBtn.addEventListener('click', () => {
+            console.log('导出ASCII CSV按钮被点击');
+            
+            if (window.app && window.app.statsManager) {
+                console.log('开始导出ASCII CSV数据...');
+                const success = window.app.statsManager.exportToASCIICSV();
+                console.log('导出结果:', success);
+                if (success) {
+                    this.showTemporaryMessage('纯英文CSV导出成功！', 'success');
+                }
+            } else {
+                console.error('应用实例或统计管理器不可用');
+                this.showTemporaryMessage('导出失败：应用未正确初始化', 'error');
+            }
+        });
+        
+        // 导出TSV（制表符分隔）
+        exportTsvBtn.addEventListener('click', () => {
+            console.log('导出TSV按钮被点击');
+            
+            if (window.app && window.app.statsManager) {
+                console.log('开始导出TSV数据...');
+                const success = window.app.statsManager.exportToTSV();
+                console.log('导出结果:', success);
+                if (success) {
+                    this.showTemporaryMessage('TSV文件导出成功！', 'success');
                 }
             } else {
                 console.error('应用实例或统计管理器不可用');

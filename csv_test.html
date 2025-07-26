@@ -165,11 +165,9 @@
                     throw new Error('没有击杀记录可导出');
                 }
                 
-                // 添加BOM头以支持中文显示
-                let csvContent = '\uFEFF';
-                
-                // CSV标题行
-                csvContent += '线路号,击杀时间,击杀日期,完整时间戳\\n';
+                // 使用英文标题避免编码问题，并在第二行添加中文说明
+                let csvContent = 'LineNumber,KillTime,KillDate,FullTimestamp\n';
+                csvContent += '线路号,击杀时间,击杀日期,完整时间戳\n';
                 
                 // 按时间排序击杀事件（最新的在前）
                 const sortedEvents = this.killEvents.slice().sort((a, b) => b.timestamp - a.timestamp);
@@ -184,18 +182,12 @@
                     const minutes = date.getMinutes().toString().padStart(2, '0');
                     const seconds = date.getSeconds().toString().padStart(2, '0');
                     
-                    const dateStr = `${year}-${month}-${day}`;
+                    const dateStr = `${year}/${month}/${day}`;
                     const timeStr = `${hours}:${minutes}:${seconds}`;
-                    const fullTimestamp = date.toLocaleString('zh-CN', {
-                        year: 'numeric',
-                        month: '2-digit',
-                        day: '2-digit',
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        second: '2-digit'
-                    });
+                    const fullTimestamp = `${year}/${month}/${day} ${timeStr}`;
                     
-                    csvContent += `${event.line},${timeStr},${dateStr},${fullTimestamp}\\n`;
+                    // 使用双引号包围数据，确保特殊字符正确处理
+                    csvContent += `"${event.line}","${timeStr}","${dateStr}","${fullTimestamp}"\n`;
                 });
                 
                 return csvContent;
@@ -205,8 +197,12 @@
                 try {
                     const csvContent = this.generateCSVContent();
                     
-                    const blob = new Blob([csvContent], { 
-                        type: 'text/csv;charset=utf-8' 
+                    // 创建UTF-8编码的Blob，使用BOM确保Excel正确识别
+                    const BOM = '\uFEFF';
+                    const csvContentWithBOM = BOM + csvContent;
+                    
+                    const blob = new Blob([csvContentWithBOM], { 
+                        type: 'text/csv;charset=utf-8'
                     });
                     
                     const url = URL.createObjectURL(blob);

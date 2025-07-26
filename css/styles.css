@@ -658,9 +658,10 @@ footer {
 }
 
 .button-group {
-    display: flex;
-    gap: 15px;
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 10px;
+    margin-bottom: 10px;
 }
 
 .export-btn, .import-btn {
@@ -782,4 +783,46 @@ footer {
         transform: translateX(0);
         opacity: 1;
     }
+}
+
+.export-tips {
+    margin-top: 15px;
+    padding: 10px;
+    background: rgba(52, 152, 219, 0.1);
+    border-left: 4px solid #3498db;
+    border-radius: 4px;
+    font-size: 13px;
+    color: #7fb3d3;
+    line-height: 1.4;
+}
+
+/* 导出按钮不同颜色区分 */
+#export-csv-btn {
+    background: linear-gradient(135deg, #3498db, #2980b9);
+    box-shadow: 0 4px 15px rgba(52, 152, 219, 0.3);
+}
+
+#export-csv-btn:hover {
+    background: linear-gradient(135deg, #2980b9, #21618c);
+    box-shadow: 0 6px 20px rgba(52, 152, 219, 0.4);
+}
+
+#export-ascii-csv-btn {
+    background: linear-gradient(135deg, #9b59b6, #8e44ad);
+    box-shadow: 0 4px 15px rgba(155, 89, 182, 0.3);
+}
+
+#export-ascii-csv-btn:hover {
+    background: linear-gradient(135deg, #8e44ad, #7d3c98);
+    box-shadow: 0 6px 20px rgba(155, 89, 182, 0.4);
+}
+
+#export-tsv-btn {
+    background: linear-gradient(135deg, #e67e22, #d35400);
+    box-shadow: 0 4px 15px rgba(230, 126, 34, 0.3);
+}
+
+#export-tsv-btn:hover {
+    background: linear-gradient(135deg, #d35400, #ba4a00);
+    box-shadow: 0 6px 20px rgba(230, 126, 34, 0.4);
 }

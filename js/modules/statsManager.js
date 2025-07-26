@@ -341,14 +341,12 @@ export class StatsManager {
                 return false;
             }
             
-            // 添加BOM头以支持中文显示 (UTF-8 BOM)
-            let csvContent = '\uFEFF';
-            
-            // CSV标题行（不使用引号，简化格式）
-            csvContent += '线路号,击杀时间,击杀日期,完整时间戳\n';
-            
             // 按时间排序击杀事件（最新的在前）
             const sortedEvents = this.killEvents.slice().sort((a, b) => b.timestamp - a.timestamp);
+            
+            // 使用英文标题避免编码问题，并在第二行添加中文说明
+            let csvContent = 'LineNumber,KillTime,KillDate,FullTimestamp\n';
+            csvContent += '线路号,击杀时间,击杀日期,完整时间戳\n';
             
             // 数据行
             sortedEvents.forEach(event => {
@@ -360,32 +358,23 @@ export class StatsManager {
                 const minutes = date.getMinutes().toString().padStart(2, '0');
                 const seconds = date.getSeconds().toString().padStart(2, '0');
                 
-                const dateStr = `${year}-${month}-${day}`;  // 使用标准日期格式
+                const dateStr = `${year}/${month}/${day}`;  // 改回斜杠格式，兼容Excel
                 const timeStr = `${hours}:${minutes}:${seconds}`;
-                const fullTimestamp = date.toLocaleString('zh-CN', {
-                    year: 'numeric',
-                    month: '2-digit',
-                    day: '2-digit',
-                    hour: '2-digit',
-                    minute: '2-digit',
-                    second: '2-digit'
-                });
+                const fullTimestamp = `${year}/${month}/${day} ${timeStr}`;
                 
-                // 不使用引号，直接输出（避免Excel解析问题）
-                csvContent += `${event.line},${timeStr},${dateStr},${fullTimestamp}\n`;
+                // 使用双引号包围数据，确保特殊字符正确处理
+                csvContent += `"${event.line}","${timeStr}","${dateStr}","${fullTimestamp}"\n`;
             });
             
             console.log('CSV内容长度:', csvContent.length);
             console.log('CSV前200字符:', csvContent.substring(0, 200));
-            console.log('CSV示例行:');
-            const lines = csvContent.split('\n');
-            lines.slice(0, 5).forEach((line, index) => {
-                console.log(`行${index + 1}: ${line}`);
-            });
             
-            // 创建Blob，使用标准的CSV MIME类型
-            const blob = new Blob([csvContent], { 
-                type: 'text/csv;charset=utf-8' 
+            // 创建UTF-8编码的Blob，使用BOM确保Excel正确识别
+            const BOM = '\uFEFF';
+            const csvContentWithBOM = BOM + csvContent;
+            
+            const blob = new Blob([csvContentWithBOM], { 
+                type: 'text/csv;charset=utf-8'
             });
             
             const url = URL.createObjectURL(blob);
@@ -408,9 +397,9 @@ export class StatsManager {
             
             console.log('CSV导出完成');
             
-            // 显示导出成功消息，包含文件位置提示
+            // 显示导出成功消息，包含使用说明
             setTimeout(() => {
-                alert(`CSV文件已导出成功！\n\n文件名: ${link.download}\n文件已保存到浏览器默认下载目录\n\n包含 ${sortedEvents.length} 条击杀记录\n按时间倒序排列（最新的在前）`);
+                alert(`CSV文件已导出成功！\n\n文件名: ${link.download}\n文件已保存到浏览器默认下载目录\n\n包含 ${sortedEvents.length} 条击杀记录\n按时间倒序排列（最新的在前）\n\n💡 使用提示：\n- 第一行是英文标题（便于Excel识别）\n- 第二行是中文说明\n- 如果Excel打开仍有乱码，请尝试：\n  1. 用记事本打开文件，另存为UTF-8编码\n  2. 或在Excel中选择"数据"->"从文本"导入`);
             }, 200);
             
             return true;
@@ -421,6 +410,130 @@ export class StatsManager {
         }
     }
     
+    // 导出为纯ASCII CSV（避免编码问题）
+    exportToASCIICSV() {
+        try {
+            console.log('开始导出ASCII CSV数据...');
+            
+            if (this.killEvents.length === 0) {
+                alert('暂无击杀记录可导出');
+                return false;
+            }
+            
+            // 按时间排序击杀事件（最新的在前）
+            const sortedEvents = this.killEvents.slice().sort((a, b) => b.timestamp - a.timestamp);
+            
+            // 使用纯英文标题，避免任何编码问题
+            let csvContent = 'Line,Time,Date,Timestamp\n';
+            
+            // 数据行
+            sortedEvents.forEach(event => {
+                const date = new Date(event.timestamp);
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                
+                const dateStr = `${year}/${month}/${day}`;
+                const timeStr = `${hours}:${minutes}:${seconds}`;
+                const fullTimestamp = `${year}/${month}/${day} ${timeStr}`;
+                
+                csvContent += `${event.line},${timeStr},${dateStr},${fullTimestamp}\n`;
+            });
+            
+            // 不使用BOM，创建纯ASCII CSV
+            const blob = new Blob([csvContent], { 
+                type: 'text/plain;charset=ascii'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `PigKillRecord_ASCII_${this.formatDateForFilename(new Date())}.csv`;
+            
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            alert(`ASCII CSV文件已导出！\n\n文件名: ${link.download}\n\n此文件使用纯英文标题，应该不会有乱码问题\n包含 ${sortedEvents.length} 条记录`);
+            
+            return true;
+        } catch (error) {
+            console.error('导出ASCII CSV时发生错误:', error);
+            alert('ASCII CSV导出失败: ' + error.message);
+            return false;
+        }
+    }
+    
+    // 导出为制表符分隔的TXT文件
+    exportToTSV() {
+        try {
+            console.log('开始导出TSV数据...');
+            
+            if (this.killEvents.length === 0) {
+                alert('暂无击杀记录可导出');
+                return false;
+            }
+            
+            // 按时间排序击杀事件（最新的在前）
+            const sortedEvents = this.killEvents.slice().sort((a, b) => b.timestamp - a.timestamp);
+            
+            // 使用制表符分隔，第一行中文标题
+            let tsvContent = '线路号\t击杀时间\t击杀日期\t完整时间戳\n';
+            
+            // 数据行
+            sortedEvents.forEach(event => {
+                const date = new Date(event.timestamp);
+                const year = date.getFullYear();
+                const month = (date.getMonth() + 1).toString().padStart(2, '0');
+                const day = date.getDate().toString().padStart(2, '0');
+                const hours = date.getHours().toString().padStart(2, '0');
+                const minutes = date.getMinutes().toString().padStart(2, '0');
+                const seconds = date.getSeconds().toString().padStart(2, '0');
+                
+                const dateStr = `${year}/${month}/${day}`;
+                const timeStr = `${hours}:${minutes}:${seconds}`;
+                const fullTimestamp = `${year}/${month}/${day} ${timeStr}`;
+                
+                tsvContent += `${event.line}\t${timeStr}\t${dateStr}\t${fullTimestamp}\n`;
+            });
+            
+            // 使用UTF-8编码
+            const blob = new Blob(['\uFEFF' + tsvContent], { 
+                type: 'text/tab-separated-values;charset=utf-8'
+            });
+            
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = `金猪击杀记录_${this.formatDateForFilename(new Date())}.tsv`;
+            
+            link.style.display = 'none';
+            document.body.appendChild(link);
+            link.click();
+            
+            setTimeout(() => {
+                document.body.removeChild(link);
+                URL.revokeObjectURL(url);
+            }, 100);
+            
+            alert(`TSV文件已导出！\n\n文件名: ${link.download}\n\n制表符分隔格式，可以用Excel打开\n包含 ${sortedEvents.length} 条记录`);
+            
+            return true;
+        } catch (error) {
+            console.error('导出TSV时发生错误:', error);
+            alert('TSV导出失败: ' + error.message);
+            return false;
+        }
+    }
+
     // 格式化日期用于文件名
     formatDateForFilename(date) {
         const year = date.getFullYear();

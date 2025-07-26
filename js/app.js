@@ -486,3 +486,53 @@ window.showDataManagement = function() {
         console.error('应用或UI管理器未初始化');
     }
 };
+
+// 调试函数：测试ASCII CSV导出
+window.testASCIICSV = function() {
+    if (window.app && window.app.statsManager) {
+        return window.app.statsManager.exportToASCIICSV();
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
+
+// 调试函数：测试TSV导出
+window.testTSV = function() {
+    if (window.app && window.app.statsManager) {
+        return window.app.statsManager.exportToTSV();
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
+
+// 调试函数：比较所有导出格式
+window.compareExportFormats = function() {
+    if (window.app && window.app.statsManager) {
+        console.log('=== 导出格式比较 ===');
+        
+        try {
+            const csvContent = window.app.statsManager.debugCSVContent();
+            console.log('📊 标准CSV内容（前200字符）:', csvContent?.substring(0, 200));
+        } catch (e) {
+            console.error('CSV生成失败:', e.message);
+        }
+        
+        try {
+            const manager = window.app.statsManager;
+            if (manager.killEvents.length > 0) {
+                // 模拟ASCII CSV内容
+                let asciiContent = 'Line,Time,Date,Timestamp\n';
+                const event = manager.killEvents[0];
+                const date = new Date(event.timestamp);
+                asciiContent += `${event.line},${date.toTimeString().split(' ')[0]},${date.toDateString()},${date.toString()}\n`;
+                console.log('📝 ASCII CSV内容示例:', asciiContent);
+            }
+        } catch (e) {
+            console.error('ASCII CSV生成失败:', e.message);
+        }
+        
+        console.log('请分别点击不同的导出按钮测试效果');
+    } else {
+        console.error('应用或统计管理器未初始化');
+    }
+};
