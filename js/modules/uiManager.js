@@ -632,8 +632,8 @@ export class UIManager {
                     </div>
                     <div class="notice-body">
                         <div class="notice-icon">⏰</div>
-                        <h3>关于倒计时功能说明</h3>
-                        <p>本系统的24小时倒计时功能<strong>仅供参考</strong>，并非准确的24小时刷新时间。</p>
+                        <h3>关于金猪刷新时间说明</h3>
+                        <p>游戏中的金猪刷新并非严格按照24小时周期，本系统倒计时<strong>仅供参考</strong>。</p>
                         <br>
                         <p>🐷 金猪的实际刷新时间可能受到以下因素影响：</p>
                         <ul>
