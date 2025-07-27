@@ -6,6 +6,7 @@ export class UIManager {
         this.isMobile = this.detectMobile();
         this.initTimestamp();
         this.initNotesInput();
+        this.initNoticeModal(); // 初始化公告弹框
     }
 
     // 检测移动设备
@@ -602,5 +603,103 @@ export class UIManager {
                 }
             }, 300);
         }, duration);
+    }
+
+    // 初始化公告弹框
+    initNoticeModal() {
+        // 检查是否已显示过今日公告
+        const today = new Date().toDateString();
+        const lastNoticeDate = localStorage.getItem('lastNoticeDate');
+        
+        if (lastNoticeDate !== today) {
+            // 延迟显示公告，确保页面加载完成
+            setTimeout(() => {
+                this.showNoticeModal();
+                localStorage.setItem('lastNoticeDate', today);
+            }, 1000);
+        }
+    }
+
+    // 显示公告弹框
+    showNoticeModal() {
+        // 创建弹框HTML
+        const modalHtml = `
+            <div id="notice-modal" class="notice-modal">
+                <div class="notice-modal-content">
+                    <div class="notice-header">
+                        <h2>📢 重要提醒</h2>
+                        <button class="notice-close" id="notice-close">&times;</button>
+                    </div>
+                    <div class="notice-body">
+                        <div class="notice-icon">⏰</div>
+                        <h3>关于倒计时功能说明</h3>
+                        <p>本系统的24小时倒计时功能<strong>仅供参考</strong>，并非准确的24小时刷新时间。</p>
+                        <br>
+                        <p>🐷 金猪的实际刷新时间可能受到以下因素影响：</p>
+                        <ul>
+                            <li>• 服务器维护和重启</li>
+                            <li>• 游戏版本更新</li>
+                            <li>• 特殊活动期间的时间调整</li>
+                            <li>• 其他不可预知的游戏机制变化</li>
+                        </ul>
+                        <br>
+                        <p class="notice-warning">⚠️ 请以游戏内实际情况为准，本工具仅作为辅助参考！</p>
+                    </div>
+                    <div class="notice-footer">
+                        <button class="notice-btn notice-btn-primary" id="notice-confirm">我已了解</button>
+                        <label class="notice-checkbox">
+                            <input type="checkbox" id="notice-dont-show-today"> 今日不再显示
+                        </label>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        // 插入到页面中
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+
+        // 绑定事件
+        const modal = document.getElementById('notice-modal');
+        const closeBtn = document.getElementById('notice-close');
+        const confirmBtn = document.getElementById('notice-confirm');
+        const dontShowCheckbox = document.getElementById('notice-dont-show-today');
+
+        // 关闭弹框函数
+        const closeModal = () => {
+            modal.style.opacity = '0';
+            setTimeout(() => {
+                if (modal.parentNode) {
+                    modal.parentNode.removeChild(modal);
+                }
+            }, 300);
+        };
+
+        // 确认按钮点击
+        confirmBtn.addEventListener('click', () => {
+            if (dontShowCheckbox.checked) {
+                // 如果勾选了今日不再显示，设置今日已显示标记
+                const today = new Date().toDateString();
+                localStorage.setItem('lastNoticeDate', today);
+            }
+            closeModal();
+        });
+
+        // 关闭按钮点击
+        closeBtn.addEventListener('click', closeModal);
+
+        // 点击背景关闭
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) {
+                closeModal();
+            }
+        });
+
+        // ESC键关闭
+        document.addEventListener('keydown', function escHandler(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+                document.removeEventListener('keydown', escHandler);
+            }
+        });
     }
 }
