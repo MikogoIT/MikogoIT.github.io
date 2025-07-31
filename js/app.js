@@ -798,6 +798,39 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
             
+            // 大厅相关全局函数
+            window.joinHall = function() {
+                console.log('joinHall函数被调用');
+                try {
+                    if (app && app.firebaseCollaborationManager) {
+                        console.log('调用Firebase协作管理器的joinHall方法');
+                        app.firebaseCollaborationManager.joinHall();
+                    } else {
+                        console.error('Firebase协作管理器未初始化');
+                        alert('大厅功能暂不可用，请刷新页面重试');
+                    }
+                } catch (error) {
+                    console.error('加入大厅失败:', error);
+                    alert('加入大厅出错：' + error.message);
+                }
+            };
+            
+            window.leaveHall = function() {
+                console.log('leaveHall函数被调用');
+                try {
+                    if (app && app.firebaseCollaborationManager) {
+                        console.log('调用Firebase协作管理器的leaveHall方法');
+                        app.firebaseCollaborationManager.leaveHall();
+                    } else {
+                        console.error('Firebase协作管理器未初始化');
+                        alert('大厅功能暂不可用，请刷新页面重试');
+                    }
+                } catch (error) {
+                    console.error('离开大厅失败:', error);
+                    alert('离开大厅出错：' + error.message);
+                }
+            };
+            
         }).catch(error => {
             console.error('应用初始化异步错误:', error);
         });

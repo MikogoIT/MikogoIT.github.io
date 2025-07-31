@@ -42,17 +42,28 @@ export class EventManager {
             this.uiManager.updateCellTooltip(cell, '双击取消击杀状态');
             console.log('更新单元格提示');
             
-            this.storageManager.setLineState(lineNumber, 'killed');
-            console.log('保存线路状态到存储');
+            // 检查是否在大厅模式
+            const isInHall = this.firebaseCollaborationManager && this.firebaseCollaborationManager.isInHallMode();
             
-            // 记录击杀时间
+            // 只在非大厅模式下保存到本地存储
+            if (!isInHall) {
+                this.storageManager.setLineState(lineNumber, 'killed');
+                console.log('保存线路状态到存储');
+                
+                // 记录击杀时间
+                const killTime = new Date().getTime();
+                this.storageManager.setKillTime(lineNumber, killTime);
+                console.log('保存击杀时间到存储');
+                
+                // 记录击杀事件并检查里程碑
+                const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
+                console.log('记录击杀事件到统计，里程碑:', isMilestone);
+            } else {
+                console.log('大厅模式下，跳过本地存储');
+            }
+            
+            // 获取击杀时间
             const killTime = new Date().getTime();
-            this.storageManager.setKillTime(lineNumber, killTime);
-            console.log('保存击杀时间到存储');
-            
-            // 记录击杀事件并检查里程碑
-            const isMilestone = this.statsManager.recordKillEvent(lineNumber, killTime);
-            console.log('记录击杀事件到统计，里程碑:', isMilestone);
             
             // recordKillEvent 已经添加了击杀事件到列表，不需要重复调用 addKillEvent
             
@@ -152,14 +163,23 @@ export class EventManager {
         // 添加击杀未知时间状态
         cell.classList.add('killed-unknown');
         this.uiManager.updateCellTooltip(cell, '双击取消击杀状态');
-        this.storageManager.setLineState(lineNumber, 'killed-unknown');
         
-        // 记录击杀时间（用于统计，但不开始倒计时）
-        const killTime = new Date().getTime();
-        this.storageManager.setKillTime(lineNumber, killTime);
+        // 检查是否在大厅模式
+        const isInHall = this.firebaseCollaborationManager && this.firebaseCollaborationManager.isInHallMode();
         
-        // 记录击杀事件
-        this.statsManager.recordKillEvent(lineNumber, killTime);
+        // 只在非大厅模式下保存到本地存储
+        if (!isInHall) {
+            this.storageManager.setLineState(lineNumber, 'killed-unknown');
+            
+            // 记录击杀时间（用于统计，但不开始倒计时）
+            const killTime = new Date().getTime();
+            this.storageManager.setKillTime(lineNumber, killTime);
+            
+            // 记录击杀事件
+            this.statsManager.recordKillEvent(lineNumber, killTime);
+        } else {
+            console.log('大厅模式下，跳过本地存储');
+        }
         
         // recordKillEvent 已经添加了击杀事件到列表，不需要重复调用
         
@@ -208,9 +228,20 @@ export class EventManager {
         cell.classList.remove('killed', 'killed-unknown');
         this.uiManager.updateCellTooltip(cell, '左键击杀开始倒计时，右键击杀但不知时间');
         
-        // 清除本地存储
-        this.storageManager.removeLineState(lineNumber);
-        this.storageManager.removeKillTime(lineNumber);
+        // 检查是否在大厅模式
+        const isInHall = this.firebaseCollaborationManager && this.firebaseCollaborationManager.isInHallMode();
+        
+        // 只在非大厅模式下清除本地存储
+        if (!isInHall) {
+            // 清除本地存储
+            this.storageManager.removeLineState(lineNumber);
+            this.storageManager.removeKillTime(lineNumber);
+            
+            // 从击杀事件中移除
+            this.statsManager.removeKillEvent(lineNumber, killTime);
+        } else {
+            console.log('大厅模式下，跳过本地存储清理');
+        }
         
         // 清除倒计时显示
         const timerCell = document.getElementById(`timer-${lineNumber}`);
@@ -220,9 +251,6 @@ export class EventManager {
         
         // 清除计时器
         this.timerManager.clearTimer(lineNumber);
-        
-        // 从击杀事件中移除
-        this.statsManager.removeKillEvent(lineNumber, killTime);
         
         // 同步到其他用户（本地P2P协作）
         if (this.collaborationManager) {

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>快速测试大厅功能</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f8f9fa;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 { color: #f39c12; text-align: center; }
+        .btn {
+            display: block;
+            width: 100%;
+            padding: 15px;
+            margin: 10px 0;
+            background: #f39c12;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        .btn:hover { background: #e67e22; }
+        .btn.primary { background: #27ae60; }
+        .btn.primary:hover { background: #219a52; }
+        .btn.danger { background: #e74c3c; }
+        .btn.danger:hover { background: #c0392b; }
+        .info {
+            background: #e8f4fd;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+            border-left: 4px solid #3498db;
+        }
+        .status {
+            background: #2c3e50;
+            color: white;
+            padding: 15px;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🏛️ 大厅功能快速测试</h1>
+        
+        <div class="info">
+            <h3>🎯 使用步骤：</h3>
+            <ol>
+                <li>首先打开主页面（index.html）让系统初始化</li>
+                <li>点击下面的测试按钮</li>
+                <li>观察控制台输出和页面反应</li>
+            </ol>
+        </div>
+        
+        <button class="btn" onclick="openMainPage()">🏠 打开主页面</button>
+        <button class="btn primary" onclick="testJoinHall()">🏛️ 测试加入大厅</button>
+        <button class="btn danger" onclick="testLeaveHall()">🚪 测试离开大厅</button>
+        <button class="btn" onclick="testStatus()">📊 检查状态</button>
+        <button class="btn" onclick="clearLog()">🗑️ 清除日志</button>
+        
+        <h3>📝 测试日志：</h3>
+        <div id="log" class="status">初始化测试环境...\n</div>
+    </div>
+
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.textContent += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function openMainPage() {
+            log('🏠 打开主页面...');
+            const mainWindow = window.open('index.html', 'mainPage', 'width=1200,height=800');
+            if (mainWindow) {
+                log('✅ 主页面已打开');
+                // 等待主页面加载
+                setTimeout(() => {
+                    log('ℹ️ 请等待主页面完全加载后再测试大厅功能');
+                }, 2000);
+            } else {
+                log('❌ 无法打开主页面，请检查弹窗阻止设置');
+            }
+        }
+
+        function testJoinHall() {
+            log('🏛️ 测试加入大厅功能...');
+            
+            // 尝试从主窗口获取函数
+            try {
+                const mainWindow = window.open('', 'mainPage');
+                if (mainWindow && mainWindow.joinHall) {
+                    log('✅ 找到joinHall函数，调用中...');
+                    mainWindow.joinHall();
+                    log('📡 joinHall函数已调用');
+                } else if (window.joinHall) {
+                    log('✅ 在当前窗口找到joinHall函数');
+                    window.joinHall();
+                } else {
+                    log('❌ 未找到joinHall函数');
+                    log('ℹ️ 请确保主页面已完全加载并初始化');
+                    
+                    // 尝试直接调用
+                    if (typeof window.parent !== 'undefined' && window.parent.joinHall) {
+                        log('🔄 尝试从父窗口调用...');
+                        window.parent.joinHall();
+                    }
+                }
+            } catch (error) {
+                log('❌ 调用joinHall时发生错误: ' + error.message);
+            }
+        }
+
+        function testLeaveHall() {
+            log('🚪 测试离开大厅功能...');
+            
+            try {
+                const mainWindow = window.open('', 'mainPage');
+                if (mainWindow && mainWindow.leaveHall) {
+                    log('✅ 找到leaveHall函数，调用中...');
+                    mainWindow.leaveHall();
+                    log('📡 leaveHall函数已调用');
+                } else if (window.leaveHall) {
+                    log('✅ 在当前窗口找到leaveHall函数');
+                    window.leaveHall();
+                } else {
+                    log('❌ 未找到leaveHall函数');
+                    log('ℹ️ 请确保主页面已完全加载并初始化'); 
+                }
+            } catch (error) {
+                log('❌ 调用leaveHall时发生错误: ' + error.message);
+            }
+        }
+
+        function testStatus() {
+            log('📊 检查系统状态...');
+            
+            // 检查Firebase
+            if (typeof window.firebaseApp !== 'undefined') {
+                log('✅ Firebase: 已加载');
+            } else {
+                log('❌ Firebase: 未加载');
+            }
+            
+            // 检查全局函数
+            const functions = ['joinHall', 'leaveHall', 'showCollaboration'];
+            functions.forEach(funcName => {
+                if (typeof window[funcName] === 'function') {
+                    log(`✅ ${funcName}: 可用`);
+                } else {
+                    log(`❌ ${funcName}: 不可用`);
+                }
+            });
+            
+            // 检查应用实例
+            if (typeof window.goldPigApp !== 'undefined') {
+                log('✅ goldPigApp: 已初始化');
+                
+                if (window.goldPigApp.firebaseCollaborationManager) {
+                    log('✅ Firebase协作管理器: 已初始化');
+                    
+                    const isInHall = window.goldPigApp.firebaseCollaborationManager.isInHallMode();
+                    log(`ℹ️ 当前大厅状态: ${isInHall ? '在大厅中' : '不在大厅中'}`);
+                } else {
+                    log('❌ Firebase协作管理器: 未初始化');
+                }
+            } else {
+                log('❌ goldPigApp: 未初始化');
+            }
+            
+            log('📊 状态检查完成');
+        }
+
+        function clearLog() {
+            document.getElementById('log').textContent = '日志已清除\n';
+            log('🗑️ 日志已清除');
+        }
+
+        // 监听来自主页面的消息
+        window.addEventListener('message', function(event) {
+            if (event.data && typeof event.data === 'object') {
+                if (event.data.type === 'hall_joined') {
+                    log('📡 收到消息: 已加入大厅');
+                } else if (event.data.type === 'hall_left') {
+                    log('📡 收到消息: 已离开大厅');
+                } else if (event.data.type === 'app_ready') {
+                    log('📡 收到消息: 主应用已就绪');
+                }
+            }
+        });
+
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🎯 测试页面加载完成');
+            log('ℹ️ 请先打开主页面，然后测试大厅功能');
+        });
+    </script>
+</body>
+</html>

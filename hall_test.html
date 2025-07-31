@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>大厅功能测试 - 金猪刷新监控系统</title>
+    <link rel="stylesheet" href="css/firebase-collaboration.css">
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background: linear-gradient(135deg, #f39c12 0%, #e67e22 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .header h1 {
+            color: #f39c12;
+            margin: 0;
+        }
+        
+        .test-section {
+            margin: 25px 0;
+            padding: 20px;
+            border: 2px solid #ecf0f1;
+            border-radius: 10px;
+            background: #f8f9fa;
+        }
+        
+        .test-buttons {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        
+        .test-btn {
+            background: #f39c12;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            min-width: 150px;
+        }
+        
+        .test-btn:hover {
+            background: #e67e22;
+            transform: translateY(-2px);
+        }
+        
+        .test-btn.primary {
+            background: #27ae60;
+        }
+        
+        .test-btn.primary:hover {
+            background: #219a52;
+        }
+        
+        .test-btn.danger {
+            background: #e74c3c;
+        }
+        
+        .test-btn.danger:hover {
+            background: #c0392b;
+        }
+        
+        .status-display {
+            background: white;
+            border: 2px solid #f39c12;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 15px 0;
+        }
+        
+        .status-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 8px 0;
+            padding: 5px 0;
+            border-bottom: 1px solid #ecf0f1;
+        }
+        
+        .status-item:last-child {
+            border-bottom: none;
+        }
+        
+        .status-label {
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .status-value {
+            color: #f39c12;
+            font-family: monospace;
+        }
+        
+        .instructions {
+            background: #e8f4fd;
+            border: 2px solid #3498db;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+        
+        .instructions h3 {
+            margin-top: 0;
+            color: #2980b9;
+        }
+        
+        .instructions ol {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+        
+        .instructions li {
+            margin: 8px 0;
+            line-height: 1.5;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏛️ 大厅功能测试</h1>
+            <p>测试全球协作大厅的功能</p>
+        </div>
+        
+        <div class="instructions">
+            <h3>📋 使用说明</h3>
+            <ol>
+                <li><strong>打开主页面</strong> - 在另一个标签页中打开主页面 (index.html)</li>
+                <li><strong>点击协作按钮</strong> - 在主页面中点击协作相关按钮</li>
+                <li><strong>加入大厅</strong> - 选择"加入全球大厅"选项</li>
+                <li><strong>测试协作</strong> - 在表格中进行操作，观察实时同步效果</li>
+                <li><strong>离开大厅</strong> - 测试离开大厅时的数据合并选项</li>
+            </ol>
+            <p><strong>注意：</strong>需要在主页面中进行实际测试，此页面只是功能演示和状态监控。</p>
+        </div>
+        
+        <div class="test-section">
+            <h3>🎛️ 快速测试</h3>
+            <div class="test-buttons">
+                <button class="test-btn" onclick="openMainPage()">
+                    🏠 打开主页面
+                </button>
+                <button class="test-btn primary" onclick="testJoinHall()">
+                    🏛️ 测试加入大厅
+                </button>
+                <button class="test-btn danger" onclick="testLeaveHall()">
+                    🚪 测试离开大厅
+                </button>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📊 当前状态</h3>
+            <div class="status-display" id="status-display">
+                <div class="status-item">
+                    <span class="status-label">Firebase状态:</span>
+                    <span class="status-value" id="firebase-status">检查中...</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">大厅状态:</span>
+                    <span class="status-value" id="hall-status">未连接</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">全局函数:</span>
+                    <span class="status-value" id="function-status">检查中...</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>📝 测试日志</h3>
+            <div id="log-output" style="background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 8px; font-family: monospace; font-size: 12px; max-height: 300px; overflow-y: auto;">
+                初始化日志系统...<br>
+            </div>
+        </div>
+        
+        <div class="test-section">
+            <h3>🏛️ 大厅功能说明</h3>
+            <ul>
+                <li><strong>全球协作:</strong> 所有加入大厅的用户共同编辑同一个表格</li>
+                <li><strong>实时同步:</strong> 一个用户的操作会实时同步到所有其他用户</li>
+                <li><strong>数据保护:</strong> 进入大厅前会自动备份本地数据</li>
+                <li><strong>智能合并:</strong> 离开大厅时可选择合并大厅数据或恢复本地数据</li>
+                <li><strong>冲突处理:</strong> 避免本地已编辑的表格与大厅数据发生冲突</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function log(message) {
+            const timestamp = new Date().toLocaleTimeString();
+            const logOutput = document.getElementById('log-output');
+            logOutput.innerHTML += `<span style="color: #74b9ff;">[${timestamp}]</span> ${message}<br>`;
+            logOutput.scrollTop = logOutput.scrollHeight;
+            console.log(message);
+        }
+        
+        function updateStatus() {
+            // 检查Firebase状态
+            const firebaseStatus = document.getElementById('firebase-status');
+            if (typeof window.firebaseApp !== 'undefined') {
+                firebaseStatus.textContent = '✅ 已加载';
+                firebaseStatus.style.color = '#27ae60';
+            } else {
+                firebaseStatus.textContent = '❌ 未加载';
+                firebaseStatus.style.color = '#e74c3c';
+            }
+            
+            // 检查全局函数
+            const functionStatus = document.getElementById('function-status');
+            const hasJoinHall = typeof window.joinHall === 'function';
+            const hasLeaveHall = typeof window.leaveHall === 'function';
+            
+            if (hasJoinHall && hasLeaveHall) {
+                functionStatus.textContent = '✅ 可用';
+                functionStatus.style.color = '#27ae60';
+            } else {
+                functionStatus.textContent = '❌ 不可用';
+                functionStatus.style.color = '#e74c3c';
+            }
+            
+            log('状态更新完成');
+        }
+        
+        function openMainPage() {
+            log('🏠 打开主页面...');
+            window.open('index.html', '_blank');
+        }
+        
+        function testJoinHall() {
+            log('🏛️ 测试加入大厅功能...');
+            
+            if (typeof window.joinHall === 'function') {
+                try {
+                    window.joinHall();
+                    log('✅ joinHall函数调用成功');
+                } catch (error) {
+                    log('❌ joinHall函数调用失败: ' + error.message);
+                }
+            } else {
+                log('❌ joinHall函数不存在，请先在主页面中初始化');
+                alert('请先在主页面(index.html)中初始化应用，然后再测试大厅功能');
+            }
+        }
+        
+        function testLeaveHall() {
+            log('🚪 测试离开大厅功能...');
+            
+            if (typeof window.leaveHall === 'function') {
+                try {
+                    window.leaveHall();
+                    log('✅ leaveHall函数调用成功');
+                } catch (error) {
+                    log('❌ leaveHall函数调用失败: ' + error.message);
+                }
+            } else {
+                log('❌ leaveHall函数不存在，请先在主页面中初始化');
+                alert('请先在主页面(index.html)中初始化应用，然后再测试大厅功能');
+            }
+        }
+        
+        // 初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            log('🎯 大厅功能测试页面加载完成');
+            updateStatus();
+            
+            // 定期更新状态
+            setInterval(updateStatus, 5000);
+        });
+        
+        // 监听来自主页面的消息
+        window.addEventListener('message', function(event) {
+            if (event.data.type === 'hall_status_update') {
+                const hallStatus = document.getElementById('hall-status');
+                if (event.data.isInHall) {
+                    hallStatus.textContent = '✅ 已连接';
+                    hallStatus.style.color = '#27ae60';
+                    log('📡 接收到大厅状态更新: 已连接');
+                } else {
+                    hallStatus.textContent = '❌ 未连接';
+                    hallStatus.style.color = '#e74c3c';
+                    log('📡 接收到大厅状态更新: 未连接');
+                }
+            }
+        });
+    </script>
+</body>
+</html>

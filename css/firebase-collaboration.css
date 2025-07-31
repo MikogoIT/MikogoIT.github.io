@@ -376,3 +376,180 @@
         opacity: 0 !important;
     }
 }
+
+/* 大厅相关样式 */
+.hall-section {
+    margin: 15px 0 !important;
+    padding: 15px !important;
+    background: linear-gradient(135deg, #f39c12, #e67e22) !important;
+    border-radius: 8px !important;
+    color: white !important;
+}
+
+.hall-section h4 {
+    margin: 0 0 10px 0 !important;
+    color: white !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+}
+
+.hall-section p {
+    margin: 0 0 10px 0 !important;
+    font-size: 12px !important;
+    opacity: 0.9 !important;
+}
+
+.hall-btn {
+    background: white !important;
+    color: #f39c12 !important;
+    border: 2px solid white !important;
+    font-weight: bold !important;
+}
+
+.hall-btn:hover {
+    background: #f8f9fa !important;
+    transform: translateY(-1px) !important;
+}
+
+.hall-btn:disabled {
+    background: #ecf0f1 !important;
+    color: #95a5a6 !important;
+    border-color: #ecf0f1 !important;
+}
+
+/* 大厅协作面板特殊样式 */
+.hall-collaboration-panel {
+    border-color: #f39c12 !important;
+}
+
+.hall-collaboration-panel .panel-header h3 {
+    color: #f39c12 !important;
+}
+
+.hall-info {
+    background: #fff8e1 !important;
+    border: 1px solid #f39c12 !important;
+    border-radius: 5px !important;
+    padding: 10px !important;
+    margin: 10px 0 !important;
+}
+
+.hall-info p {
+    margin: 5px 0 !important;
+    font-size: 13px !important;
+}
+
+.hall-info-text {
+    margin-top: 15px !important;
+}
+
+.hall-info-text h4 {
+    color: #f39c12 !important;
+    margin: 0 0 8px 0 !important;
+    font-size: 13px !important;
+}
+
+.hall-info-text ul {
+    margin: 0 !important;
+    padding-left: 15px !important;
+}
+
+.hall-info-text li {
+    margin: 5px 0 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+}
+
+/* 数据合并对话框样式 */
+.merge-dialog-overlay {
+    position: fixed !important;
+    top: 0 !important;
+    left: 0 !important;
+    width: 100% !important;
+    height: 100% !important;
+    background: rgba(0,0,0,0.7) !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    z-index: 10001 !important;
+    font-family: Arial, sans-serif !important;
+}
+
+.merge-dialog-content {
+    background: white !important;
+    border-radius: 15px !important;
+    padding: 30px !important;
+    max-width: 500px !important;
+    width: 90% !important;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.3) !important;
+}
+
+.merge-dialog-header h3 {
+    margin: 0 0 20px 0 !important;
+    color: #2c3e50 !important;
+    text-align: center !important;
+}
+
+.merge-options {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 15px !important;
+}
+
+.merge-option {
+    border: 2px solid #ecf0f1 !important;
+    border-radius: 10px !important;
+    padding: 20px !important;
+    background: #f8f9fa !important;
+    transition: all 0.3s ease !important;
+}
+
+.merge-option:hover {
+    border-color: #3498db !important;
+    background: #ebf3fd !important;
+}
+
+.merge-option h4 {
+    margin: 0 0 10px 0 !important;
+    color: #2c3e50 !important;
+    font-size: 16px !important;
+}
+
+.merge-option p {
+    margin: 0 0 15px 0 !important;
+    color: #7f8c8d !important;
+    font-size: 14px !important;
+    line-height: 1.5 !important;
+}
+
+.merge-btn {
+    padding: 12px 24px !important;
+    border: none !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: bold !important;
+    cursor: pointer !important;
+    transition: all 0.3s ease !important;
+    width: 100% !important;
+    margin-top: 10px !important;
+}
+
+.merge-btn.primary {
+    background: #27ae60 !important;
+    color: white !important;
+}
+
+.merge-btn.primary:hover {
+    background: #219a52 !important;
+    transform: translateY(-2px) !important;
+}
+
+.merge-btn.secondary {
+    background: #95a5a6 !important;
+    color: white !important;
+}
+
+.merge-btn.secondary:hover {
+    background: #7f8c8d !important;
+    transform: translateY(-2px) !important;
+}

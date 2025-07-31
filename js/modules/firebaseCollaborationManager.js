@@ -31,6 +31,13 @@ export class FirebaseCollaborationManager {
         this.usersRef = null;
         this.gameStateRef = null;
         
+        // 大厅相关状态
+        this.isInHall = false;
+        this.hallRef = null;
+        this.hallUsersRef = null;
+        this.hallGameStateRef = null;
+        this.hallBackupData = null; // 保存进入大厅前的本地数据
+        
         // Firebase实例
         this.app = null;
         this.auth = null;
@@ -42,6 +49,9 @@ export class FirebaseCollaborationManager {
         
         // 心跳机制
         this.heartbeatInterval = null;
+        
+        // 大厅管理器（延迟初始化）
+        this.hallManager = null;
         
         // 初始化Firebase
         this.initFirebase();
@@ -176,6 +186,9 @@ export class FirebaseCollaborationManager {
             
             this.isInitialized = true;
             console.log('✅ Firebase初始化成功');
+            
+            // 初始化大厅管理器
+            this.initHallManager();
             
         } catch (error) {
             console.error('❌ Firebase初始化失败:', error);
@@ -810,6 +823,13 @@ export class FirebaseCollaborationManager {
     
     // 同步线路状态变化
     async syncLineStateChange(lineNumber, state, killTime = null) {
+        // 如果在大厅模式，同步到大厅
+        if (this.isInHallMode()) {
+            await this.syncLineStateToHall(lineNumber, state, killTime);
+            return;
+        }
+        
+        // 如果在房间模式，同步到房间
         if (!this.roomId || !this.gameStateRef) {
             console.log('未在房间中，跳过同步');
             return;
@@ -911,7 +931,7 @@ export class FirebaseCollaborationManager {
             });
         });
         
-        // 更新房间信息组件中的用户列表和数量
+        // 更新房间信息组件中的用户列表
         this.updateRoomInfoUsersList(users);
         
         // 检查房主是否在线
@@ -1228,8 +1248,17 @@ export class FirebaseCollaborationManager {
                 <p><strong>初始化:</strong> <span id="firebase-init-status">${this.isInitialized ? '✅ 已初始化' : '❌ 未初始化'}</span></p>
                 <p><strong>连接状态:</strong> <span id="firebase-connection-status">${this.isConnected ? '✅ 已连接' : '❌ 已断开'}</span></p>
             </div>
+            
+            <div class="hall-section">
+                <h4>🏛️ 全球大厅</h4>
+                <p>所有用户共同编辑同一个表格</p>
+                <button id="firebase-join-hall-btn" class="action-btn hall-btn" ${!this.isInitialized ? 'disabled' : ''}>
+                    🌍 加入全球大厅
+                </button>
+            </div>
+            
             <div class="room-actions">
-                <h4>🏠 房间操作</h4>
+                <h4>🏠 私人房间</h4>
                 <button id="firebase-create-room-btn" class="action-btn primary" ${!this.isInitialized ? 'disabled' : ''}>
                     🏠 创建房间
                 </button>
@@ -1253,6 +1282,8 @@ export class FirebaseCollaborationManager {
             <div class="firebase-info">
                 <h4>ℹ️ 功能说明</h4>
                 <ul>
+                    <li>🏛️ <strong>全球大厅:</strong> 所有用户共同编辑，离开时可选择合并数据</li>
+                    <li>🏠 <strong>私人房间:</strong> 创建专属房间，邀请特定用户协作</li>
                     <li>🌐 <strong>跨设备支持:</strong> 不同设备间实时协作</li>
                     <li>⚡ <strong>实时同步:</strong> 操作实时同步到所有用户</li>
                     <li>🔄 <strong>断线重连:</strong> 自动处理网络问题</li>
@@ -1358,6 +1389,30 @@ export class FirebaseCollaborationManager {
 
     // 绑定创建/加入面板事件
     bindCreateJoinPanelEvents(panel) {
+        // 加入大厅按钮
+        const joinHallBtn = panel.querySelector('#firebase-join-hall-btn');
+        if (joinHallBtn) {
+            joinHallBtn.addEventListener('click', async () => {
+                console.log('🏛️ 加入大厅按钮被点击');
+                joinHallBtn.disabled = true;
+                joinHallBtn.textContent = '加入中...';
+                
+                try {
+                    const success = await this.joinHall();
+                    if (success) {
+                        console.log('✅ 成功加入大厅');
+                        panel.remove();
+                    }
+                } catch (error) {
+                    console.error('❌ 加入大厅失败:', error);
+                    this.showTemporaryMessage('加入大厅失败: ' + error.message, 'error');
+                } finally {
+                    joinHallBtn.disabled = false;
+                    joinHallBtn.textContent = '🌍 加入全球大厅';
+                }
+            });
+        }
+        
         // 创建房间按钮
         const createBtn = panel.querySelector('#firebase-create-room-btn');
         if (createBtn) {
@@ -1687,5 +1742,407 @@ export class FirebaseCollaborationManager {
         // 比如隐藏房间状态指示器等
         
         console.log('✅ 房间信息已隐藏');
+    }
+
+    // 加入大厅
+    async joinHall() {
+        if (!this.isInitialized) {
+            alert('Firebase未初始化，请稍后重试');
+            return false;
+        }
+        
+        try {
+            console.log('开始加入大厅...');
+            
+            // 检查大厅是否存在
+            const hallRef = this.firebaseUtils.ref(this.database, `hall`);
+            const hallSnapshot = await this.firebaseUtils.get(hallRef);
+            if (!hallSnapshot.exists()) {
+                alert('大厅不存在');
+                return false;
+            }
+            
+            this.isInHall = true;
+            
+            // 备份当前房间数据
+            this.backupCurrentRoomData();
+            
+            // 添加用户到大厅
+            const userRef = this.firebaseUtils.ref(this.database, `hall/users/${this.userId}`);
+            await this.firebaseUtils.set(userRef, {
+                userName: this.userName,
+                userColor: this.userColor,
+                isHost: false,
+                lastSeen: this.firebaseUtils.serverTimestamp(),
+                isOnline: true
+            });
+            
+            // 更新大厅最后活动时间
+            const activityRef = this.firebaseUtils.ref(this.database, `hall/info/lastActivity`);
+            await this.firebaseUtils.set(activityRef, this.firebaseUtils.serverTimestamp());
+            
+            // 设置大厅引用
+            this.setupHallReferences();
+            
+            // 设置事件监听
+            this.setupHallListeners();
+            
+            // 同步大厅状态到本地
+            await this.syncHallStateToLocal();
+            
+            // 显示悬浮协作面板
+            this.showFloatingCollaborationPanel();
+            
+            console.log('✅ 成功加入大厅');
+            return true;
+            
+        } catch (error) {
+            console.error('❌ 加入大厅失败:', error);
+            alert('加入大厅失败: ' + error.message);
+            return false;
+        }
+    }
+    
+    // 备份当前房间数据
+    backupCurrentRoomData() {
+        console.log('备份当前房间数据');
+        
+        // 备份房间ID和用户ID
+        this.hallBackupData = {
+            roomId: this.roomId,
+            userId: this.userId,
+            userName: this.userName,
+            userColor: this.userColor
+        };
+        
+        console.log('备份数据:', this.hallBackupData);
+    }
+    
+    // 恢复备份的房间数据
+    async restoreBackupRoomData() {
+        if (!this.hallBackupData) {
+            console.log('没有找到备份的房间数据');
+            return;
+        }
+        
+        const { roomId, userId, userName, userColor } = this.hallBackupData;
+        
+        console.log('恢复备份的房间数据:', this.hallBackupData);
+        
+        try {
+            this.roomId = roomId;
+            this.userId = userId;
+            this.userName = userName;
+            this.userColor = userColor;
+            
+            // 更新用户信息
+            const userRef = this.firebaseUtils.ref(this.database, `rooms/${roomId}/users/${userId}`);
+            await this.firebaseUtils.update(userRef, {
+                userName: userName,
+                userColor: userColor,
+                isOnline: true,
+                lastSeen: this.firebaseUtils.serverTimestamp(),
+                lastHeartbeat: this.firebaseUtils.serverTimestamp()
+            });
+            
+            // 更新房间最后活动时间
+            const activityRef = this.firebaseUtils.ref(this.database, `rooms/${roomId}/info/lastActivity`);
+            await this.firebaseUtils.set(activityRef, this.firebaseUtils.serverTimestamp());
+            
+            // 设置引用
+            this.setupRoomReferences();
+            
+            // 设置事件监听
+            this.setupRoomListeners();
+            
+            // 同步当前游戏状态
+            await this.syncCurrentGameState();
+            
+            console.log('✅ 房间数据恢复成功');
+        } catch (error) {
+            console.error('❌ 恢复房间数据失败:', error);
+        }
+    }
+    
+    // 离开大厅
+    async leaveHall() {
+        console.log('🚪 leaveHall函数被调用');
+        
+        if (!this.isInHall) {
+            console.log('❌ 当前不在大厅中');
+            this.showTemporaryMessage('当前不在大厅中', 'warning');
+            return;
+        }
+        
+        try {
+            console.log('🚪 开始离开大厅');
+            
+            // 显示离开中的提示
+            this.showTemporaryMessage('正在离开大厅...', 'info');
+            
+            // 停止心跳机制
+            console.log('💓 停止心跳机制');
+            this.stopHeartbeat();
+            
+            // 移除事件监听器
+            console.log('👂 移除事件监听器');
+            this.removeHallListeners();
+            
+            // 检查Firebase连接状态和引用
+            if (!this.database || !this.firebaseUtils) {
+                console.warn('⚠️ Firebase数据库或工具未初始化，跳过远程清理');
+            } else {
+                // 尝试进行远程清理
+                try {
+                    const userRef = this.firebaseUtils.ref(this.database, `hall/users/${this.userId}`);
+                    
+                    // 标记用户离线
+                    await this.firebaseUtils.update(userRef, {
+                        isOnline: false,
+                        lastSeen: this.firebaseUtils.serverTimestamp()
+                    });
+                    console.log('✅ 用户状态已更新为离线');
+                    
+                    // 延迟移除用户数据
+                    setTimeout(async () => {
+                        try {
+                            await this.firebaseUtils.remove(userRef);
+                            console.log('✅ 用户数据已移除');
+                        } catch (error) {
+                            console.warn('⚠️ 移除用户数据失败:', error);
+                        }
+                    }, 2000);
+                } catch (error) {
+                    console.warn('⚠️ 更新用户状态失败，可能是网络问题:', error);
+                }
+            }
+            
+            // 重置本地状态（这个必须执行，即使远程操作失败）
+            console.log('🔄 重置本地状态');
+            this.roomId = null;
+            this.isHost = false;
+            this.roomRef = null;
+            this.usersRef = null;
+            this.gameStateRef = null;
+            this.isInHall = false;
+            this.hallRef = null;
+            this.hallUsersRef = null;
+            this.hallGameStateRef = null;
+            this.hallBackupData = null;
+            
+            // 隐藏悬浮协作面板
+            console.log('🏠 隐藏悬浮协作面板');
+            this.hideFloatingCollaborationPanel();
+            
+            // 清理保存的房间状态
+            console.log('🧹 清理保存的房间状态');
+            this.clearSavedRoomState();
+            
+            console.log('✅ 已成功离开大厅');
+            this.showTemporaryMessage('已成功离开大厅', 'success');
+            
+            // 恢复备份的房间数据
+            await this.restoreBackupRoomData();
+            
+        } catch (error) {
+            console.error('❌ 离开大厅失败:', error);
+            
+            // 即使出错，也要执行基本的清理
+            console.log('🔄 执行强制清理...');
+            this.stopHeartbeat();
+            this.removeHallListeners();
+            this.roomId = null;
+            this.isHost = false;
+            this.roomRef = null;
+            this.usersRef = null;
+            this.gameStateRef = null;
+            this.isInHall = false;
+            this.hallRef = null;
+            this.hallUsersRef = null;
+            this.hallGameStateRef = null;
+            this.hallBackupData = null;
+            this.hideRoomInfo();
+            this.clearSavedRoomState();
+            
+            this.showTemporaryMessage(`离开大厅时出现问题: ${error.message}`, 'error');
+            
+            // 重新抛出错误以便上层处理
+            throw error;
+        }
+    }
+    
+    // 设置大厅引用
+    setupHallReferences() {
+        if (!this.isInHall) return;
+        
+        this.hallRef = this.firebaseUtils.ref(this.database, `hall`);
+        this.hallUsersRef = this.firebaseUtils.ref(this.database, `hall/users`);
+        this.hallGameStateRef = this.firebaseUtils.ref(this.database, `hall/gameState`);
+    }
+    
+    // 设置大厅事件监听
+    setupHallListeners() {
+        if (!this.isInHall) return;
+        
+        console.log('设置大厅事件监听...');
+        
+        // 监听用户变化
+        const hallUsersListener = this.firebaseUtils.onValue(this.hallUsersRef, (snapshot) => {
+            this.handleHallUsersChange(snapshot.val());
+        });
+        this.listeners.set('hallUsers', hallUsersListener);
+        
+        // 监听游戏状态变化
+        const hallGameStateListener = this.firebaseUtils.onValue(this.hallGameStateRef, (snapshot) => {
+            this.handleHallGameStateChange(snapshot.val());
+        });
+        this.listeners.set('hallGameState', hallGameStateListener);
+        
+        console.log('✅ 大厅事件监听设置完成');
+    }
+    
+    // 移除大厅事件监听器
+    removeHallListeners() {
+        console.log('移除大厅事件监听器...');
+        
+        this.listeners.forEach((unsubscribe, key) => {
+            try {
+                if (typeof unsubscribe === 'function') {
+                    console.log(`移除监听器: ${key}`);
+                    unsubscribe(); // 在Firebase v9+中，onValue返回的是unsubscribe函数
+                } else {
+                    console.warn(`监听器 ${key} 不是有效的取消订阅函数`);
+                }
+            } catch (error) {
+                console.warn(`移除监听器 ${key} 时出错:`, error);
+            }
+        });
+        
+        this.listeners.clear();
+        console.log('✅ 大厅事件监听器已清理');
+    }
+    
+    // 加入大厅时同步状态到本地
+    async syncHallStateToLocal() {
+        try {
+            console.log('同步大厅状态到本地...');
+            
+            // 清除本地状态
+            for (let i = 1; i <= 400; i++) {
+                localStorage.removeItem(`pigTimer_line_${i}_state`);
+                localStorage.removeItem(`pigTimer_line_${i}_killTime`);
+            }
+            
+            // 获取大厅所有用户状态
+            const hallUsersSnapshot = await this.firebaseUtils.get(this.hallUsersRef);
+            const hallUsers = hallUsersSnapshot.val();
+            
+            // 应用用户状态
+            if (hallUsers) {
+                Object.entries(hallUsers).forEach(([userId, userData]) => {
+                    localStorage.setItem(`pigTimer_user_${userId}_state`, JSON.stringify(userData));
+                });
+            }
+            
+            // 触发本地状态恢复
+            if (window.app && window.app.restoreTableState) {
+                setTimeout(() => {
+                    window.app.restoreTableState();
+                    console.log('✅ 本地状态恢复完成');
+                }, 500);
+            }
+            
+            console.log('✅ 大厅状态同步到本地完成');
+            
+        } catch (error) {
+            console.error('❌ 同步大厅状态到本地失败:', error);
+        }
+    }
+    
+    // 处理大厅用户变化
+    handleHallUsersChange(users) {
+        console.log('🔥 handleHallUsersChange 被调用，大厅用户数据:', users);
+        
+        if (!users) {
+            console.log('🔥 没有用户数据，退出处理');
+            return;
+        }
+        
+        const userCount = Object.keys(users).length;
+        console.log('🔥 大厅用户列表更新:', userCount, '个用户', users);
+        
+        // 详细输出每个用户的信息
+        Object.entries(users).forEach(([userId, userData]) => {
+            console.log(`🔥 用户 ${userId}:`, {
+                userName: userData.userName,
+                userColor: userData.userColor,
+                isHost: userData.isHost,
+                isOnline: userData.isOnline,
+                lastSeen: userData.lastSeen
+            });
+        });
+        
+        // 更新大厅信息组件中的用户列表
+        this.updateHallInfoUsersList(users);
+    }
+    
+    // 处理大厅游戏状态变化
+    handleHallGameStateChange(gameState) {
+        if (!gameState) return;
+        
+        console.log('🎮 大厅游戏状态更新:', gameState);
+        
+        // 更新本地状态（所有用户都应该接收并应用远程状态变化）
+        this.updateLocalStateFromRemote(gameState);
+    }
+    
+    // 更新大厅信息界面中的用户列表
+    updateHallInfoUsersList(users) {
+        console.log('🔄 更新大厅信息用户列表:', users);
+        console.log('🔄 传入的用户数量:', users ? Object.keys(users).length : 0);
+    }
+
+    // 初始化大厅管理器
+    async initHallManager() {
+        try {
+            // 动态导入大厅管理器
+            const { FirebaseHallManager } = await import('./hallManager.js');
+            this.hallManager = new FirebaseHallManager(this);
+            console.log('✅ 大厅管理器初始化完成');
+        } catch (error) {
+            console.error('❌ 大厅管理器初始化失败:', error);
+        }
+    }
+
+    // 加入大厅的公共接口
+    async joinHall() {
+        if (this.hallManager) {
+            return await this.hallManager.joinHall();
+        } else {
+            console.error('❌ 大厅管理器未初始化');
+            return false;
+        }
+    }
+
+    // 离开大厅的公共接口
+    async leaveHall() {
+        if (this.hallManager) {
+            return await this.hallManager.leaveHall();
+        } else {
+            console.error('❌ 大厅管理器未初始化');
+            return false;
+        }
+    }
+
+    // 检查是否在大厅中
+    isInHallMode() {
+        return this.hallManager ? this.hallManager.isInHall : false;
+    }
+
+    // 同步线路状态到大厅（如果在大厅中）
+    async syncLineStateToHall(lineNumber, state, killTime = null, userId = null) {
+        if (this.hallManager && this.hallManager.isInHall) {
+            await this.hallManager.syncLineStateToHall(lineNumber, state, killTime, userId);
+        }
     }
 }
